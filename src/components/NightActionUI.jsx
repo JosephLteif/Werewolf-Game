@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 
-export function NightActionUI({ title, subtitle, color, players, onAction, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
+export function NightActionUI({
+    title,
+    subtitle,
+    color,
+    players,
+    onAction,
+    extras,
+    multiSelect,
+    maxSelect,
+    canSkip,
+    phaseEndTime,
+    myPlayer
+}) {
     const [targets, setTargets] = useState([]);
     const [now, setNow] = useState(() => Date.now());
 
@@ -56,13 +68,29 @@ export function NightActionUI({ title, subtitle, color, players, onAction, extra
             text: 'text-yellow-400',
             button: 'from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500',
             glow: 'shadow-yellow-500/30'
+        },
+        slate: {
+            bg: 'from-slate-950 via-gray-950 to-slate-950',
+            cardBg: 'from-slate-900/20 to-gray-900/20',
+            border: 'border-slate-400',
+            text: 'text-slate-400',
+            button: 'from-slate-600 to-gray-600 hover:from-slate-500 hover:to-gray-500',
+            glow: 'shadow-slate-500/30'
         }
     };
 
     const theme = colorThemes[color] || colorThemes.purple;
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br ${theme.bg} text-slate-100 p-4 flex flex-col`}>
+        <div className={`min-h-screen bg-gradient-to-br ${theme.bg} text-slate-100 p-4 flex flex-col relative`}>
+            {myPlayer && (
+                <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+                        {myPlayer.name[0]}
+                    </div>
+                    <span className="text-xs font-bold text-slate-300">{myPlayer.name}</span>
+                </div>
+            )}
             <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
                 {/* Header */}
                 <div className="text-center mb-8 mt-4">
