@@ -13,6 +13,7 @@ import { createRoom as createRoomRT, joinRoom as joinRoomRT, subscribeToRoom } f
 const ROLES = {
   // Good
   VILLAGER: { id: 'villager', name: 'Villager', icon: Users, desc: 'Find the wolves. Don\'t die.', alignment: 'good', weight: 1 },
+  DOPPELGANGER: { id: 'doppelganger', name: 'Doppelgänger', icon: Users, desc: 'Choose a player night 1. If they die, you become their role.', alignment: 'good', weight: 0 },
   DOCTOR: { id: 'doctor', name: 'Doctor', icon: Shield, desc: 'Protect one person each night.', alignment: 'good', weight: 4 },
   SEER: { id: 'seer', name: 'Seer', icon: Eye, desc: 'Reveal one player\'s true nature.', alignment: 'good', weight: 7 },
   HUNTER: { id: 'hunter', name: 'Hunter', icon: Crosshair, desc: 'If you die, take someone with you.', alignment: 'good', weight: 3 },
@@ -39,6 +40,7 @@ const PHASES = {
   LOBBY: 'LOBBY',
   ROLE_REVEAL: 'ROLE_REVEAL',
   NIGHT_INTRO: 'NIGHT_INTRO',
+  NIGHT_DOPPELGANGER: 'NIGHT_DOPPELGANGER',
   NIGHT_CUPID: 'NIGHT_CUPID',
   NIGHT_WEREWOLF: 'NIGHT_WEREWOLF',
   NIGHT_MINION: 'NIGHT_MINION',
@@ -232,6 +234,7 @@ export default function App() {
     if (settings.activeRoles[ROLES.MINION.id]) deck.push(ROLES.MINION.id);
     if (settings.activeRoles[ROLES.LYCAN.id]) deck.push(ROLES.LYCAN.id);
     if (settings.activeRoles[ROLES.CUPID.id]) deck.push(ROLES.CUPID.id);
+    if (settings.activeRoles[ROLES.DOPPELGANGER.id]) deck.push(ROLES.DOPPELGANGER.id);
     if (settings.activeRoles[ROLES.TANNER.id]) deck.push(ROLES.TANNER.id);
     if (settings.activeRoles[ROLES.MAYOR.id]) deck.push(ROLES.MAYOR.id);
     if (settings.activeRoles[ROLES.MASON.id]) { deck.push(ROLES.MASON.id); deck.push(ROLES.MASON.id); } // Masons come in pairs usually, or at least 2
@@ -290,7 +293,13 @@ export default function App() {
     const hasLovers = gameState.lovers && gameState.lovers.length > 0;
 
     let firstPhase = PHASES.NIGHT_WEREWOLF;
-    if (hasCupid && !hasLovers) {
+
+    const hasDoppelganger = players.some(p => p.role === ROLES.DOPPELGANGER.id && p.isAlive);
+    const hasDoppelgangerTarget = gameState.doppelgangerTarget;
+
+    if (hasDoppelganger && !hasDoppelgangerTarget) {
+      firstPhase = PHASES.NIGHT_DOPPELGANGER;
+    } else if (hasCupid && !hasLovers) {
       firstPhase = PHASES.NIGHT_CUPID;
     }
 
@@ -324,6 +333,7 @@ export default function App() {
 
     // Calculate Next Phase
     const sequence = [
+      PHASES.NIGHT_DOPPELGANGER,
       PHASES.NIGHT_CUPID,
       PHASES.NIGHT_WEREWOLF,
       PHASES.NIGHT_MINION,
@@ -345,6 +355,10 @@ export default function App() {
       // Cupid only acts once (first night if lovers not set)
       if (p === PHASES.NIGHT_CUPID && (gameState.lovers && gameState.lovers.length > 0)) continue;
 
+      // Doppelganger only acts once
+      if (p === PHASES.NIGHT_DOPPELGANGER && (gameState.doppelgangerTarget || newActions.doppelgangerCopy)) continue;
+
+      if (p === PHASES.NIGHT_DOPPELGANGER && hasRole(ROLES.DOPPELGANGER.id) && !gameState.doppelgangerTarget) { nextPhase = p; break; }
       if (p === PHASES.NIGHT_CUPID && hasRole(ROLES.CUPID.id) && (!gameState.lovers || gameState.lovers.length === 0)) { nextPhase = p; break; }
       if (p === PHASES.NIGHT_WEREWOLF) { nextPhase = p; break; } // Wolves always wake up
       if (p === PHASES.NIGHT_MINION && hasRole(ROLES.MINION.id)) { nextPhase = p; break; }
@@ -362,7 +376,7 @@ export default function App() {
       let updates = { nightActions: newActions, phase: nextPhase };
 
       // Set timer for next phase if it's an action phase
-      if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(nextPhase)) {
+      if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID, PHASES.NIGHT_DOPPELGANGER].includes(nextPhase)) {
         updates.phaseEndTime = now + (gameState.settings.actionWaitTime * 1000);
       } else {
         updates.phaseEndTime = null; // Clear timer for non-timed phases
@@ -371,9 +385,12 @@ export default function App() {
       if (gameState.phase === PHASES.NIGHT_CUPID && newActions.cupidLinks?.length === 2) {
         updates.lovers = newActions.cupidLinks;
       }
+      if (gameState.phase === PHASES.NIGHT_DOPPELGANGER && newActions.doppelgangerCopy) {
+        updates.doppelgangerTarget = newActions.doppelgangerCopy;
+      }
       await updateGame(updates);
     }
-  };
+  }
 
   const resolveNight = async (finalActions) => {
     let newPlayers = [...players];
@@ -432,6 +449,20 @@ export default function App() {
       }
     }
 
+    // Doppelgänger Transformation (Night Death)
+    deaths.forEach(victim => {
+      if (gameState.doppelgangerTarget === victim.id) {
+        const doppelganger = newPlayers.find(p => p.role === ROLES.DOPPELGANGER.id);
+        if (doppelganger && doppelganger.isAlive) {
+          doppelganger.role = victim.role;
+          // If they become a wolf, they are now evil. If they become Seer, good.
+          // The alignment is implicit in the role ID for our checks.
+          // We might want to notify them.
+          // For now, we just update the role.
+        }
+      }
+    });
+
     // Check Hunter
     const hunterDied = deaths.find(p => p.role === ROLES.HUNTER.id);
     let nextPhase = PHASES.DAY_REVEAL;
@@ -448,8 +479,10 @@ export default function App() {
       players: newPlayers,
       dayLog: log,
       phase: nextPhase,
+      phase: nextPhase,
       nightActions: finalActions,
-      lovers: finalActions.cupidLinks && finalActions.cupidLinks.length === 2 ? finalActions.cupidLinks : gameState.lovers
+      lovers: finalActions.cupidLinks && finalActions.cupidLinks.length === 2 ? finalActions.cupidLinks : gameState.lovers,
+      doppelgangerTarget: finalActions.doppelgangerCopy || gameState.doppelgangerTarget
     });
   };
 
@@ -466,6 +499,17 @@ export default function App() {
       const otherLover = newPlayers.find(p => p.id === otherLoverId);
       if (otherLover && otherLover.isAlive) {
         otherLover.isAlive = false;
+      }
+      if (otherLover && otherLover.isAlive) {
+        otherLover.isAlive = false;
+      }
+    }
+
+    // Doppelgänger Transformation (Hunter Shot)
+    if (gameState.doppelgangerTarget === victim.id) {
+      const doppelganger = newPlayers.find(p => p.role === ROLES.DOPPELGANGER.id);
+      if (doppelganger && doppelganger.isAlive) {
+        doppelganger.role = victim.role;
       }
     }
 
@@ -494,17 +538,17 @@ export default function App() {
       const loversAlive = activePlayers.filter(p => gameState.lovers.includes(p.id) && p.isAlive).length === 2;
       const othersAlive = activePlayers.filter(p => !gameState.lovers.includes(p.id) && p.isAlive).length;
       if (loversAlive && othersAlive === 0) {
-        updateGame({ players: currentPlayers, winner: 'LOVERS', phase: PHASES.GAME_OVER });
+        updateGame({ players: currentPlayers, winner: 'LOVERS', winners: [...(gameState.winners || []), 'LOVERS'], phase: PHASES.GAME_OVER });
         return true;
       }
     }
 
     if (activeWolves === 0) {
-      updateGame({ players: currentPlayers, winner: 'VILLAGERS', phase: PHASES.GAME_OVER });
+      updateGame({ players: currentPlayers, winner: 'VILLAGERS', winners: [...(gameState.winners || []), 'VILLAGERS'], phase: PHASES.GAME_OVER });
       return true;
     }
     if (activeWolves >= good) {
-      updateGame({ players: currentPlayers, winner: 'WEREWOLVES', phase: PHASES.GAME_OVER });
+      updateGame({ players: currentPlayers, winner: 'WEREWOLVES', winners: [...(gameState.winners || []), 'WEREWOLVES'], phase: PHASES.GAME_OVER });
       return true;
     }
     return false;
@@ -578,14 +622,27 @@ export default function App() {
 
     // Jester/Tanner Win
     if (victim.role === ROLES.JESTER.id || victim.role === ROLES.TANNER.id) {
+      const winnerRole = victim.role === ROLES.JESTER.id ? 'JESTER' : 'TANNER';
+      const currentWinners = gameState.winners || [];
+
+      // Add to winners but continue game
       await updateGame({
         players: newPlayers,
-        winner: victim.role === ROLES.JESTER.id ? 'JESTER' : 'TANNER',
-        phase: PHASES.GAME_OVER,
+        winners: [...currentWinners, winnerRole],
+        dayLog: `${victim.name} was voted out. They were the ${ROLES[victim.role.toUpperCase()].name}!`,
+        phase: PHASES.NIGHT_INTRO, // Continue game
         votes: {},
         lockedVotes: []
       });
       return;
+    }
+
+    // Doppelgänger Transformation (Voting Death)
+    if (gameState.doppelgangerTarget === victim.id) {
+      const doppelganger = newPlayers.find(p => p.role === ROLES.DOPPELGANGER.id);
+      if (doppelganger && doppelganger.isAlive) {
+        doppelganger.role = victim.role;
+      }
     }
 
     // Lovers Check
@@ -636,7 +693,7 @@ export default function App() {
       // Time's up!
       if (gameState.phase === PHASES.DAY_VOTE) {
         resolveVotingRef.current && resolveVotingRef.current();
-      } else if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(gameState.phase)) {
+      } else if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID, PHASES.NIGHT_DOPPELGANGER].includes(gameState.phase)) {
         // For night actions, timeout means skipping/advancing with null
         // We need to know WHICH action to skip.
         // This is a bit tricky because advanceNight takes specific arguments.
@@ -1131,10 +1188,11 @@ export default function App() {
     (gameState.phase === PHASES.NIGHT_DOCTOR && myPlayer.role === ROLES.DOCTOR.id) ||
     (gameState.phase === PHASES.NIGHT_SEER && myPlayer.role === ROLES.SEER.id) ||
     (gameState.phase === PHASES.NIGHT_MASON && myPlayer.role === ROLES.MASON.id) ||
-    (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer.role === ROLES.VIGILANTE.id)
+    (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer.role === ROLES.VIGILANTE.id) ||
+    (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer.role === ROLES.DOPPELGANGER.id)
   );
 
-  if ([PHASES.NIGHT_INTRO, PHASES.NIGHT_CUPID, PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_MINION, PHASES.NIGHT_SORCERER, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_MASON, PHASES.NIGHT_VIGILANTE].includes(gameState.phase)) {
+  if ([PHASES.NIGHT_INTRO, PHASES.NIGHT_CUPID, PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_MINION, PHASES.NIGHT_SORCERER, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_MASON, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_DOPPELGANGER].includes(gameState.phase)) {
 
     // NIGHT INTRO
     if (gameState.phase === PHASES.NIGHT_INTRO) {
@@ -1209,6 +1267,19 @@ export default function App() {
           myPlayer={myPlayer}
           multiSelect={true}
           maxSelect={2}
+          phaseEndTime={gameState.phaseEndTime}
+        />
+      );
+    }
+
+    // DOPPELGANGER
+    if (gameState.phase === PHASES.NIGHT_DOPPELGANGER) {
+      return (
+        <NightActionUI
+          title="Doppelgänger" subtitle="Choose a player to copy if they die." color="slate"
+          players={players.filter(p => p.isAlive && p.id !== user.uid)}
+          onAction={(id) => advanceNight('doppelgangerCopy', id)}
+          myPlayer={myPlayer}
           phaseEndTime={gameState.phaseEndTime}
         />
       );
@@ -1709,7 +1780,18 @@ export default function App() {
 
   // --- GAME OVER ---
   if (gameState.phase === PHASES.GAME_OVER) {
-    return <DeadScreen winner={gameState.winner} isGameOver={true} onReset={() => updateGame({ phase: PHASES.LOBBY, winner: null, dayLog: "", players: players.map(p => ({ ...p, isAlive: true, role: null, ready: false })) })} isHost={isHost} players={players} lovers={gameState.lovers} />;
+    return (
+      <DeadScreen
+        winner={gameState.winner}
+        winners={gameState.winners}
+        isGameOver={gameState.phase === PHASES.GAME_OVER}
+        onReset={() => updateGame({ phase: PHASES.LOBBY, players: [], dayLog: "", nightActions: {}, votes: {}, lockedVotes: [], winners: [] })}
+        isHost={isHost}
+        dayLog={gameState.dayLog}
+        players={players}
+        lovers={gameState.lovers}
+      />
+    );
   }
 
   return <div>Loading...</div>;

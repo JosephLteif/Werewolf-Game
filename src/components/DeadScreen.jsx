@@ -11,17 +11,24 @@ export function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, player
         LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' }
     };
 
-    const colors = isGameOver && winner ? winnerColors[winner] : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
+    const colors = isGameOver && winners && winners.length > 0 ? winnerColors[winners[0]] : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
 
     // Filter winners
     const winningPlayers = players ? players.filter(p => {
-        if (!winner) return false;
-        if (winner === 'LOVERS') return lovers && lovers.includes(p.id);
-        if (winner === 'VILLAGERS') return ROLES[p.role.toUpperCase()].alignment === 'good';
-        if (winner === 'WEREWOLVES') return ROLES[p.role.toUpperCase()].alignment === 'evil';
-        if (winner === 'JESTER') return p.role === ROLES.JESTER.id;
-        if (winner === 'TANNER') return p.role === ROLES.TANNER.id;
-        return false;
+        if (!winners || winners.length === 0) return false;
+
+        let isWinner = false;
+        if (winners.includes('LOVERS') && lovers && lovers.includes(p.id)) isWinner = true;
+        if (winners.includes('VILLAGERS') && ROLES[p.role.toUpperCase()].alignment === 'good') isWinner = true;
+        if (winners.includes('WEREWOLVES')) {
+            const role = ROLES[p.role.toUpperCase()];
+            if (role.id === ROLES.SORCERER.id && p.foundSeer) isWinner = true;
+            else if (role.alignment === 'evil') isWinner = true;
+        }
+        if (winners.includes('JESTER') && p.role === ROLES.JESTER.id) isWinner = true;
+        if (winners.includes('TANNER') && p.role === ROLES.TANNER.id) isWinner = true;
+
+        return isWinner;
     }) : [];
 
     const [deadParticles, setDeadParticles] = useState(null);
@@ -65,7 +72,7 @@ export function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, player
                             <Skull className="w-16 h-16 text-white" />
                         </div>
                         <h2 className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}>
-                            {winner} WIN!
+                            {winners ? winners.join(' & ') : 'NO ONE'} WINS!
                         </h2>
                         <p className="text-slate-400 mb-8 text-xl">Game Over</p>
 
