@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Skull, RotateCcw } from 'lucide-react';
 import { ROLES } from '../constants';
 
-export function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, players, lovers }) {
+export function DeadScreen({ winner, winners = [], isGameOver, onReset, isHost, dayLog, players, lovers }) {
     const winnerColors = {
         VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
         WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },

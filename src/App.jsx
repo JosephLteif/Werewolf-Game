@@ -4,56 +4,24 @@ import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, rtdb } from './firebase';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT, subscribeToRoom } from './rooms';
-
-// --- CONFIGURATION ---
-/* NIGHTFALL: Multiplayer Edition
-  Uses Firestore to sync game state across devices.
-*/
-
-const ROLES = {
-  // Good
-  VILLAGER: { id: 'villager', name: 'Villager', icon: Users, desc: 'Find the wolves. Don\'t die.', alignment: 'good', weight: 1 },
-  DOPPELGANGER: { id: 'doppelganger', name: 'Doppelgänger', icon: Users, desc: 'Choose a player night 1. If they die, you become their role.', alignment: 'good', weight: 0 },
-  DOCTOR: { id: 'doctor', name: 'Doctor', icon: Shield, desc: 'Protect one person each night.', alignment: 'good', weight: 4 },
-  SEER: { id: 'seer', name: 'Seer', icon: Eye, desc: 'Reveal one player\'s true nature.', alignment: 'good', weight: 7 },
-  HUNTER: { id: 'hunter', name: 'Hunter', icon: Crosshair, desc: 'If you die, take someone with you.', alignment: 'good', weight: 3 },
-  VIGILANTE: { id: 'vigilante', name: 'Vigilante', icon: Zap, desc: 'You have one bullet to use at night.', alignment: 'good', weight: 3 },
-  MAYOR: { id: 'mayor', name: 'Mayor', icon: Crown, desc: 'Your vote counts as 2.', alignment: 'good', weight: 2 },
-  LYCAN: { id: 'lycan', name: 'Lycan', icon: Fingerprint, desc: 'You are a Villager, but appear as a WOLF to the Seer.', alignment: 'good', weight: -1 }, // Negative because it hurts the village
-  MASON: { id: 'mason', name: 'Mason', icon: Hammer, desc: 'You know who the other Masons are.', alignment: 'good', weight: 2 },
-  CUPID: { id: 'cupid', name: 'Cupid', icon: Heart, desc: 'Link two players. If one dies, both die.', alignment: 'good', weight: -2 },
-
-  // Evil
-  WEREWOLF: { id: 'werewolf', name: 'Werewolf', icon: Skull, desc: 'Eliminate the villagers at night.', alignment: 'evil', weight: -6 },
-  SORCERER: { id: 'sorcerer', name: 'Sorcerer', icon: Sparkles, desc: 'Find the Seer. You win with the Werewolves.', alignment: 'evil', weight: -3 },
-  MINION: { id: 'minion', name: 'Minion', icon: Ghost, desc: 'You know the wolves. They don\'t know you.', alignment: 'evil', weight: -3 },
-
-  // Neutral
-  JESTER: { id: 'jester', name: 'Jester', icon: Smile, desc: 'Get voted out during the day to win.', alignment: 'neutral', weight: -1 },
-  TANNER: { id: 'tanner', name: 'Tanner', icon: Skull, desc: 'You hate your job. Get voted out to win.', alignment: 'neutral', weight: -1 },
-
-  // Special
-  // HOST removed as a role. Host is now a player.
-};
-
-const PHASES = {
-  LOBBY: 'LOBBY',
-  ROLE_REVEAL: 'ROLE_REVEAL',
-  NIGHT_INTRO: 'NIGHT_INTRO',
-  NIGHT_DOPPELGANGER: 'NIGHT_DOPPELGANGER',
-  NIGHT_CUPID: 'NIGHT_CUPID',
-  NIGHT_WEREWOLF: 'NIGHT_WEREWOLF',
-  NIGHT_MINION: 'NIGHT_MINION',
-  NIGHT_SORCERER: 'NIGHT_SORCERER',
-  NIGHT_DOCTOR: 'NIGHT_DOCTOR',
-  NIGHT_SEER: 'NIGHT_SEER',
-  NIGHT_MASON: 'NIGHT_MASON',
-  NIGHT_VIGILANTE: 'NIGHT_VIGILANTE',
-  HUNTER_ACTION: 'HUNTER_ACTION',
-  DAY_REVEAL: 'DAY_REVEAL',
-  DAY_VOTE: 'DAY_VOTE',
-  GAME_OVER: 'GAME_OVER'
-};
+import { ROLES, PHASES } from './constants';
+import {
+  assignRoles,
+  determineFirstNightPhase,
+  handleDoppelgangerTransformation,
+  handleLoverDeaths
+} from './utils/gameLogic';
+import { checkWinCondition } from './utils/winConditions';
+import { processNightActions, generateDayLog, getNextNightPhase, isTimedNightPhase, updateNightActions } from './services/nightActions';
+import { countVotes, determineVotingResult } from './services/voting';
+import { NightActionUI } from './components/NightActionUI';
+import { DeadScreen } from './components/DeadScreen';
+import { RoleInfoModal } from './components/modals/RoleInfoModal';
+import { WaitingScreen } from './components/screens/WaitingScreen';
+import { NightIntroScreen } from './components/screens/NightIntroScreen';
+import { RoleRevealScreen } from './components/screens/RoleRevealScreen';
+import { DayRevealScreen } from './components/screens/DayRevealScreen';
+import { HunterActionScreen } from './components/screens/HunterActionScreen';
 
 // --- UTILS ---
 
@@ -215,48 +183,9 @@ export default function App() {
 
   const startGame = async () => {
     if (!isHost) return;
-    const settings = gameState.settings;
 
-    // Assign Roles - Include EVERYONE (Host is a player)
-    const activePlayers = [...players];
-
-    // Assign Roles
-    let deck = [];
-    for (let i = 0; i < settings.wolfCount; i++) deck.push(ROLES.WEREWOLF.id);
-
-    // Add selected special roles
-    if (settings.activeRoles[ROLES.DOCTOR.id]) deck.push(ROLES.DOCTOR.id);
-    if (settings.activeRoles[ROLES.SEER.id]) deck.push(ROLES.SEER.id);
-    if (settings.activeRoles[ROLES.HUNTER.id]) deck.push(ROLES.HUNTER.id);
-    if (settings.activeRoles[ROLES.JESTER.id]) deck.push(ROLES.JESTER.id);
-    if (settings.activeRoles[ROLES.VIGILANTE.id]) deck.push(ROLES.VIGILANTE.id);
-    if (settings.activeRoles[ROLES.SORCERER.id]) deck.push(ROLES.SORCERER.id);
-    if (settings.activeRoles[ROLES.MINION.id]) deck.push(ROLES.MINION.id);
-    if (settings.activeRoles[ROLES.LYCAN.id]) deck.push(ROLES.LYCAN.id);
-    if (settings.activeRoles[ROLES.CUPID.id]) deck.push(ROLES.CUPID.id);
-    if (settings.activeRoles[ROLES.DOPPELGANGER.id]) deck.push(ROLES.DOPPELGANGER.id);
-    if (settings.activeRoles[ROLES.TANNER.id]) deck.push(ROLES.TANNER.id);
-    if (settings.activeRoles[ROLES.MAYOR.id]) deck.push(ROLES.MAYOR.id);
-    if (settings.activeRoles[ROLES.MASON.id]) { deck.push(ROLES.MASON.id); deck.push(ROLES.MASON.id); } // Masons come in pairs usually, or at least 2
-
-    // Fill rest with Villagers
-    while (deck.length < activePlayers.length) deck.push(ROLES.VILLAGER.id);
-
-    // Shuffle
-    deck = deck.sort(() => Math.random() - 0.5);
-
-    // Assign to players
-    const newPlayers = players.map(p => {
-      // If we have more roles than players (unlikely if logic is right), just villager
-      // If we have more players than roles (deck filled with villagers), pop one
-      const role = deck.pop() || ROLES.VILLAGER.id;
-      return {
-        ...p,
-        role,
-        isAlive: true,
-        ready: false
-      };
-    });
+    // Use service to assign roles
+    const newPlayers = assignRoles(players, gameState.settings);
 
     // Init Vigilante Ammo
     const vigAmmo = {};
@@ -288,20 +217,8 @@ export default function App() {
   };
 
   const startNight = async () => {
-    // Determine first night phase
-    const hasCupid = players.some(p => p.role === ROLES.CUPID.id && p.isAlive);
-    const hasLovers = gameState.lovers && gameState.lovers.length > 0;
-
-    let firstPhase = PHASES.NIGHT_WEREWOLF;
-
-    const hasDoppelganger = players.some(p => p.role === ROLES.DOPPELGANGER.id && p.isAlive);
-    const hasDoppelgangerTarget = gameState.doppelgangerTarget;
-
-    if (hasDoppelganger && !hasDoppelgangerTarget) {
-      firstPhase = PHASES.NIGHT_DOPPELGANGER;
-    } else if (hasCupid && !hasLovers) {
-      firstPhase = PHASES.NIGHT_CUPID;
-    }
+    // Use service to determine first night phase
+    const firstPhase = determineFirstNightPhase(players, gameState);
 
     await updateGame({
       phase: firstPhase,
@@ -312,62 +229,11 @@ export default function App() {
 
   // --- HELPER: NEXT PHASE CALCULATOR ---
   async function advanceNight(actionType, actionValue) {
-    const newActions = { ...gameState.nightActions };
-    if (actionType) {
-      if (actionType === 'cupidLinks') {
-        // Accumulate lovers
-        const current = newActions.cupidLinks || [];
-        if (current.includes(actionValue)) {
-          newActions.cupidLinks = current.filter(id => id !== actionValue);
-        } else if (current.length < 2) {
-          newActions.cupidLinks = [...current, actionValue];
-        }
-        // If we don't have 2 yet, just update state and return (don't advance phase)
-        // Actually, the UI handles the selection, we only call advanceNight when CONFIRMING
-        // So actionValue here should be the FINAL array
-        newActions.cupidLinks = actionValue;
-      } else {
-        newActions[actionType] = actionValue;
-      }
-    }
+    // Use service to update night actions
+    const newActions = updateNightActions(gameState.nightActions, actionType, actionValue);
 
-    // Calculate Next Phase
-    const sequence = [
-      PHASES.NIGHT_DOPPELGANGER,
-      PHASES.NIGHT_CUPID,
-      PHASES.NIGHT_WEREWOLF,
-      PHASES.NIGHT_MINION,
-      PHASES.NIGHT_SORCERER,
-      PHASES.NIGHT_DOCTOR,
-      PHASES.NIGHT_SEER,
-      PHASES.NIGHT_MASON,
-      PHASES.NIGHT_VIGILANTE
-    ];
-
-    let currentIdx = sequence.indexOf(gameState.phase);
-    let nextPhase = 'RESOLVE';
-
-    // Find next valid phase
-    for (let i = currentIdx + 1; i < sequence.length; i++) {
-      const p = sequence[i];
-      const hasRole = (rid) => players.some(pl => pl.role === rid && pl.isAlive);
-
-      // Cupid only acts once (first night if lovers not set)
-      if (p === PHASES.NIGHT_CUPID && (gameState.lovers && gameState.lovers.length > 0)) continue;
-
-      // Doppelganger only acts once
-      if (p === PHASES.NIGHT_DOPPELGANGER && (gameState.doppelgangerTarget || newActions.doppelgangerCopy)) continue;
-
-      if (p === PHASES.NIGHT_DOPPELGANGER && hasRole(ROLES.DOPPELGANGER.id) && !gameState.doppelgangerTarget) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_CUPID && hasRole(ROLES.CUPID.id) && (!gameState.lovers || gameState.lovers.length === 0)) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_WEREWOLF) { nextPhase = p; break; } // Wolves always wake up
-      if (p === PHASES.NIGHT_MINION && hasRole(ROLES.MINION.id)) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_SORCERER && hasRole(ROLES.SORCERER.id)) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_DOCTOR && hasRole(ROLES.DOCTOR.id)) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_SEER && hasRole(ROLES.SEER.id)) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_MASON && hasRole(ROLES.MASON.id)) { nextPhase = p; break; }
-      if (p === PHASES.NIGHT_VIGILANTE && hasRole(ROLES.VIGILANTE.id)) { nextPhase = p; break; }
-    }
+    // Use service to calculate next phase
+    const nextPhase = getNextNightPhase(gameState.phase, players, gameState, newActions);
 
     if (nextPhase === 'RESOLVE') {
       resolveNight(newActions);
@@ -375,8 +241,8 @@ export default function App() {
       // If we just finished Cupid, save lovers
       let updates = { nightActions: newActions, phase: nextPhase };
 
-      // Set timer for next phase if it's an action phase
-      if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID, PHASES.NIGHT_DOPPELGANGER].includes(nextPhase)) {
+      // Set timer for next phase if it's a timed action phase
+      if (isTimedNightPhase(nextPhase)) {
         updates.phaseEndTime = now + (gameState.settings.actionWaitTime * 1000);
       } else {
         updates.phaseEndTime = null; // Clear timer for non-timed phases
@@ -393,97 +259,37 @@ export default function App() {
   }
 
   const resolveNight = async (finalActions) => {
-    let newPlayers = [...players];
-
-    // Check Sorcerer Success
-    if (finalActions.sorcererCheck) {
-      const target = newPlayers.find(p => p.id === finalActions.sorcererCheck);
-      const sorcerer = newPlayers.find(p => p.role === ROLES.SORCERER.id);
-      if (target && target.role === ROLES.SEER.id && sorcerer) {
-        sorcerer.foundSeer = true;
-      }
-    }
-
-    let deaths = [];
-
-    // Wolf Kill
-    if (finalActions.wolfTarget && finalActions.wolfTarget !== finalActions.doctorProtect) {
-      const victim = newPlayers.find(p => p.id === finalActions.wolfTarget);
-      if (victim) {
-        victim.isAlive = false;
-        deaths.push(victim);
-      }
-    }
-
-    // Vigilante Shot
-    if (finalActions.vigilanteTarget) {
-      const victim = newPlayers.find(p => p.id === finalActions.vigilanteTarget);
-      if (victim && victim.id !== finalActions.doctorProtect && victim.isAlive) {
-        victim.isAlive = false;
-        deaths.push(victim);
-      }
-    }
-
-    // Handle Cupid Links (Lovers Pact)
-    // If any lover died, the other dies too.
-    // We need to loop because a lover dying might kill another lover (if we had chains, but here just pairs)
-    let loversDied = true;
-    while (loversDied) {
-      loversDied = false;
-      if (gameState.lovers && gameState.lovers.length === 2) {
-        const [l1Id, l2Id] = gameState.lovers;
-        const l1 = newPlayers.find(p => p.id === l1Id);
-        const l2 = newPlayers.find(p => p.id === l2Id);
-
-        if (l1 && l2) {
-          if (!l1.isAlive && l2.isAlive) {
-            l2.isAlive = false;
-            deaths.push(l2);
-            loversDied = true;
-          } else if (!l2.isAlive && l1.isAlive) {
-            l1.isAlive = false;
-            deaths.push(l1);
-            loversDied = true;
-          }
-        }
-      }
-    }
-
-    // Doppelgänger Transformation (Night Death)
-    deaths.forEach(victim => {
-      if (gameState.doppelgangerTarget === victim.id) {
-        const doppelganger = newPlayers.find(p => p.role === ROLES.DOPPELGANGER.id);
-        if (doppelganger && doppelganger.isAlive) {
-          doppelganger.role = victim.role;
-          // If they become a wolf, they are now evil. If they become Seer, good.
-          // The alignment is implicit in the role ID for our checks.
-          // We might want to notify them.
-          // For now, we just update the role.
-        }
-      }
-    });
+    // Use service to process night actions
+    const { newPlayers, deaths } = processNightActions(finalActions, players, gameState);
 
     // Check Hunter
     const hunterDied = deaths.find(p => p.role === ROLES.HUNTER.id);
     let nextPhase = PHASES.DAY_REVEAL;
-    let log = deaths.length > 0 ? `${deaths.map(d => d.name).join(', ')} died.` : "No one died.";
+    const log = generateDayLog(deaths);
 
     if (hunterDied) {
-      log += " The Hunter died and seeks revenge!";
+      const hunterLog = log + " The Hunter died and seeks revenge!";
       nextPhase = PHASES.HUNTER_ACTION;
+      await updateGame({
+        players: newPlayers,
+        dayLog: hunterLog,
+        phase: nextPhase,
+        nightActions: finalActions,
+        lovers: finalActions.cupidLinks && finalActions.cupidLinks.length === 2 ? finalActions.cupidLinks : gameState.lovers,
+        doppelgangerTarget: finalActions.doppelgangerCopy || gameState.doppelgangerTarget
+      });
     } else {
-      if (checkWin(newPlayers)) return;
-    }
+      if (checkWinCondition(newPlayers)) return;
 
-    await updateGame({
-      players: newPlayers,
-      dayLog: log,
-      phase: nextPhase,
-      phase: nextPhase,
-      nightActions: finalActions,
-      lovers: finalActions.cupidLinks && finalActions.cupidLinks.length === 2 ? finalActions.cupidLinks : gameState.lovers,
-      doppelgangerTarget: finalActions.doppelgangerCopy || gameState.doppelgangerTarget
-    });
+      await updateGame({
+        players: newPlayers,
+        dayLog: log,
+        phase: nextPhase,
+        nightActions: finalActions,
+        lovers: finalActions.cupidLinks && finalActions.cupidLinks.length === 2 ? finalActions.cupidLinks : gameState.lovers,
+        doppelgangerTarget: finalActions.doppelgangerCopy || gameState.doppelgangerTarget
+      });
+    }
   };
 
 
@@ -493,25 +299,14 @@ export default function App() {
     const victim = newPlayers.find(p => p.id === targetId);
     victim.isAlive = false;
 
-    // Lovers Check for Hunter Shot
-    if (gameState.lovers && gameState.lovers.includes(victim.id)) {
-      const otherLoverId = gameState.lovers.find(id => id !== victim.id);
-      const otherLover = newPlayers.find(p => p.id === otherLoverId);
-      if (otherLover && otherLover.isAlive) {
-        otherLover.isAlive = false;
-      }
-      if (otherLover && otherLover.isAlive) {
-        otherLover.isAlive = false;
-      }
-    }
+    // Handle Doppelganger and Lover deaths
+    handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
+    const loverDeaths = handleLoverDeaths(newPlayers, gameState.lovers);
+    
+    // Combine deaths
+    const allDeaths = [victim, ...loverDeaths];
+    newPlayers = newPlayers.filter(p => p.isAlive);
 
-    // Doppelgänger Transformation (Hunter Shot)
-    if (gameState.doppelgangerTarget === victim.id) {
-      const doppelganger = newPlayers.find(p => p.role === ROLES.DOPPELGANGER.id);
-      if (doppelganger && doppelganger.isAlive) {
-        doppelganger.role = victim.role;
-      }
-    }
 
     let log = gameState.dayLog + ` The Hunter shot ${victim.name}!`;
 
@@ -584,28 +379,10 @@ export default function App() {
   };
 
   async function resolveVoting() {
-    // Count votes
-    const voteCounts = {};
-    Object.entries(gameState.votes || {}).forEach(([voterId, targetId]) => {
-      const voter = players.find(p => p.id === voterId);
-      const weight = (voter && voter.role === ROLES.MAYOR.id && voter.isAlive) ? 2 : 1;
-      voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
-    });
+    const voteCounts = countVotes(gameState.votes, players);
+    const { type, victims } = determineVotingResult(voteCounts);
 
-    // Find max votes
-    let maxVotes = 0;
-    let victims = [];
-    Object.entries(voteCounts).forEach(([targetId, count]) => {
-      if (count > maxVotes) {
-        maxVotes = count;
-        victims = [targetId];
-      } else if (count === maxVotes) {
-        victims.push(targetId);
-      }
-    });
-
-    // Handle tie or skip
-    if (victims.length > 1 || victims[0] === 'skip') {
+    if (type === 'no_elimination') {
       await updateGame({
         dayLog: "No one was eliminated.",
         phase: PHASES.NIGHT_INTRO,
@@ -637,22 +414,11 @@ export default function App() {
       return;
     }
 
-    // Doppelgänger Transformation (Voting Death)
-    if (gameState.doppelgangerTarget === victim.id) {
-      const doppelganger = newPlayers.find(p => p.role === ROLES.DOPPELGANGER.id);
-      if (doppelganger && doppelganger.isAlive) {
-        doppelganger.role = victim.role;
-      }
-    }
-
-    // Lovers Check
-    if (gameState.lovers && gameState.lovers.includes(victim.id)) {
-      const otherLoverId = gameState.lovers.find(id => id !== victim.id);
-      const otherLover = newPlayers.find(p => p.id === otherLoverId);
-      if (otherLover && otherLover.isAlive) {
-        otherLover.isAlive = false;
-      }
-    }
+    // Handle Doppelganger and Lover deaths
+    handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
+    handleLoverDeaths(newPlayers, gameState.lovers);
+    
+    newPlayers = newPlayers.filter(p => p.isAlive);
 
     // Hunter Vote Death
     if (victim.role === ROLES.HUNTER.id) {
@@ -1043,139 +809,27 @@ export default function App() {
         {!isHost && <div className="text-center text-slate-500 animate-pulse mt-4">Waiting for host to start...</div>}
 
         {/* Role Info / Rules Modal */}
-        {showRoleInfo && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50" onClick={() => setShowRoleInfo(null)}>
-            <div className="bg-slate-800 p-6 rounded-2xl max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-              {showRoleInfo === 'RULES' ? (
-                <>
-                  <h3 className="text-2xl font-black text-indigo-400 mb-4 flex items-center gap-2">
-                    <Info className="w-6 h-6" /> Rule Book
-                  </h3>
-                  <div className="space-y-4 text-slate-300 text-sm">
-                    <section>
-                      <h4 className="font-bold text-white mb-1">Objective</h4>
-                      <p>Villagers must find and eliminate all Werewolves. Werewolves must eliminate Villagers until they equal or outnumber them.</p>
-                    </section>
-                    <section>
-                      <h4 className="font-bold text-white mb-1">Game Flow</h4>
-                      <ul className="list-disc pl-4 space-y-1">
-                        <li><strong className="text-indigo-300">Night:</strong> Special roles wake up secretly to perform actions (kill, heal, investigate).</li>
-                        <li><strong className="text-orange-300">Day:</strong> Everyone wakes up. Deaths are revealed. Players discuss and vote to eliminate a suspect.</li>
-                      </ul>
-                    </section>
-                    <section>
-                      <h4 className="font-bold text-white mb-1">Voting</h4>
-                      <p>Majority vote eliminates a player. In case of a tie, no one dies.</p>
-                    </section>
-                    <section>
-                      <h4 className="font-bold text-white mb-1">Winning</h4>
-                      <ul className="list-disc pl-4 space-y-1">
-                        <li><strong className="text-blue-400">Villagers:</strong> Kill all Wolves.</li>
-                        <li><strong className="text-red-400">Werewolves:</strong> Equal/outnumber Villagers.</li>
-                        <li><strong className="text-purple-400">Jester/Tanner:</strong> Get voted out.</li>
-                        <li><strong className="text-pink-400">Lovers:</strong> Be the last two alive.</li>
-                      </ul>
-                    </section>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-4 mb-4">
-                    {React.createElement(Object.values(ROLES).find(r => r.id === showRoleInfo).icon, { className: "w-12 h-12 text-indigo-400" })}
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold">{Object.values(ROLES).find(r => r.id === showRoleInfo).name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-slate-500 uppercase font-bold">{Object.values(ROLES).find(r => r.id === showRoleInfo).alignment}</span>
-                        <span className="text-xs text-slate-600">•</span>
-                        <span className="text-xs font-mono font-bold text-slate-400">
-                          Weight: {Object.values(ROLES).find(r => r.id === showRoleInfo).weight > 0 ? '+' : ''}{Object.values(ROLES).find(r => r.id === showRoleInfo).weight}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-slate-300 mb-6">{Object.values(ROLES).find(r => r.id === showRoleInfo).desc}</p>
-                </>
-              )}
-              <button onClick={() => setShowRoleInfo(null)} className="w-full bg-slate-700 hover:bg-slate-600 mt-6 py-3 rounded-xl font-bold transition-colors">Close</button>
-            </div>
-          </div>
-        )}
+        <RoleInfoModal 
+          showRoleInfo={showRoleInfo}
+          onClose={() => setShowRoleInfo(null)}
+        />
       </div>
     );
   }
 
+
   // --- ROLE REVEAL ---
   if (gameState.phase === PHASES.ROLE_REVEAL) {
     if (!myPlayer) return <div>Loading...</div>;
-    const MyRole = ROLES[myPlayer.role.toUpperCase()];
-
-    const alignmentColors = {
-      good: { bg: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-400', text: 'text-blue-400', glow: 'shadow-blue-500/50' },
-      evil: { bg: 'from-red-500/20 to-rose-500/20', border: 'border-red-400', text: 'text-red-500', glow: 'shadow-red-500/50' },
-      neutral: { bg: 'from-purple-500/20 to-pink-500/20', border: 'border-purple-400', text: 'text-purple-400', glow: 'shadow-purple-500/50' }
-    };
-
-    const colors = alignmentColors[MyRole.alignment] || alignmentColors.good;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
-        {/* Ambient particles */}
-        <div className="absolute inset-0 opacity-20">
-          {roleRevealParticles && roleRevealParticles.map((p, i) => (
-            <div
-              key={i}
-              className={`absolute w-2 h-2 ${colors.text} rounded-full animate-pulse`}
-              style={{
-                top: p.top,
-                left: p.left,
-                animationDelay: p.delay,
-                animationDuration: p.dur
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10 max-w-md w-full">
-          <h2 className="text-3xl font-black text-slate-400 mb-12 tracking-wide">Your Role Is...</h2>
-
-          <div className={`bg-gradient-to-br ${colors.bg} backdrop-blur-sm border-2 ${colors.border} p-10 rounded-3xl w-full mb-10 flex flex-col items-center gap-6 shadow-2xl ${colors.glow} relative overflow-hidden`}>
-            {/* Glow effect */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-50 blur-xl`}></div>
-
-            <div className="relative">
-              <MyRole.icon className={`w-32 h-32 ${colors.text} drop-shadow-2xl`} />
-            </div>
-            <div className={`text-4xl font-black ${colors.text} relative`}>{MyRole.name}</div>
-            <p className="text-slate-300 text-base leading-relaxed relative">{MyRole.desc}</p>
-
-            {/* Alignment badge */}
-            <div className={`px-4 py-2 rounded-full ${colors.border} border ${colors.text} text-xs font-bold uppercase tracking-wider relative`}>
-              {MyRole.alignment}
-            </div>
-          </div>
-
-          {!myPlayer.ready ? (
-            <button
-              onClick={markReady}
-              className={`w-full bg-gradient-to-r ${colors.bg} hover:opacity-80 ${colors.border} border-2 ${colors.text} font-bold py-5 rounded-2xl shadow-lg transition-all hover:scale-105`}
-            >
-              I Understand
-            </button>
-          ) : (
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex items-center gap-3 text-green-400">
-                <Check className="w-6 h-6" />
-                <span className="font-bold">Ready!</span>
-              </div>
-              <p className="text-slate-500 text-sm">Waiting for others...</p>
-            </div>
-          )}
-
-          <div className="mt-8 text-sm text-slate-600">
-            <span className="font-bold text-slate-400">{players.filter(p => p.ready).length}</span> / {players.length} ready
-          </div>
-        </div>
-      </div>
+      <RoleRevealScreen
+        myPlayer={myPlayer}
+        markReady={markReady}
+        players={players}
+        roleRevealParticles={roleRevealParticles}
+        ROLES={ROLES}
+      />
     );
   }
 
@@ -1196,63 +850,16 @@ export default function App() {
 
     // NIGHT INTRO
     if (gameState.phase === PHASES.NIGHT_INTRO) {
-      return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-          {/* Animated stars background */}
-          <div className="absolute inset-0 opacity-30">
-            {nightIntroStars && nightIntroStars.map((s, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
-                style={{
-                  top: s.top,
-                  left: s.left,
-                  animationDelay: s.delay,
-                  animationDuration: s.dur
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="relative z-10">
-            <Moon className="w-32 h-32 mb-8 text-indigo-300 animate-pulse drop-shadow-[0_0_30px_rgba(165,180,252,0.5)]" />
-            <h2 className="text-5xl font-black mb-4 bg-gradient-to-r from-indigo-200 via-purple-200 to-indigo-200 bg-clip-text text-transparent">Night Falls</h2>
-            <p className="text-indigo-300 mb-12 text-lg">The village sleeps... but evil awakens</p>
-            {isHost && (
-              <button
-                onClick={startNight}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-900/50 transition-all hover:scale-105"
-              >
-                Begin Night
-              </button>
-            )}
-          </div>
-        </div>
-      )
+      return <NightIntroScreen isHost={isHost} startNight={startNight} nightIntroStars={nightIntroStars} />;
     }
 
     // WAITING SCREEN (If not my turn OR I am dead)
     if (!amAlive) {
-      return <DeadScreen winner={null} />;
+      return <DeadScreen winner={null} winners={gameState?.winners || []} />;
     }
 
     if (!isMyTurn) {
-      return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-indigo-900/30 flex items-center justify-center mb-6 animate-pulse">
-              <Moon className="w-12 h-12 text-indigo-400" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold mb-3 text-indigo-200">You are sleeping...</h2>
-          <p className="text-indigo-400/70 text-sm">Someone is taking their turn</p>
-          <div className="mt-8 flex gap-2">
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-      );
+      return <WaitingScreen />;
     }
 
     // ACTIVE ROLES UI
@@ -1542,75 +1149,27 @@ export default function App() {
 
   // --- HUNTER ACTION ---
   if (gameState.phase === PHASES.HUNTER_ACTION) {
-    if (myPlayer.role === ROLES.HUNTER.id && !myPlayer.isAlive && !gameState.dayLog.includes("shot")) {
-      return (
-        <div className="min-h-screen bg-red-950 text-white p-6 flex flex-col items-center justify-center">
-          <Crosshair className="w-16 h-16 mb-4" />
-          <h2 className="text-2xl font-bold mb-4">REVENGE!</h2>
-          <p className="mb-6 text-center">Select someone to take with you.</p>
-          <div className="w-full space-y-2">
-            {players.filter(p => p.isAlive).map(p => (
-              <button key={p.id} onClick={() => handleHunterShot(p.id)} className="w-full p-4 bg-red-900/50 border border-red-500 rounded-xl font-bold">
-                {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )
-    }
-    return <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center p-6 text-center">Waiting for Hunter...</div>;
+    const isHunter = myPlayer.role === ROLES.HUNTER.id && !myPlayer.isAlive && !gameState.dayLog.includes("shot");
+    return (
+      <HunterActionScreen
+        players={players}
+        handleHunterShot={handleHunterShot}
+        myPlayer={myPlayer}
+        isHunter={isHunter}
+      />
+    );
   }
 
   // --- DAY PHASES ---
   if (gameState.phase === PHASES.DAY_REVEAL) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-        {myPlayer && (
-          <div className="absolute top-4 right-4 bg-white/80 backdrop-blur border border-orange-200 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-              {myPlayer.name[0]}
-            </div>
-            <span className="text-xs font-bold text-slate-600">{myPlayer.name}</span>
-          </div>
-        )}
-        {/* Animated sun rays */}
-        <div className="absolute inset-0 opacity-20">
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-1/2 left-1/2 w-1 bg-gradient-to-b from-orange-400 to-transparent origin-top"
-              style={{
-                height: '50%',
-                transform: `rotate(${i * 30}deg) translateY(-50%)`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 blur-2xl bg-orange-300 opacity-30 rounded-full"></div>
-            <Sun className="relative w-32 h-32 text-orange-500 animate-spin-slow drop-shadow-lg" />
-          </div>
-          <h2 className="text-5xl font-black mb-6 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600 bg-clip-text text-transparent">Morning Breaks</h2>
-          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-2xl mb-10 max-w-md border-2 border-orange-200">
-            <p className="text-xl font-bold leading-relaxed text-slate-800">{gameState.dayLog}</p>
-          </div>
-          {isHost ? (
-            <button
-              onClick={() => updateGame({ phase: PHASES.DAY_VOTE, votes: {}, lockedVotes: [], phaseEndTime: now + (gameState.settings.votingWaitTime * 1000) })}
-              className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-orange-900/30 transition-all hover:scale-105"
-            >
-              Start Voting
-            </button>
-          ) : (
-            <div className="text-slate-500 text-sm flex items-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-              Waiting for host...
-            </div>
-          )}
-        </div>
-      </div>
+      <DayRevealScreen
+        gameState={gameState}
+        isHost={isHost}
+        updateGame={updateGame}
+        myPlayer={myPlayer}
+        now={now}
+      />
     );
   }
 
@@ -1618,20 +1177,8 @@ export default function App() {
     // if (!amAlive) return <DeadScreen winner={null} dayLog={gameState.dayLog} />; // Removed to allow viewing voting
 
     // Calculate vote counts
-    const voteCounts = {};
+    const voteCounts = countVotes(gameState.votes, players);
     const alivePlayers = players.filter(p => p.isAlive);
-
-    // Initialize counts
-    alivePlayers.forEach(p => voteCounts[p.id] = 0);
-    voteCounts['skip'] = 0;
-
-    // Count votes
-    // Count votes
-    Object.values(gameState.votes || {}).forEach(targetId => {
-      if (voteCounts[targetId] !== undefined) {
-        voteCounts[targetId]++;
-      }
-    });
 
     const myVote = gameState.votes?.[user.uid];
     const isLocked = gameState.lockedVotes?.includes(user.uid);
@@ -1795,273 +1342,4 @@ export default function App() {
   }
 
   return <div>Loading...</div>;
-}
-
-// --- SUBCOMPONENTS ---
-
-function NightActionUI({ title, subtitle, color, players, onAction, extras, multiSelect, maxSelect, canSkip, phaseEndTime, myPlayer }) {
-  const [targets, setTargets] = useState([]);
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const timeLeft = phaseEndTime ? Math.max(0, Math.ceil((phaseEndTime - now) / 1000)) : null;
-
-  const toggleTarget = (id) => {
-    if (multiSelect) {
-      if (targets.includes(id)) {
-        setTargets(targets.filter(t => t !== id));
-      } else if (targets.length < maxSelect) {
-        setTargets([...targets, id]);
-      }
-    } else {
-      setTargets([id]);
-    }
-  };
-
-  const colorThemes = {
-    red: {
-      bg: 'from-red-950 via-rose-950 to-slate-950',
-      cardBg: 'from-red-900/20 to-rose-900/20',
-      border: 'border-red-500',
-      text: 'text-red-400',
-      button: 'from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500',
-      glow: 'shadow-red-500/30'
-    },
-    blue: {
-      bg: 'from-blue-950 via-cyan-950 to-slate-950',
-      cardBg: 'from-blue-900/20 to-cyan-900/20',
-      border: 'border-blue-400',
-      text: 'text-blue-400',
-      button: 'from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500',
-      glow: 'shadow-blue-500/30'
-    },
-    purple: {
-      bg: 'from-purple-950 via-pink-950 to-slate-950',
-      cardBg: 'from-purple-900/20 to-pink-900/20',
-      border: 'border-purple-400',
-      text: 'text-purple-400',
-      button: 'from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500',
-      glow: 'shadow-purple-500/30'
-    },
-    yellow: {
-      bg: 'from-yellow-950 via-amber-950 to-slate-950',
-      cardBg: 'from-yellow-900/20 to-amber-900/20',
-      border: 'border-yellow-400',
-      text: 'text-yellow-400',
-      button: 'from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500',
-      glow: 'shadow-yellow-500/30'
-    }
-  };
-
-  const theme = colorThemes[color] || colorThemes.purple;
-
-  return (
-    <div className={`min-h-screen bg-gradient-to-br ${theme.bg} text-slate-100 p-4 flex flex-col relative`}>
-      {myPlayer && (
-        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-            {myPlayer.name[0]}
-          </div>
-          <span className="text-xs font-bold text-slate-300">{myPlayer.name}</span>
-        </div>
-      )}
-      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
-        {/* Header */}
-        <div className="text-center mb-8 mt-4">
-          <h2 className={`text-4xl font-black ${theme.text} mb-2 drop-shadow-lg`}>{title}</h2>
-          <p className="text-slate-400 text-base">{subtitle}</p>
-          {timeLeft !== null && (
-            <div className={`text-3xl font-mono font-black ${theme.text} mt-2`}>
-              {timeLeft}s
-            </div>
-          )}
-          {multiSelect && (
-            <div className="mt-3 inline-flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-full border border-slate-700">
-              <span className="text-xs font-bold text-slate-400">
-                {targets.length} / {maxSelect} selected
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Player Cards */}
-        <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-          {players.map(p => {
-            const isSelected = targets.includes(p.id);
-
-            return (
-              <button
-                key={p.id}
-                onClick={() => toggleTarget(p.id)}
-                className={`w-full relative overflow-hidden rounded-2xl border-2 transition-all shadow-lg hover:shadow-xl
-                  ${isSelected
-                    ? `bg-gradient-to-r ${theme.cardBg} ${theme.border} ${theme.glow}`
-                    : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
-                  }`}
-              >
-                <div className="relative p-4 flex items-center gap-4">
-                  <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
-                    style={{ backgroundColor: p.avatarColor }}
-                  >
-                    {p.name[0]}
-                  </div>
-
-                  <div className="flex-1 text-left">
-                    <div className="font-bold text-lg">{p.name}</div>
-                    {extras && <div className="text-sm">{extras(p)}</div>}
-                  </div>
-
-                  {isSelected && (
-                    <Check className={`w-6 h-6 ${theme.text}`} />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Action Button */}
-        <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800 space-y-3">
-          <button
-            disabled={targets.length === 0 || (multiSelect && targets.length < maxSelect)}
-            onClick={() => onAction(multiSelect ? targets : targets[0])}
-            className={`w-full bg-gradient-to-r ${theme.button} disabled:from-slate-700 disabled:to-slate-600 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105`}
-          >
-            <Check className="w-5 h-5" />
-            Confirm Action
-          </button>
-
-          {canSkip && (
-            <button
-              onClick={() => onAction(multiSelect ? [] : null)}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl transition-all"
-            >
-              Skip Action
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, players, lovers }) {
-  const winnerColors = {
-    VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
-    WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },
-    JESTER: { bg: 'from-purple-600 to-pink-600', text: 'text-purple-400', alignment: 'neutral' },
-    TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' },
-    LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' }
-  };
-
-  const colors = isGameOver && winner ? winnerColors[winner] : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
-
-  // Filter winners
-  const winningPlayers = players ? players.filter(p => {
-    if (!winner) return false;
-    if (winner === 'LOVERS') return lovers && lovers.includes(p.id);
-    if (winner === 'VILLAGERS') return ROLES[p.role.toUpperCase()].alignment === 'good';
-    if (winner === 'WEREWOLVES') {
-      const role = ROLES[p.role.toUpperCase()];
-      if (role.id === ROLES.SORCERER.id) return !!p.foundSeer;
-      return role.alignment === 'evil';
-    }
-    if (winner === 'JESTER') return p.role === ROLES.JESTER.id;
-    if (winner === 'TANNER') return p.role === ROLES.TANNER.id;
-    return false;
-  }) : [];
-  const [deadParticles, setDeadParticles] = useState(null);
-  useEffect(() => {
-    if (!isGameOver) return;
-    const t = setTimeout(() => {
-      setDeadParticles(Array.from({ length: 30 }).map(() => ({
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 3}s`,
-        dur: `${2 + Math.random() * 3}s`
-      })));
-    }, 0);
-    return () => clearTimeout(t);
-  }, [isGameOver]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-      {/* Ambient background */}
-      {isGameOver && (
-        <div className="absolute inset-0 opacity-10">
-          {deadParticles && deadParticles.map((p, i) => (
-            <div
-              key={i}
-              className={`absolute w-1 h-1 ${colors.text} rounded-full animate-pulse`}
-              style={{
-                top: p.top,
-                left: p.left,
-                animationDelay: p.delay,
-                animationDuration: p.dur
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="relative z-10 max-w-md w-full">
-        {isGameOver ? (
-          <>
-            <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center mb-8 shadow-2xl animate-pulse mx-auto`}>
-              <Skull className="w-16 h-16 text-white" />
-            </div>
-            <h2 className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}>
-              {winner} WIN!
-            </h2>
-            <p className="text-slate-400 mb-8 text-xl">Game Over</p>
-
-            {winningPlayers.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">Winning Players</h3>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {winningPlayers.map(p => (
-                    <div key={p.id} className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-full">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: p.avatarColor }}>
-                        {p.name[0]}
-                      </div>
-                      <span className="font-bold text-sm">{p.name}</span>
-                      <span className="text-xs text-slate-500">({ROLES[p.role.toUpperCase()].name})</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <Skull className="w-24 h-24 text-slate-600 mb-6 opacity-50 mx-auto" />
-            <h2 className="text-4xl font-black mb-3 text-slate-300">YOU ARE DEAD</h2>
-            <p className="text-slate-500 mb-8">You can watch, but don't speak.</p>
-
-            {dayLog && (
-              <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl backdrop-blur-sm">
-                <h3 className="text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">Latest News</h3>
-                <p className="text-slate-200 font-medium leading-relaxed">{dayLog}</p>
-              </div>
-            )}
-          </>
-        )}
-
-        {isHost && isGameOver && (
-          <button
-            onClick={onReset}
-            className={`bg-gradient-to-r ${colors.bg} hover:opacity-80 text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-lg transition-all hover:scale-105 mx-auto`}
-          >
-            <RotateCcw className="w-5 h-5" />
-            Play Again
-          </button>
-        )}
-      </div>
-    </div>
-  );
 }
