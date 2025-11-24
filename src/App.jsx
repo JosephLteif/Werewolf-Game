@@ -899,7 +899,8 @@ export default function App() {
             ))}
           </div>
 
-          {isHost && (() => {
+          {/* Game Balance - Visible to All Players */}
+          {(() => {
             const activeSpecialRolesCount = Object.entries(gameState.settings.activeRoles)
               .filter(([id, isActive]) => isActive && id !== ROLES.MASON.id).length;
             const masonCount = gameState.settings.activeRoles[ROLES.MASON.id] ? 2 : 0;
@@ -928,14 +929,8 @@ export default function App() {
             });
 
             // Add villager weights for remaining slots
-            // totalRolesNeeded = wolfCount + special roles + masons, so villagers fill the rest
             const villagersCount = Math.max(0, playersCount - totalRolesNeeded);
             balanceWeight += villagersCount * ROLES.VILLAGER.weight;
-
-            // Validation Checks
-            const hasEnoughPlayers = playersCount >= totalRolesNeeded && playersCount >= 3;
-            const isBalanced = gameState.settings.wolfCount < playersCount / 2;
-            const isValid = hasEnoughPlayers && isBalanced;
 
             // Balance assessment
             let balanceColor = 'text-green-400';
@@ -953,6 +948,11 @@ export default function App() {
               balanceColor = 'text-orange-400';
               balanceText = 'Slight Wolf Advantage';
             }
+
+            // Validation Checks (for host)
+            const hasEnoughPlayers = playersCount >= totalRolesNeeded && playersCount >= 3;
+            const isBalanced = gameState.settings.wolfCount < playersCount / 2;
+            const isValid = hasEnoughPlayers && isBalanced;
 
             return (
               <div className="space-y-2">
@@ -1018,23 +1018,28 @@ export default function App() {
                   </div>
                 </div>
 
-                {!hasEnoughPlayers && (
-                  <div className="text-red-400 text-xs text-center font-bold">
-                    Need {Math.max(3, totalRolesNeeded)} players (Have {playersCount})
-                  </div>
+                {/* Host-Only Controls */}
+                {isHost && (
+                  <>
+                    {!hasEnoughPlayers && (
+                      <div className="text-red-400 text-xs text-center font-bold">
+                        Need {Math.max(3, totalRolesNeeded)} players (Have {playersCount})
+                      </div>
+                    )}
+                    {!isBalanced && (
+                      <div className="text-red-400 text-xs text-center font-bold">
+                        Too many wolves! (Must be &lt; {Math.ceil(playersCount / 2)})
+                      </div>
+                    )}
+                    <button
+                      onClick={startGame}
+                      disabled={!isValid}
+                      className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/20"
+                    >
+                      Start Game
+                    </button>
+                  </>
                 )}
-                {!isBalanced && (
-                  <div className="text-red-400 text-xs text-center font-bold">
-                    Too many wolves! (Must be &lt; {Math.ceil(playersCount / 2)})
-                  </div>
-                )}
-                <button
-                  onClick={startGame}
-                  disabled={!isValid}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-900/20"
-                >
-                  Start Game
-                </button>
               </div>
             );
           })()}
