@@ -299,6 +299,7 @@ export default function App() {
     if (settings.activeRoles[ROLES.SORCERER.id]) deck.push(ROLES.SORCERER.id);
     if (settings.activeRoles[ROLES.MINION.id]) deck.push(ROLES.MINION.id);
     if (settings.activeRoles[ROLES.CUPID.id]) deck.push(ROLES.CUPID.id);
+    if (settings.activeRoles[ROLES.MAYOR.id]) deck.push(ROLES.MAYOR.id);
     if (settings.activeRoles[ROLES.MASON.id]) { deck.push(ROLES.MASON.id); deck.push(ROLES.MASON.id); } // Masons come in pairs usually, or at least 2
 
     // Fill rest with Villagers
@@ -645,8 +646,10 @@ export default function App() {
   const resolveVoting = async () => {
     // Count votes
     const voteCounts = {};
-    Object.values(gameState.votes).forEach(targetId => {
-      voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+    Object.entries(gameState.votes).forEach(([voterId, targetId]) => {
+      const voter = gameState.players.find(p => p.id === voterId);
+      const weight = (voter && voter.role === ROLES.MAYOR.id && voter.isAlive) ? 2 : 1;
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
     });
 
     // Find max votes
@@ -1387,6 +1390,7 @@ export default function App() {
     alivePlayers.forEach(p => voteCounts[p.id] = 0);
     voteCounts['skip'] = 0;
 
+    // Count votes
     // Count votes
     Object.values(gameState.votes || {}).forEach(targetId => {
       if (voteCounts[targetId] !== undefined) {
