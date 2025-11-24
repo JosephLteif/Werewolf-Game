@@ -13,24 +13,24 @@ const appId = 'nightfall-game';
 
 const ROLES = {
   // Good
-  VILLAGER: { id: 'villager', name: 'Villager', icon: Users, desc: 'Find the wolves. Don\'t die.', alignment: 'good' },
-  DOCTOR: { id: 'doctor', name: 'Doctor', icon: Shield, desc: 'Protect one person each night.', alignment: 'good' },
-  SEER: { id: 'seer', name: 'Seer', icon: Eye, desc: 'Reveal one player\'s true nature.', alignment: 'good' },
-  HUNTER: { id: 'hunter', name: 'Hunter', icon: Crosshair, desc: 'If you die, take someone with you.', alignment: 'good' },
-  VIGILANTE: { id: 'vigilante', name: 'Vigilante', icon: Zap, desc: 'You have one bullet to use at night.', alignment: 'good' },
-  MAYOR: { id: 'mayor', name: 'Mayor', icon: Crown, desc: 'Your vote counts as 2.', alignment: 'good' },
-  LYCAN: { id: 'lycan', name: 'Lycan', icon: Fingerprint, desc: 'You are a Villager, but appear as a WOLF to the Seer.', alignment: 'good' },
-  MASON: { id: 'mason', name: 'Mason', icon: Hammer, desc: 'You know who the other Masons are.', alignment: 'good' },
+  VILLAGER: { id: 'villager', name: 'Villager', icon: Users, desc: 'Find the wolves. Don\'t die.', alignment: 'good', weight: 1 },
+  DOCTOR: { id: 'doctor', name: 'Doctor', icon: Shield, desc: 'Protect one person each night.', alignment: 'good', weight: 4 },
+  SEER: { id: 'seer', name: 'Seer', icon: Eye, desc: 'Reveal one player\'s true nature.', alignment: 'good', weight: 7 },
+  HUNTER: { id: 'hunter', name: 'Hunter', icon: Crosshair, desc: 'If you die, take someone with you.', alignment: 'good', weight: 3 },
+  VIGILANTE: { id: 'vigilante', name: 'Vigilante', icon: Zap, desc: 'You have one bullet to use at night.', alignment: 'good', weight: 3 },
+  MAYOR: { id: 'mayor', name: 'Mayor', icon: Crown, desc: 'Your vote counts as 2.', alignment: 'good', weight: 2 },
+  LYCAN: { id: 'lycan', name: 'Lycan', icon: Fingerprint, desc: 'You are a Villager, but appear as a WOLF to the Seer.', alignment: 'good', weight: -1 }, // Negative because it hurts the village
+  MASON: { id: 'mason', name: 'Mason', icon: Hammer, desc: 'You know who the other Masons are.', alignment: 'good', weight: 2 },
 
   // Evil
-  WEREWOLF: { id: 'werewolf', name: 'Werewolf', icon: Skull, desc: 'Eliminate the villagers at night.', alignment: 'evil' },
-  SORCERER: { id: 'sorcerer', name: 'Sorcerer', icon: Sparkles, desc: 'Find the Seer. You win with the Werewolves.', alignment: 'evil' },
-  MINION: { id: 'minion', name: 'Minion', icon: Ghost, desc: 'You know the wolves. They don\'t know you.', alignment: 'evil' },
+  WEREWOLF: { id: 'werewolf', name: 'Werewolf', icon: Skull, desc: 'Eliminate the villagers at night.', alignment: 'evil', weight: -6 },
+  SORCERER: { id: 'sorcerer', name: 'Sorcerer', icon: Sparkles, desc: 'Find the Seer. You win with the Werewolves.', alignment: 'evil', weight: -3 },
+  MINION: { id: 'minion', name: 'Minion', icon: Ghost, desc: 'You know the wolves. They don\'t know you.', alignment: 'evil', weight: -3 },
 
   // Neutral
-  JESTER: { id: 'jester', name: 'Jester', icon: Smile, desc: 'Get voted out during the day to win.', alignment: 'neutral' },
-  TANNER: { id: 'tanner', name: 'Tanner', icon: Skull, desc: 'You hate your job. Get voted out to win.', alignment: 'neutral' }, // Functionally same as Jester for win con, but different flavor
-  CUPID: { id: 'cupid', name: 'Cupid', icon: Heart, desc: 'Link two players. If one dies, both die.', alignment: 'neutral' },
+  JESTER: { id: 'jester', name: 'Jester', icon: Smile, desc: 'Get voted out during the day to win.', alignment: 'neutral', weight: -1 },
+  TANNER: { id: 'tanner', name: 'Tanner', icon: Skull, desc: 'You hate your job. Get voted out to win.', alignment: 'neutral', weight: -1 },
+  CUPID: { id: 'cupid', name: 'Cupid', icon: Heart, desc: 'Link two players. If one dies, both die.', alignment: 'neutral', weight: -2 },
 
   // Special
   // HOST removed as a role. Host is now a player.
@@ -880,6 +880,9 @@ export default function App() {
                       >
                         <r.icon className="w-3 h-3" />
                         {r.name}
+                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${isActive ? 'bg-white/20' : 'bg-slate-800'}`}>
+                          {r.weight > 0 ? '+' : ''}{r.weight}
+                        </span>
                         {isHost && (
                           <div
                             onClick={(e) => { e.stopPropagation(); setShowRoleInfo(r.id); }}
@@ -903,13 +906,118 @@ export default function App() {
             const totalRolesNeeded = gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
             const playersCount = gameState.players.length;
 
+            // Calculate balance weight
+            let balanceWeight = 0;
+
+            // Add werewolf weights
+            balanceWeight += gameState.settings.wolfCount * ROLES.WEREWOLF.weight;
+
+            // Add active role weights
+            Object.entries(gameState.settings.activeRoles).forEach(([roleId, isActive]) => {
+              if (isActive) {
+                const role = Object.values(ROLES).find(r => r.id === roleId);
+                if (role) {
+                  // Mason comes in pairs
+                  if (roleId === ROLES.MASON.id) {
+                    balanceWeight += role.weight * 2;
+                  } else {
+                    balanceWeight += role.weight;
+                  }
+                }
+              }
+            });
+
+            // Add villager weights for remaining slots
+            // totalRolesNeeded = wolfCount + special roles + masons, so villagers fill the rest
+            const villagersCount = Math.max(0, playersCount - totalRolesNeeded);
+            balanceWeight += villagersCount * ROLES.VILLAGER.weight;
+
             // Validation Checks
             const hasEnoughPlayers = playersCount >= totalRolesNeeded && playersCount >= 3;
             const isBalanced = gameState.settings.wolfCount < playersCount / 2;
             const isValid = hasEnoughPlayers && isBalanced;
 
+            // Balance assessment
+            let balanceColor = 'text-green-400';
+            let balanceText = 'Balanced';
+            if (balanceWeight > 5) {
+              balanceColor = 'text-blue-400';
+              balanceText = 'Village Favored';
+            } else if (balanceWeight < -5) {
+              balanceColor = 'text-red-400';
+              balanceText = 'Wolves Favored';
+            } else if (balanceWeight > 0) {
+              balanceColor = 'text-cyan-400';
+              balanceText = 'Slight Village Advantage';
+            } else if (balanceWeight < 0) {
+              balanceColor = 'text-orange-400';
+              balanceText = 'Slight Wolf Advantage';
+            }
+
             return (
               <div className="space-y-2">
+                {/* Balance Indicator */}
+                <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs text-slate-500 font-bold uppercase">Game Balance</span>
+                    <span className={`text-xs font-bold ${balanceColor}`}>{balanceText}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full transition-all ${balanceWeight >= 0 ? 'bg-blue-500' : 'bg-red-500'}`}
+                        style={{ width: `${Math.min(100, Math.abs(balanceWeight) * 5)}%` }}
+                      />
+                    </div>
+                    <span className={`text-sm font-mono font-bold ${balanceColor}`}>
+                      {balanceWeight > 0 ? '+' : ''}{balanceWeight}
+                    </span>
+                  </div>
+
+                  {/* Role Breakdown */}
+                  <div className="mt-3 pt-3 border-t border-slate-700 space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Werewolves</span>
+                      <span className="font-mono text-slate-300">
+                        {gameState.settings.wolfCount} × {ROLES.WEREWOLF.weight} = {gameState.settings.wolfCount * ROLES.WEREWOLF.weight}
+                      </span>
+                    </div>
+
+                    {Object.entries(gameState.settings.activeRoles)
+                      .filter(([roleId, isActive]) => isActive)
+                      .map(([roleId]) => {
+                        const role = Object.values(ROLES).find(r => r.id === roleId);
+                        if (!role) return null;
+                        const count = roleId === ROLES.MASON.id ? 2 : 1;
+                        const totalWeight = role.weight * count;
+                        return (
+                          <div key={roleId} className="flex justify-between items-center">
+                            <span className="text-slate-400">{role.name}{count > 1 ? 's' : ''}</span>
+                            <span className="font-mono text-slate-300">
+                              {count} × {role.weight > 0 ? '+' : ''}{role.weight} = {totalWeight > 0 ? '+' : ''}{totalWeight}
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                    {villagersCount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Villagers</span>
+                        <span className="font-mono text-slate-300">
+                          {villagersCount} × +{ROLES.VILLAGER.weight} = +{villagersCount * ROLES.VILLAGER.weight}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-1.5 border-t border-slate-700 font-bold">
+                      <span className="text-slate-300">Total</span>
+                      <span className={`font-mono ${balanceColor}`}>
+                        {balanceWeight > 0 ? '+' : ''}{balanceWeight}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {!hasEnoughPlayers && (
                   <div className="text-red-400 text-xs text-center font-bold">
                     Need {Math.max(3, totalRolesNeeded)} players (Have {playersCount})
@@ -974,7 +1082,16 @@ export default function App() {
                 <>
                   <div className="flex items-center gap-4 mb-4">
                     {React.createElement(Object.values(ROLES).find(r => r.id === showRoleInfo).icon, { className: "w-12 h-12 text-indigo-400" })}
-                    <h3 className="text-2xl font-bold">{Object.values(ROLES).find(r => r.id === showRoleInfo).name}</h3>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold">{Object.values(ROLES).find(r => r.id === showRoleInfo).name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-slate-500 uppercase font-bold">{Object.values(ROLES).find(r => r.id === showRoleInfo).alignment}</span>
+                        <span className="text-xs text-slate-600">•</span>
+                        <span className="text-xs font-mono font-bold text-slate-400">
+                          Weight: {Object.values(ROLES).find(r => r.id === showRoleInfo).weight > 0 ? '+' : ''}{Object.values(ROLES).find(r => r.id === showRoleInfo).weight}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <p className="text-slate-300 mb-6">{Object.values(ROLES).find(r => r.id === showRoleInfo).desc}</p>
                 </>
