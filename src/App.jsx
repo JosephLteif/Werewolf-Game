@@ -1534,7 +1534,7 @@ export default function App() {
 
   // --- GAME OVER ---
   if (gameState.phase === PHASES.GAME_OVER) {
-    return <DeadScreen winner={gameState.winner} isGameOver={true} onReset={() => updateGame({ phase: PHASES.LOBBY, winner: null, dayLog: "", players: gameState.players.map(p => ({ ...p, isAlive: true, role: null, ready: false })) })} isHost={isHost} />;
+    return <DeadScreen winner={gameState.winner} isGameOver={true} onReset={() => updateGame({ phase: PHASES.LOBBY, winner: null, dayLog: "", players: gameState.players.map(p => ({ ...p, isAlive: true, role: null, ready: false })) })} isHost={isHost} players={gameState.players} lovers={gameState.lovers} />;
   }
 
   return <div>Loading...</div>;
@@ -1685,16 +1685,27 @@ function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, ex
   );
 }
 
-function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog }) {
+function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, players, lovers }) {
   const winnerColors = {
-    VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400' },
-    WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400' },
-    JESTER: { bg: 'from-purple-600 to-pink-600', text: 'text-purple-400' },
-    TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400' },
-    LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400' }
+    VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
+    WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },
+    JESTER: { bg: 'from-purple-600 to-pink-600', text: 'text-purple-400', alignment: 'neutral' },
+    TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' },
+    LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' }
   };
 
   const colors = isGameOver && winner ? winnerColors[winner] : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
+
+  // Filter winners
+  const winningPlayers = players ? players.filter(p => {
+    if (!winner) return false;
+    if (winner === 'LOVERS') return lovers && lovers.includes(p.id);
+    if (winner === 'VILLAGERS') return ROLES[p.role.toUpperCase()].alignment === 'good';
+    if (winner === 'WEREWOLVES') return ROLES[p.role.toUpperCase()].alignment === 'evil';
+    if (winner === 'JESTER') return p.role === ROLES.JESTER.id;
+    if (winner === 'TANNER') return p.role === ROLES.TANNER.id;
+    return false;
+  }) : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
@@ -1725,7 +1736,24 @@ function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog }) {
             <h2 className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}>
               {winner} WIN!
             </h2>
-            <p className="text-slate-400 mb-12 text-xl">Game Over</p>
+            <p className="text-slate-400 mb-8 text-xl">Game Over</p>
+
+            {winningPlayers.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">Winning Players</h3>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {winningPlayers.map(p => (
+                    <div key={p.id} className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-full">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: p.avatarColor }}>
+                        {p.name[0]}
+                      </div>
+                      <span className="font-bold text-sm">{p.name}</span>
+                      <span className="text-xs text-slate-500">({ROLES[p.role.toUpperCase()].name})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <>
