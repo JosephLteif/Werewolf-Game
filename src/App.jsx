@@ -1380,7 +1380,7 @@ export default function App() {
   }
 
   if (gameState.phase === PHASES.DAY_VOTE) {
-    if (!amAlive) return <DeadScreen winner={null} dayLog={gameState.dayLog} />;
+    // if (!amAlive) return <DeadScreen winner={null} dayLog={gameState.dayLog} />; // Removed to allow viewing voting
 
     // Calculate vote counts
     const voteCounts = {};
@@ -1408,6 +1408,11 @@ export default function App() {
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
           {/* Header */}
           <div className="text-center mb-6">
+            {!amAlive && (
+              <div className="bg-slate-800 text-slate-200 px-4 py-2 rounded-full inline-block mb-4 text-sm font-bold shadow-lg">
+                👻 You are dead (Spectating)
+              </div>
+            )}
             <h2 className="text-3xl font-black text-orange-600 mb-2">Village Vote</h2>
             <p className="text-slate-600 text-sm">Discuss and vote to eliminate a suspect</p>
             <div className="mt-3 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
@@ -1432,8 +1437,8 @@ export default function App() {
               return (
                 <button
                   key={p.id}
-                  onClick={() => !isLocked && castVote(p.id)}
-                  disabled={isLocked}
+                  onClick={() => amAlive && !isLocked && castVote(p.id)}
+                  disabled={!amAlive || isLocked}
                   className={`w-full relative overflow-hidden rounded-2xl border-2 transition-all shadow-md hover:shadow-lg disabled:opacity-75 disabled:cursor-not-allowed
                     ${isMyVote ? 'border-orange-500 bg-white' : 'border-slate-200 bg-white hover:border-orange-300'}`}
                 >
@@ -1478,8 +1483,8 @@ export default function App() {
 
             {/* Skip Vote Option */}
             <button
-              onClick={() => !isLocked && castVote('skip')}
-              disabled={isLocked}
+              onClick={() => amAlive && !isLocked && castVote('skip')}
+              disabled={!amAlive || isLocked}
               className={`w-full p-4 rounded-2xl border-2 border-dashed transition-all shadow-md hover:shadow-lg disabled:opacity-75 disabled:cursor-not-allowed
                 ${myVote === 'skip' ? 'border-slate-500 bg-slate-100' : 'border-slate-300 bg-white hover:border-slate-400'}`}
             >
@@ -1498,28 +1503,30 @@ export default function App() {
           </div>
 
           {/* Action Bar */}
-          <div className="bg-white rounded-2xl shadow-lg p-4 border-2 border-slate-200">
-            {!isLocked ? (
-              <button
-                onClick={lockVote}
-                disabled={!myVote}
-                className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 disabled:from-slate-400 disabled:to-slate-300 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Check className="w-5 h-5" />
-                {myVote ? 'Lock Vote' : 'Select a player first'}
-              </button>
-            ) : (
-              <div className="text-center py-4">
-                <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-bold">
+          {amAlive && (
+            <div className="bg-white rounded-2xl shadow-lg p-4 border-2 border-slate-200">
+              {!isLocked ? (
+                <button
+                  onClick={lockVote}
+                  disabled={!myVote}
+                  className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 disabled:from-slate-400 disabled:to-slate-300 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
                   <Check className="w-5 h-5" />
-                  Vote Locked
+                  {myVote ? 'Lock Vote' : 'Select a player first'}
+                </button>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-bold">
+                    <Check className="w-5 h-5" />
+                    Vote Locked
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Waiting for {totalPlayers - lockedCount} {totalPlayers - lockedCount === 1 ? 'player' : 'players'}...
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Waiting for {totalPlayers - lockedCount} {totalPlayers - lockedCount === 1 ? 'player' : 'players'}...
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1678,7 +1685,7 @@ function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, ex
   );
 }
 
-function DeadScreen({ winner, isGameOver, onReset, isHost }) {
+function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400' },
     WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400' },
@@ -1709,10 +1716,10 @@ function DeadScreen({ winner, isGameOver, onReset, isHost }) {
         </div>
       )}
 
-      <div className="relative z-10">
+      <div className="relative z-10 max-w-md w-full">
         {isGameOver ? (
           <>
-            <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center mb-8 shadow-2xl animate-pulse`}>
+            <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center mb-8 shadow-2xl animate-pulse mx-auto`}>
               <Skull className="w-16 h-16 text-white" />
             </div>
             <h2 className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}>
@@ -1722,16 +1729,23 @@ function DeadScreen({ winner, isGameOver, onReset, isHost }) {
           </>
         ) : (
           <>
-            <Skull className="w-24 h-24 text-slate-600 mb-6 opacity-50" />
+            <Skull className="w-24 h-24 text-slate-600 mb-6 opacity-50 mx-auto" />
             <h2 className="text-4xl font-black mb-3 text-slate-300">YOU ARE DEAD</h2>
             <p className="text-slate-500 mb-8">You can watch, but don't speak.</p>
+
+            {dayLog && (
+              <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl backdrop-blur-sm">
+                <h3 className="text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">Latest News</h3>
+                <p className="text-slate-200 font-medium leading-relaxed">{dayLog}</p>
+              </div>
+            )}
           </>
         )}
 
         {isHost && isGameOver && (
           <button
             onClick={onReset}
-            className={`bg-gradient-to-r ${colors.bg} hover:opacity-80 text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-lg transition-all hover:scale-105`}
+            className={`bg-gradient-to-r ${colors.bg} hover:opacity-80 text-white px-10 py-4 rounded-2xl font-bold text-lg flex items-center gap-3 shadow-lg transition-all hover:scale-105 mx-auto`}
           >
             <RotateCcw className="w-5 h-5" />
             Play Again
