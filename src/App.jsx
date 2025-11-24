@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Shield, Eye, Skull, Users, Play, RotateCcw, Check, Fingerprint, Crosshair, Smile, Zap, Heart, Sparkles, Ghost, Hammer, Info, Copy, Crown, Radio } from 'lucide-react';
-import { signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, deleteDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth, rtdb } from './firebase';
+import { ref, update, serverTimestamp } from 'firebase/database';
+import { createRoom as createRoomRT, joinRoom as joinRoomRT, subscribeToRoom } from './rooms';
 
 // --- CONFIGURATION ---
-const appId = 'nightfall-game';
-
 /* NIGHTFALL: Multiplayer Edition
-   Uses Firestore to sync game state across devices.
+  Uses Firestore to sync game state across devices.
 */
 
 const ROLES = {
@@ -55,7 +54,6 @@ const PHASES = {
 };
 
 // --- UTILS ---
-const generateRoomCode = () => Math.random().toString(36).substring(2, 6).toUpperCase();
 
 export default function App() {
   // Local User State
@@ -68,13 +66,14 @@ export default function App() {
 
   // Synced Game State
   const [gameState, setGameState] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
+  const players = gameState ? Object.entries(gameState.players || {}).map(([id, p]) => ({ id, ...p })) : [];
 
   // Local UI State
   const [errorMsg, setErrorMsg] = useState("");
   const [seerMessage, setSeerMessage] = useState(null);
-  const [selectedVote, setSelectedVote] = useState(null);
-  const [now, setNow] = useState(Date.now());
+  
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -106,34 +105,48 @@ export default function App() {
     window.location.reload();
   };
 
-  // --- FIRESTORE SYNC ---
+  // --- RTDB SYNC ---
   useEffect(() => {
     if (!user || !roomCode || !joined) return;
 
-    // Use specific path for permissions: /artifacts/{appId}/public/data/rooms/{roomCode}
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${roomCode}`);
-    const unsubscribe = onSnapshot(roomRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+    const unsub = subscribeToRoom(roomCode, (data) => {
+      if (data) {
         setGameState(data);
-
-        // Check if I am host
         if (data.hostId === user.uid) setIsHost(true);
-
-        // Auto-clear loading when data arrives
         setLoading(false);
       } else {
         setErrorMsg("Room closed or does not exist.");
         setJoined(false);
         setGameState(null);
       }
-    }, (err) => {
-      console.error("Sync error:", err);
-      setErrorMsg("Connection lost or permission denied.");
     });
 
-    return () => unsubscribe();
+    return () => {
+      try { unsub(); } catch { /* ignore */ }
+    };
   }, [user, roomCode, joined]);
+
+  // Ambient particles generated on mount (avoid impure Math.random() during render)
+  const [roleRevealParticles, setRoleRevealParticles] = useState(null);
+  const [nightIntroStars, setNightIntroStars] = useState(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setRoleRevealParticles(Array.from({ length: 15 }).map(() => ({
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 3}s`,
+        dur: `${3 + Math.random() * 2}s`
+      })));
+      setNightIntroStars(Array.from({ length: 20 }).map(() => ({
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 2}s`,
+        dur: `${2 + Math.random() * 2}s`
+      })));
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // --- ACTIONS ---
 
@@ -141,58 +154,15 @@ export default function App() {
     if (!user) return setErrorMsg("Waiting for connection...");
     if (!playerName) return setErrorMsg("Enter your name first!");
 
-    const code = generateRoomCode();
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${code}`);
-
-    const initialState = {
-      code,
-      hostId: user.uid,
-      phase: PHASES.LOBBY,
-      players: [{
-        id: user.uid,
-        name: playerName,
-        role: null, // Host is just a player now
-        isAlive: true,
-        ready: false,
-        avatarColor: `hsl(${Math.random() * 360}, 70%, 60%)`
-      }],
-      nightActions: { wolfTarget: null, doctorProtect: null, vigilanteTarget: null, sorcererCheck: null, cupidLinks: [] },
-      vigilanteAmmo: {}, // Map of userId -> ammo count
-      lovers: [], // Array of 2 userIds
-      votes: {}, // Map of userId -> targetId (or 'skip')
-      lockedVotes: [], // Array of userIds who have locked their vote
-      dayLog: "Waiting for game to start...",
-      settings: {
-        wolfCount: 1,
-        activeRoles: {
-          [ROLES.DOCTOR.id]: true,
-          [ROLES.SEER.id]: true,
-          [ROLES.HUNTER.id]: false,
-          [ROLES.JESTER.id]: false,
-          [ROLES.VIGILANTE.id]: false,
-          [ROLES.MAYOR.id]: false,
-          [ROLES.LYCAN.id]: false,
-          [ROLES.SORCERER.id]: false,
-          [ROLES.TANNER.id]: false,
-          [ROLES.CUPID.id]: false,
-          [ROLES.MINION.id]: false,
-          [ROLES.MASON.id]: false
-        },
-        actionWaitTime: 30,
-        votingWaitTime: 60
-      },
-      winner: null,
-      updatedAt: Date.now()
-    };
-
     try {
-      await setDoc(roomRef, initialState);
+      const color = `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`;
+      const code = await createRoomRT({ id: user.uid, name: playerName, avatarColor: color });
       setRoomCode(code);
       setIsHost(true);
       setJoined(true);
     } catch (e) {
       console.error(e);
-      setErrorMsg("Failed to create room. Permissions error.");
+      setErrorMsg("Failed to create room. " + (e.message || e));
     }
   };
 
@@ -202,86 +172,48 @@ export default function App() {
     if (!roomCode) return setErrorMsg("Enter a room code!");
 
     const code = roomCode.toUpperCase();
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${code}`);
-
     try {
-      const snap = await getDoc(roomRef);
-
-      if (!snap.exists()) return setErrorMsg("Room not found!");
-      const data = snap.data();
-
-      if (data.phase !== PHASES.LOBBY && !data.players.some(p => p.id === user.uid)) {
-        return setErrorMsg("Game already in progress!");
-      }
-
-      // Add player if not exists
-      if (!data.players.some(p => p.id === user.uid)) {
-        const newPlayer = {
-          id: user.uid,
-          name: playerName,
-          role: null,
-          isAlive: true,
-          ready: false,
-          avatarColor: `hsl(${Math.random() * 360}, 70%, 60%)`
-        };
-        await updateDoc(roomRef, {
-          players: arrayUnion(newPlayer)
-        });
-      }
-
+      await joinRoomRT(code, { id: user.uid, name: playerName, avatarColor: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)` });
       setRoomCode(code);
       setJoined(true);
     } catch (e) {
       console.error(e);
-      setErrorMsg("Failed to join. Permissions error.");
+      setErrorMsg("Failed to join. " + (e.message || e));
     }
   };
 
   const updateGame = async (updates) => {
     if (!user || !roomCode) return;
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${roomCode}`);
-    await updateDoc(roomRef, { ...updates, updatedAt: Date.now() });
+
+    const payload = { ...updates };
+
+    // If callers pass players as an array, convert to object map keyed by id
+    if (payload.players && Array.isArray(payload.players)) {
+      const playersMap = {};
+      payload.players.forEach(p => {
+        const { id, name, isAlive, ready, avatarColor, role } = p;
+        playersMap[id] = { name, isAlive, ready, avatarColor, role };
+      });
+      payload.players = playersMap;
+    }
+
+    payload.updatedAt = serverTimestamp();
+
+    // Remove any undefined values — Realtime DB update() rejects undefined
+    Object.keys(payload).forEach(k => {
+      if (payload[k] === undefined) delete payload[k];
+    });
+
+    await update(ref(rtdb, `rooms/${roomCode}`), payload);
   };
 
-  // --- TIMER CHECK (HOST ONLY) ---
-  useEffect(() => {
-    if (!isHost || !gameState || !gameState.phaseEndTime) return;
-
-    if (now > gameState.phaseEndTime) {
-      // Time's up!
-      if (gameState.phase === PHASES.DAY_VOTE) {
-        resolveVoting();
-      } else if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(gameState.phase)) {
-        // For night actions, timeout means skipping/advancing with null
-        // We need to know WHICH action to skip.
-        // This is a bit tricky because advanceNight takes specific arguments.
-        // But we can infer the action based on the phase.
-
-        let actionKey = null;
-        if (gameState.phase === PHASES.NIGHT_WEREWOLF) actionKey = 'wolfTarget';
-        if (gameState.phase === PHASES.NIGHT_DOCTOR) actionKey = 'doctorProtect';
-        if (gameState.phase === PHASES.NIGHT_SEER) actionKey = null; // Seer just views
-        if (gameState.phase === PHASES.NIGHT_SORCERER) actionKey = null; // Sorcerer just views
-        if (gameState.phase === PHASES.NIGHT_VIGILANTE) actionKey = 'vigilanteTarget';
-        if (gameState.phase === PHASES.NIGHT_CUPID) actionKey = 'cupidLinks';
-
-        // Special handling for Cupid who needs an array
-        const value = actionKey === 'cupidLinks' ? [] : null;
-
-        advanceNight(actionKey, value);
-      } else if ([PHASES.NIGHT_MINION, PHASES.NIGHT_MASON, PHASES.NIGHT_INTRO, PHASES.ROLE_REVEAL, PHASES.DAY_REVEAL].includes(gameState.phase)) {
-        // Info phases - just move on? 
-        // Actually, ROLE_REVEAL and DAY_REVEAL usually wait for user input or host.
-        // Let's only auto-advance the Action phases for now as requested.
-      }
-    }
-  }, [now, isHost, gameState]);
+  
 
   // --- GAME LOGIC ---
 
   const startGame = async () => {
     if (!isHost) return;
-    const { players, settings } = gameState;
+    const settings = gameState.settings;
 
     // Assign Roles - Include EVERYONE (Host is a player)
     const activePlayers = [...players];
@@ -298,7 +230,9 @@ export default function App() {
     if (settings.activeRoles[ROLES.VIGILANTE.id]) deck.push(ROLES.VIGILANTE.id);
     if (settings.activeRoles[ROLES.SORCERER.id]) deck.push(ROLES.SORCERER.id);
     if (settings.activeRoles[ROLES.MINION.id]) deck.push(ROLES.MINION.id);
+    if (settings.activeRoles[ROLES.LYCAN.id]) deck.push(ROLES.LYCAN.id);
     if (settings.activeRoles[ROLES.CUPID.id]) deck.push(ROLES.CUPID.id);
+    if (settings.activeRoles[ROLES.TANNER.id]) deck.push(ROLES.TANNER.id);
     if (settings.activeRoles[ROLES.MAYOR.id]) deck.push(ROLES.MAYOR.id);
     if (settings.activeRoles[ROLES.MASON.id]) { deck.push(ROLES.MASON.id); deck.push(ROLES.MASON.id); } // Masons come in pairs usually, or at least 2
 
@@ -337,7 +271,7 @@ export default function App() {
   };
 
   const markReady = async () => {
-    const newPlayers = gameState.players.map(p =>
+    const newPlayers = players.map(p =>
       p.id === user.uid ? { ...p, ready: true } : p
     );
 
@@ -352,7 +286,7 @@ export default function App() {
 
   const startNight = async () => {
     // Determine first night phase
-    const hasCupid = gameState.players.some(p => p.role === ROLES.CUPID.id && p.isAlive);
+    const hasCupid = players.some(p => p.role === ROLES.CUPID.id && p.isAlive);
     const hasLovers = gameState.lovers && gameState.lovers.length > 0;
 
     let firstPhase = PHASES.NIGHT_WEREWOLF;
@@ -362,13 +296,13 @@ export default function App() {
 
     await updateGame({
       phase: firstPhase,
-      phaseEndTime: Date.now() + (gameState.settings.actionWaitTime * 1000),
+      phaseEndTime: now + (gameState.settings.actionWaitTime * 1000),
       nightActions: { wolfTarget: null, doctorProtect: null, vigilanteTarget: null, sorcererCheck: null, cupidLinks: [] }
     });
   };
 
   // --- HELPER: NEXT PHASE CALCULATOR ---
-  const advanceNight = async (actionType, actionValue) => {
+  async function advanceNight(actionType, actionValue) {
     const newActions = { ...gameState.nightActions };
     if (actionType) {
       if (actionType === 'cupidLinks') {
@@ -406,7 +340,7 @@ export default function App() {
     // Find next valid phase
     for (let i = currentIdx + 1; i < sequence.length; i++) {
       const p = sequence[i];
-      const hasRole = (rid) => gameState.players.some(pl => pl.role === rid && pl.isAlive);
+      const hasRole = (rid) => players.some(pl => pl.role === rid && pl.isAlive);
 
       // Cupid only acts once (first night if lovers not set)
       if (p === PHASES.NIGHT_CUPID && (gameState.lovers && gameState.lovers.length > 0)) continue;
@@ -428,11 +362,11 @@ export default function App() {
       let updates = { nightActions: newActions, phase: nextPhase };
 
       // Set timer for next phase if it's an action phase
-      if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(nextPhase)) {
-        updates.phaseEndTime = Date.now() + (gameState.settings.actionWaitTime * 1000);
-      } else {
-        updates.phaseEndTime = null; // Clear timer for non-timed phases
-      }
+        if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(nextPhase)) {
+          updates.phaseEndTime = now + (gameState.settings.actionWaitTime * 1000);
+        } else {
+          updates.phaseEndTime = null; // Clear timer for non-timed phases
+        }
 
       if (gameState.phase === PHASES.NIGHT_CUPID && newActions.cupidLinks?.length === 2) {
         updates.lovers = newActions.cupidLinks;
@@ -442,7 +376,7 @@ export default function App() {
   };
 
   const resolveNight = async (finalActions) => {
-    let newPlayers = [...gameState.players];
+    let newPlayers = [...players];
     let deaths = [];
 
     // Wolf Kill
@@ -509,60 +443,10 @@ export default function App() {
     });
   };
 
-  const handleVote = async (targetId) => {
-    if (targetId === null) {
-      await updateGame({
-        dayLog: "No one was hanged.",
-        phase: PHASES.NIGHT_INTRO
-      });
-      return;
-    }
-
-    let newPlayers = [...gameState.players];
-    const victim = newPlayers.find(p => p.id === targetId);
-    victim.isAlive = false;
-
-    // Jester/Tanner Win
-    if (victim.role === ROLES.JESTER.id || victim.role === ROLES.TANNER.id) {
-      await updateGame({
-        players: newPlayers,
-        winner: victim.role === ROLES.JESTER.id ? 'JESTER' : 'TANNER',
-        phase: PHASES.GAME_OVER
-      });
-      return;
-    }
-
-    // Lovers Check
-    if (gameState.lovers && gameState.lovers.includes(victim.id)) {
-      const otherLoverId = gameState.lovers.find(id => id !== victim.id);
-      const otherLover = newPlayers.find(p => p.id === otherLoverId);
-      if (otherLover && otherLover.isAlive) {
-        otherLover.isAlive = false;
-        // We don't log it explicitly as "Heartbreak" in this simple version, but they die.
-      }
-    }
-
-    // Hunter Vote Death
-    if (victim.role === ROLES.HUNTER.id) {
-      await updateGame({
-        players: newPlayers,
-        dayLog: `${victim.name} (Hunter) was voted out!`,
-        phase: PHASES.HUNTER_ACTION
-      });
-      return;
-    }
-
-    if (checkWin(newPlayers)) return;
-
-    await updateGame({
-      players: newPlayers,
-      dayLog: `${victim.name} was voted out.`,
-      phase: PHASES.NIGHT_INTRO
-    });
-  };
+  
 
   const handleHunterShot = async (targetId) => {
-    let newPlayers = [...gameState.players];
+    let newPlayers = [...players];
     const victim = newPlayers.find(p => p.id === targetId);
     victim.isAlive = false;
 
@@ -619,35 +503,37 @@ export default function App() {
   // --- NEW VOTING SYSTEM ---
   const castVote = async (targetId) => {
     // Can't vote if already locked
-    if (gameState.lockedVotes.includes(user.uid)) return;
+    if ((gameState.lockedVotes || []).includes(user.uid)) return;
 
-    const newVotes = { ...gameState.votes, [user.uid]: targetId };
+    const votes = gameState.votes || {};
+    const newVotes = { ...votes, [user.uid]: targetId };
     await updateGame({ votes: newVotes });
   };
 
   const lockVote = async () => {
     // Can't lock if no vote cast
-    if (!gameState.votes[user.uid]) return;
+    if (!gameState.votes?.[user.uid]) return;
 
     // Can't lock if already locked
-    if (gameState.lockedVotes.includes(user.uid)) return;
+    const lockedVotes = gameState.lockedVotes || [];
+    if (lockedVotes.includes(user.uid)) return;
 
-    const newLockedVotes = [...gameState.lockedVotes, user.uid];
+    const newLockedVotes = [...lockedVotes, user.uid];
     await updateGame({ lockedVotes: newLockedVotes });
 
     // Check if everyone has locked
-    const alivePlayers = gameState.players.filter(p => p.isAlive);
+    const alivePlayers = players.filter(p => p.isAlive);
     if (newLockedVotes.length === alivePlayers.length) {
       // Trigger resolution
       resolveVoting();
     }
   };
 
-  const resolveVoting = async () => {
+  async function resolveVoting() {
     // Count votes
     const voteCounts = {};
-    Object.entries(gameState.votes).forEach(([voterId, targetId]) => {
-      const voter = gameState.players.find(p => p.id === voterId);
+    Object.entries(gameState.votes || {}).forEach(([voterId, targetId]) => {
+      const voter = players.find(p => p.id === voterId);
       const weight = (voter && voter.role === ROLES.MAYOR.id && voter.isAlive) ? 2 : 1;
       voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
     });
@@ -676,7 +562,7 @@ export default function App() {
     }
 
     const targetId = victims[0];
-    let newPlayers = [...gameState.players];
+    let newPlayers = [...players];
     const victim = newPlayers.find(p => p.id === targetId);
     victim.isAlive = false;
 
@@ -724,8 +610,50 @@ export default function App() {
     });
   };
 
+  // --- TIMER CHECK (HOST ONLY) ---
+  const advanceNightRef = useRef(null);
+  const resolveVotingRef = useRef(null);
+
+  useEffect(() => {
+    advanceNightRef.current = advanceNight;
+    resolveVotingRef.current = resolveVoting;
+  });
+
+  useEffect(() => {
+    if (!isHost || !gameState || !gameState.phaseEndTime) return;
+
+    if (now > gameState.phaseEndTime) {
+      // Time's up!
+      if (gameState.phase === PHASES.DAY_VOTE) {
+        resolveVotingRef.current && resolveVotingRef.current();
+      } else if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(gameState.phase)) {
+        // For night actions, timeout means skipping/advancing with null
+        // We need to know WHICH action to skip.
+        // This is a bit tricky because advanceNight takes specific arguments.
+        // But we can infer the action based on the phase.
+
+        let actionKey = null;
+        if (gameState.phase === PHASES.NIGHT_WEREWOLF) actionKey = 'wolfTarget';
+        if (gameState.phase === PHASES.NIGHT_DOCTOR) actionKey = 'doctorProtect';
+        if (gameState.phase === PHASES.NIGHT_SEER) actionKey = null; // Seer just views
+        if (gameState.phase === PHASES.NIGHT_SORCERER) actionKey = null; // Sorcerer just views
+        if (gameState.phase === PHASES.NIGHT_VIGILANTE) actionKey = 'vigilanteTarget';
+        if (gameState.phase === PHASES.NIGHT_CUPID) actionKey = 'cupidLinks';
+
+        // Special handling for Cupid who needs an array
+        const value = actionKey === 'cupidLinks' ? [] : null;
+
+        advanceNightRef.current && advanceNightRef.current(actionKey, value);
+      } else if ([PHASES.NIGHT_MINION, PHASES.NIGHT_MASON, PHASES.NIGHT_INTRO, PHASES.ROLE_REVEAL, PHASES.DAY_REVEAL].includes(gameState.phase)) {
+        // Info phases - just move on? 
+        // Actually, ROLE_REVEAL and DAY_REVEAL usually wait for user input or host.
+        // Let's only auto-advance the Action phases for now as requested.
+      }
+    }
+  }, [now, isHost, gameState]);
+
   // --- RENDER HELPERS ---
-  const myPlayer = gameState?.players?.find(p => p.id === user?.uid);
+  const myPlayer = players.find(p => p.id === user?.uid);
   const amAlive = myPlayer?.isAlive;
 
   if (!joined || !gameState) {
@@ -808,10 +736,10 @@ export default function App() {
         <div className="flex-1 overflow-y-auto mb-6">
           <h3 className="text-slate-500 font-bold mb-3 flex justify-between">
             <span>Players</span>
-            <span>{gameState.players.length}</span>
+            <span>{players.length}</span>
           </h3>
           <div className="grid grid-cols-1 gap-2">
-            {gameState.players.map(p => (
+            {players.map(p => (
               <div key={p.id} className="bg-slate-800 p-4 rounded-xl flex items-center gap-3 border border-slate-700">
                 <span className="font-bold text-lg">{p.name}</span>
                 {p.id === user.uid && <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">(You)</span>}
@@ -860,7 +788,7 @@ export default function App() {
               <div key={alignment}>
                 <h4 className="text-xs font-bold uppercase text-slate-500 mb-2 tracking-widest">{alignment} Roles</h4>
                 <div className="flex flex-wrap gap-2">
-                  {Object.values(ROLES).filter(r => r.id !== 'villager' && r.id !== 'werewolf' && r.alignment === alignment).map(r => {
+                  {Object.values(ROLES).filter(r => r.selectable !== false && r.id !== 'werewolf' && r.id !== 'villager' && r.alignment === alignment).map(r => {
                     const isActive = gameState.settings.activeRoles[r.id];
                     const alignmentColors = {
                       good: 'bg-blue-600 border-blue-500',
@@ -905,7 +833,7 @@ export default function App() {
               .filter(([id, isActive]) => isActive && id !== ROLES.MASON.id).length;
             const masonCount = gameState.settings.activeRoles[ROLES.MASON.id] ? 2 : 0;
             const totalRolesNeeded = gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
-            const playersCount = gameState.players.length;
+            const playersCount = players.length;
 
             // Calculate balance weight
             let balanceWeight = 0;
@@ -984,8 +912,8 @@ export default function App() {
                     </div>
 
                     {Object.entries(gameState.settings.activeRoles)
-                      .filter(([roleId, isActive]) => isActive)
-                      .map(([roleId]) => {
+                              .filter(([, isActive]) => isActive)
+                              .map(([roleId]) => {
                         const role = Object.values(ROLES).find(r => r.id === roleId);
                         if (!role) return null;
                         const count = roleId === ROLES.MASON.id ? 2 : 1;
@@ -1126,15 +1054,15 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
         {/* Ambient particles */}
         <div className="absolute inset-0 opacity-20">
-          {[...Array(15)].map((_, i) => (
+          {roleRevealParticles && roleRevealParticles.map((p, i) => (
             <div
               key={i}
               className={`absolute w-2 h-2 ${colors.text} rounded-full animate-pulse`}
               style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${3 + Math.random() * 2}s`
+                top: p.top,
+                left: p.left,
+                animationDelay: p.delay,
+                animationDuration: p.dur
               }}
             />
           ))}
@@ -1177,7 +1105,7 @@ export default function App() {
           )}
 
           <div className="mt-8 text-sm text-slate-600">
-            <span className="font-bold text-slate-400">{gameState.players.filter(p => p.ready).length}</span> / {gameState.players.length} ready
+            <span className="font-bold text-slate-400">{players.filter(p => p.ready).length}</span> / {players.length} ready
           </div>
         </div>
       </div>
@@ -1204,15 +1132,15 @@ export default function App() {
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
           {/* Animated stars background */}
           <div className="absolute inset-0 opacity-30">
-            {[...Array(20)].map((_, i) => (
+            {nightIntroStars && nightIntroStars.map((s, i) => (
               <div
                 key={i}
                 className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
                 style={{
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`
+                  top: s.top,
+                  left: s.left,
+                  animationDelay: s.delay,
+                  animationDuration: s.dur
                 }}
               />
             ))}
@@ -1266,7 +1194,7 @@ export default function App() {
       return (
         <NightActionUI
           title="Cupid" subtitle="Choose TWO lovers." color="purple"
-          players={gameState.players.filter(p => p.isAlive && p.id !== user.uid)}
+          players={players.filter(p => p.isAlive && p.id !== user.uid)}
           onAction={(ids) => advanceNight('cupidLinks', ids)}
           myPlayer={myPlayer}
           multiSelect={true}
@@ -1281,7 +1209,7 @@ export default function App() {
       return (
         <NightActionUI
           title="Werewolf" subtitle="Choose a victim together." color="red"
-          players={gameState.players.filter(p => p.isAlive)}
+          players={players.filter(p => p.isAlive)}
           onAction={(id) => advanceNight('wolfTarget', id)}
           myPlayer={myPlayer}
           extras={(p) => p.role === ROLES.WEREWOLF.id && <span className="text-xs text-red-500 font-bold ml-2">(ALLY)</span>}
@@ -1301,7 +1229,7 @@ export default function App() {
               <p className="text-slate-400">The Werewolves are...</p>
             </div>
             <div className="space-y-3 mb-8">
-              {gameState.players.filter(p => p.role === ROLES.WEREWOLF.id).map(p => (
+              {players.filter(p => p.role === ROLES.WEREWOLF.id).map(p => (
                 <div key={p.id} className="bg-gradient-to-r from-red-900/30 to-rose-900/30 border-2 border-red-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-red-500/20">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
@@ -1344,7 +1272,7 @@ export default function App() {
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                  {gameState.players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
+                  {players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
                     <button
                       key={p.id}
                       onClick={() => {
@@ -1376,7 +1304,7 @@ export default function App() {
       return (
         <NightActionUI
           title="Doctor" subtitle="Protect someone." color="blue"
-          players={gameState.players.filter(p => p.isAlive)}
+          players={players.filter(p => p.isAlive)}
           onAction={(id) => advanceNight('doctorProtect', id)}
           myPlayer={myPlayer}
           canSkip={true}
@@ -1410,7 +1338,7 @@ export default function App() {
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                  {gameState.players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
+                  {players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
                     <button
                       key={p.id}
                       onClick={() => {
@@ -1448,8 +1376,8 @@ export default function App() {
               <p className="text-slate-400">Your trusted allies</p>
             </div>
             <div className="space-y-3 mb-8">
-              {gameState.players.filter(p => p.role === ROLES.MASON.id && p.id !== user.uid).length > 0 ? (
-                gameState.players.filter(p => p.role === ROLES.MASON.id && p.id !== user.uid).map(p => (
+              {players.filter(p => p.role === ROLES.MASON.id && p.id !== user.uid).length > 0 ? (
+                players.filter(p => p.role === ROLES.MASON.id && p.id !== user.uid).map(p => (
                   <div key={p.id} className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-2 border-blue-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
@@ -1476,7 +1404,7 @@ export default function App() {
           title={`Vigilante (${ammo} ammo)`}
           subtitle={ammo > 0 ? "Choose your target carefully." : "You're out of ammo."}
           color="yellow"
-          players={gameState.players.filter(p => p.isAlive)}
+          players={players.filter(p => p.isAlive)}
           onAction={(id) => {
             if (ammo > 0 && id) {
               updateGame({ vigilanteAmmo: { ...gameState.vigilanteAmmo, [user.uid]: 0 } });
@@ -1502,7 +1430,7 @@ export default function App() {
           <h2 className="text-2xl font-bold mb-4">REVENGE!</h2>
           <p className="mb-6 text-center">Select someone to take with you.</p>
           <div className="w-full space-y-2">
-            {gameState.players.filter(p => p.isAlive).map(p => (
+            {players.filter(p => p.isAlive).map(p => (
               <button key={p.id} onClick={() => handleHunterShot(p.id)} className="w-full p-4 bg-red-900/50 border border-red-500 rounded-xl font-bold">
                 {p.name}
               </button>
@@ -1543,7 +1471,7 @@ export default function App() {
           </div>
           {isHost ? (
             <button
-              onClick={() => updateGame({ phase: PHASES.DAY_VOTE, votes: {}, lockedVotes: [], phaseEndTime: Date.now() + (gameState.settings.votingWaitTime * 1000) })}
+              onClick={() => updateGame({ phase: PHASES.DAY_VOTE, votes: {}, lockedVotes: [], phaseEndTime: now + (gameState.settings.votingWaitTime * 1000) })}
               className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-orange-900/30 transition-all hover:scale-105"
             >
               Start Voting
@@ -1564,7 +1492,7 @@ export default function App() {
 
     // Calculate vote counts
     const voteCounts = {};
-    const alivePlayers = gameState.players.filter(p => p.isAlive);
+    const alivePlayers = players.filter(p => p.isAlive);
 
     // Initialize counts
     alivePlayers.forEach(p => voteCounts[p.id] = 0);
@@ -1714,7 +1642,7 @@ export default function App() {
 
   // --- GAME OVER ---
   if (gameState.phase === PHASES.GAME_OVER) {
-    return <DeadScreen winner={gameState.winner} isGameOver={true} onReset={() => updateGame({ phase: PHASES.LOBBY, winner: null, dayLog: "", players: gameState.players.map(p => ({ ...p, isAlive: true, role: null, ready: false })) })} isHost={isHost} players={gameState.players} lovers={gameState.lovers} />;
+    return <DeadScreen winner={gameState.winner} isGameOver={true} onReset={() => updateGame({ phase: PHASES.LOBBY, winner: null, dayLog: "", players: players.map(p => ({ ...p, isAlive: true, role: null, ready: false })) })} isHost={isHost} players={players} lovers={gameState.lovers} />;
   }
 
   return <div>Loading...</div>;
@@ -1722,9 +1650,9 @@ export default function App() {
 
 // --- SUBCOMPONENTS ---
 
-function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
+function NightActionUI({ title, subtitle, color, players, onAction, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
   const [targets, setTargets] = useState([]);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -1886,21 +1814,34 @@ function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, players, love
     if (winner === 'TANNER') return p.role === ROLES.TANNER.id;
     return false;
   }) : [];
+  const [deadParticles, setDeadParticles] = useState(null);
+  useEffect(() => {
+    if (!isGameOver) return;
+    const t = setTimeout(() => {
+      setDeadParticles(Array.from({ length: 30 }).map(() => ({
+        top: `${Math.random() * 100}%`,
+        left: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 3}s`,
+        dur: `${2 + Math.random() * 3}s`
+      })));
+    }, 0);
+    return () => clearTimeout(t);
+  }, [isGameOver]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
       {/* Ambient background */}
       {isGameOver && (
         <div className="absolute inset-0 opacity-10">
-          {[...Array(30)].map((_, i) => (
+          {deadParticles && deadParticles.map((p, i) => (
             <div
               key={i}
               className={`absolute w-1 h-1 ${colors.text} rounded-full animate-pulse`}
               style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`,
-                animationDuration: `${2 + Math.random() * 3}s`
+                top: p.top,
+                left: p.left,
+                animationDelay: p.delay,
+                animationDuration: p.dur
               }}
             />
           ))}

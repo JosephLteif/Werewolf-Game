@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 
-export function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
+export function NightActionUI({ title, subtitle, color, players, onAction, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
     const [targets, setTargets] = useState([]);
-    const [now, setNow] = useState(Date.now());
+    const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
         const interval = setInterval(() => setNow(Date.now()), 1000);

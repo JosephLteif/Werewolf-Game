@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Moon, Sun, Shield, Eye, Skull, Users, Play, RotateCcw, Check, Fingerprint, Crosshair, Smile, Zap, Radio, Smartphone, Copy } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, updateDoc, onSnapshot, arrayUnion, deleteDoc, getDoc } from 'firebase/firestore';
+import { getDatabase, ref, set, update, onValue, runTransaction, get } from 'firebase/database';
 
 // --- CONFIGURATION ---
 const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getDatabase(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'nightfall-game';
 
 /* NIGHTFALL: Multiplayer Edition
@@ -59,6 +59,11 @@ export default function App() {
   const [seerMessage, setSeerMessage] = useState(null);
   const [selectedVote, setSelectedVote] = useState(null);
 
+  // Normalized players array (Realtime DB may store players as an object map)
+  const players = gameState && gameState.players
+    ? (Array.isArray(gameState.players) ? gameState.players : Object.keys(gameState.players).map(k => ({ id: k, ...gameState.players[k] })))
+    : [];
+
   // --- AUTH & INIT ---
   useEffect(() => {
     const initAuth = async () => {
@@ -85,12 +90,12 @@ export default function App() {
     if (!user || !roomCode || !joined) return;
 
     // Use specific path for permissions: /artifacts/{appId}/public/data/rooms/{roomCode}
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${roomCode}`);
-    const unsubscribe = onSnapshot(roomRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
+    const roomRef = ref(db, `artifacts/${appId}/public/data/rooms/room_${roomCode}`);
+    const unsubscribe = onValue(roomRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
         setGameState(data);
-        
+
         // Check if I am host
         if (data.hostId === user.uid) setIsHost(true);
 
@@ -116,7 +121,7 @@ export default function App() {
     if (!playerName) return setErrorMsg("Enter your name first!");
     
     const code = generateRoomCode();
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${code}`);
+    const roomRef = ref(db, `artifacts/${appId}/public/data/rooms/room_${code}`);
     
     const initialState = {
       code,
@@ -142,7 +147,7 @@ export default function App() {
     };
 
     try {
-      await setDoc(roomRef, initialState);
+      await set(roomRef, initialState);
       setRoomCode(code);
       setIsHost(true);
       setJoined(true);
@@ -158,19 +163,19 @@ export default function App() {
     if (!roomCode) return setErrorMsg("Enter a room code!");
     
     const code = roomCode.toUpperCase();
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${code}`);
-    
+    const roomRef = ref(db, `artifacts/${appId}/public/data/rooms/room_${code}`);
+
     try {
-      const snap = await getDoc(roomRef);
+      const snap = await get(roomRef);
 
       if (!snap.exists()) return setErrorMsg("Room not found!");
-      const data = snap.data();
+      const data = snap.val();
 
       if (data.phase !== PHASES.LOBBY && !data.players.some(p => p.id === user.uid)) {
         return setErrorMsg("Game already in progress!");
       }
 
-      // Add player if not exists
+      // Add player if not exists (use transaction to avoid races)
       if (!data.players.some(p => p.id === user.uid)) {
         const newPlayer = {
           id: user.uid,
@@ -180,8 +185,13 @@ export default function App() {
           ready: false,
           avatarColor: `hsl(${Math.random() * 360}, 70%, 60%)`
         };
-        await updateDoc(roomRef, {
-          players: arrayUnion(newPlayer)
+
+        await runTransaction(roomRef, (current) => {
+          if (current === null) return current; // room disappeared
+          if (!current.players) current.players = [];
+          if (current.players.some(p => p.id === newPlayer.id)) return current;
+          current.players = [...current.players, newPlayer];
+          return current;
         });
       }
 
@@ -195,15 +205,15 @@ export default function App() {
 
   const updateGame = async (updates) => {
     if (!user || !roomCode) return;
-    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${roomCode}`);
-    await updateDoc(roomRef, { ...updates, updatedAt: Date.now() });
+    const roomRef = ref(db, `artifacts/${appId}/public/data/rooms/room_${roomCode}`);
+    await update(roomRef, { ...updates, updatedAt: Date.now() });
   };
 
   // --- GAME LOGIC (Host Only typically triggers these, but we keep it shared for simplicity) ---
 
   const startGame = async () => {
     if (!isHost) return;
-    const { players, settings } = gameState;
+    const settings = gameState.settings;
     
     // Assign Roles
     let deck = [];
@@ -239,7 +249,7 @@ export default function App() {
   };
 
   const markReady = async () => {
-    const newPlayers = gameState.players.map(p => 
+    const newPlayers = players.map(p => 
       p.id === user.uid ? { ...p, ready: true } : p
     );
     
@@ -280,7 +290,7 @@ export default function App() {
     // Find next valid phase
     for (let i = currentIdx + 1; i < sequence.length; i++) {
       const p = sequence[i];
-      const hasRole = (rid) => gameState.players.some(pl => pl.role === rid && pl.isAlive);
+      const hasRole = (rid) => players.some(pl => pl.role === rid && pl.isAlive);
       
       if (p === PHASES.NIGHT_DOCTOR && hasRole(ROLES.DOCTOR.id)) { nextPhase = p; break; }
       if (p === PHASES.NIGHT_SEER && hasRole(ROLES.SEER.id)) { nextPhase = p; break; }
@@ -298,7 +308,7 @@ export default function App() {
   };
 
   const resolveNight = async (finalActions) => {
-    let newPlayers = [...gameState.players];
+    let newPlayers = [...players];
     let deaths = [];
 
     // Wolf Kill
@@ -311,7 +321,7 @@ export default function App() {
     }
 
     // Vigilante Shot
-    if (finalActions.vigilanteTarget) {
+     if (finalActions.vigilanteTarget) {
        const victim = newPlayers.find(p => p.id === finalActions.vigilanteTarget);
        // Vigilante ammo logic should be handled when shooting, but assuming ammo was checked
        if (victim && victim.id !== finalActions.doctorProtect && victim.isAlive) {
@@ -349,7 +359,7 @@ export default function App() {
       return;
     }
 
-    let newPlayers = [...gameState.players];
+    let newPlayers = [...players];
     const victim = newPlayers.find(p => p.id === targetId);
     victim.isAlive = false;
 
@@ -383,7 +393,7 @@ export default function App() {
   };
 
   const handleHunterShot = async (targetId) => {
-    let newPlayers = [...gameState.players];
+    let newPlayers = [...players];
     const victim = newPlayers.find(p => p.id === targetId);
     victim.isAlive = false;
 
@@ -427,7 +437,7 @@ export default function App() {
   };
 
   // --- RENDER HELPERS ---
-  const myPlayer = gameState?.players?.find(p => p.id === user?.uid);
+  const myPlayer = players.find(p => p.id === user?.uid);
   const amAlive = myPlayer?.isAlive;
 
   if (!joined || !gameState) {
@@ -494,10 +504,10 @@ export default function App() {
         <div className="flex-1 overflow-y-auto mb-6">
            <h3 className="text-slate-500 font-bold mb-3 flex justify-between">
              <span>Players</span>
-             <span>{gameState.players.length}</span>
+               <span>{players.length}</span>
            </h3>
            <div className="grid grid-cols-2 gap-3">
-             {gameState.players.map(p => (
+             {players.map(p => (
                <div key={p.id} className="bg-slate-800 p-3 rounded-xl flex items-center gap-3 border border-slate-700">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-slate-900 text-xs" style={{backgroundColor: p.avatarColor}}>
                     {p.name[0]}
@@ -564,8 +574,8 @@ export default function App() {
            </div>
         )}
         
-        <div className="mt-8 text-xs text-slate-600">
-           {gameState.players.filter(p => p.ready).length} / {gameState.players.length} ready
+          <div className="mt-8 text-xs text-slate-600">
+            {players.filter(p => p.ready).length} / {players.length} ready
         </div>
       </div>
     );

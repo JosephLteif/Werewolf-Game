@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Skull, RotateCcw } from 'lucide-react';
 import { ROLES } from '../constants';
 
@@ -24,20 +24,34 @@ export function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, player
         return false;
     }) : [];
 
+    const [deadParticles, setDeadParticles] = useState(null);
+    useEffect(() => {
+        if (!isGameOver) return;
+        const t = setTimeout(() => {
+            setDeadParticles(Array.from({ length: 30 }).map(() => ({
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                delay: `${Math.random() * 3}s`,
+                dur: `${2 + Math.random() * 3}s`
+            })));
+        }, 0);
+        return () => clearTimeout(t);
+    }, [isGameOver]);
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
             {/* Ambient background */}
             {isGameOver && (
                 <div className="absolute inset-0 opacity-10">
-                    {[...Array(30)].map((_, i) => (
+                    {deadParticles && deadParticles.map((p, i) => (
                         <div
                             key={i}
                             className={`absolute w-1 h-1 ${colors.text} rounded-full animate-pulse`}
                             style={{
-                                top: `${Math.random() * 100}%`,
-                                left: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 3}s`,
-                                animationDuration: `${2 + Math.random() * 3}s`
+                                top: p.top,
+                                left: p.left,
+                                animationDelay: p.delay,
+                                animationDuration: p.dur
                             }}
                         />
                     ))}
