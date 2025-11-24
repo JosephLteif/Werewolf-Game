@@ -72,7 +72,8 @@ export default function App() {
   // Local UI State
   const [errorMsg, setErrorMsg] = useState("");
   const [seerMessage, setSeerMessage] = useState(null);
-  
+  const [sorcererTarget, setSorcererTarget] = useState(null);
+
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -191,8 +192,7 @@ export default function App() {
     if (payload.players && Array.isArray(payload.players)) {
       const playersMap = {};
       payload.players.forEach(p => {
-        const { id, name, isAlive, ready, avatarColor, role } = p;
-        playersMap[id] = { name, isAlive, ready, avatarColor, role };
+        playersMap[p.id] = p;
       });
       payload.players = playersMap;
     }
@@ -207,7 +207,7 @@ export default function App() {
     await update(ref(rtdb, `rooms/${roomCode}`), payload);
   };
 
-  
+
 
   // --- GAME LOGIC ---
 
@@ -362,11 +362,11 @@ export default function App() {
       let updates = { nightActions: newActions, phase: nextPhase };
 
       // Set timer for next phase if it's an action phase
-        if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(nextPhase)) {
-          updates.phaseEndTime = now + (gameState.settings.actionWaitTime * 1000);
-        } else {
-          updates.phaseEndTime = null; // Clear timer for non-timed phases
-        }
+      if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(nextPhase)) {
+        updates.phaseEndTime = now + (gameState.settings.actionWaitTime * 1000);
+      } else {
+        updates.phaseEndTime = null; // Clear timer for non-timed phases
+      }
 
       if (gameState.phase === PHASES.NIGHT_CUPID && newActions.cupidLinks?.length === 2) {
         updates.lovers = newActions.cupidLinks;
@@ -377,6 +377,16 @@ export default function App() {
 
   const resolveNight = async (finalActions) => {
     let newPlayers = [...players];
+
+    // Check Sorcerer Success
+    if (finalActions.sorcererCheck) {
+      const target = newPlayers.find(p => p.id === finalActions.sorcererCheck);
+      const sorcerer = newPlayers.find(p => p.role === ROLES.SORCERER.id);
+      if (target && target.role === ROLES.SEER.id && sorcerer) {
+        sorcerer.foundSeer = true;
+      }
+    }
+
     let deaths = [];
 
     // Wolf Kill
@@ -443,7 +453,7 @@ export default function App() {
     });
   };
 
-  
+
 
   const handleHunterShot = async (targetId) => {
     let newPlayers = [...players];
@@ -912,8 +922,8 @@ export default function App() {
                     </div>
 
                     {Object.entries(gameState.settings.activeRoles)
-                              .filter(([, isActive]) => isActive)
-                              .map(([roleId]) => {
+                      .filter(([, isActive]) => isActive)
+                      .map(([roleId]) => {
                         const role = Object.values(ROLES).find(r => r.id === roleId);
                         if (!role) return null;
                         const count = roleId === ROLES.MASON.id ? 2 : 1;
@@ -1221,7 +1231,15 @@ export default function App() {
     // MINION
     if (gameState.phase === PHASES.NIGHT_MINION) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-950 via-rose-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center">
+        <div className="min-h-screen bg-gradient-to-br from-red-950 via-rose-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
+          {myPlayer && (
+            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-red-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+                {myPlayer.name[0]}
+              </div>
+              <span className="text-xs font-bold text-red-200">{myPlayer.name}</span>
+            </div>
+          )}
           <div className="max-w-md w-full">
             <div className="mb-8">
               <Ghost className="w-24 h-24 text-red-400 mx-auto mb-4 drop-shadow-lg" />
@@ -1249,7 +1267,15 @@ export default function App() {
     // SORCERER
     if (gameState.phase === PHASES.NIGHT_SORCERER) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-950 via-pink-950 to-slate-950 text-slate-100 p-4 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-purple-950 via-pink-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
+          {myPlayer && (
+            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-purple-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+                {myPlayer.name[0]}
+              </div>
+              <span className="text-xs font-bold text-purple-200">{myPlayer.name}</span>
+            </div>
+          )}
           <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
             <div className="text-center mb-8 mt-4">
               <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4 drop-shadow-lg" />
@@ -1263,7 +1289,11 @@ export default function App() {
                   <p className="text-2xl font-bold">{seerMessage}</p>
                 </div>
                 <button
-                  onClick={() => { setSeerMessage(null); advanceNight(null, null); }}
+                  onClick={() => {
+                    setSeerMessage(null);
+                    advanceNight('sorcererCheck', sorcererTarget);
+                    setSorcererTarget(null);
+                  }}
                   className="w-full max-w-md bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
                 >
                   Continue
@@ -1278,6 +1308,7 @@ export default function App() {
                       onClick={() => {
                         const isSeer = p.role === ROLES.SEER.id;
                         setSeerMessage(`${p.name} is ${isSeer ? 'THE SEER' : 'NOT the Seer'}.`);
+                        setSorcererTarget(p.id);
                       }}
                       className="w-full p-4 bg-slate-900/50 rounded-2xl text-left font-bold border-2 border-slate-700 hover:border-purple-500 transition-all shadow-lg hover:shadow-xl flex items-center gap-4"
                     >
@@ -1312,10 +1343,19 @@ export default function App() {
         />
       );
     }
+
     // SEER
     if (gameState.phase === PHASES.NIGHT_SEER) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 text-slate-100 p-4 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
+          {myPlayer && (
+            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-purple-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+                {myPlayer.name[0]}
+              </div>
+              <span className="text-xs font-bold text-purple-200">{myPlayer.name}</span>
+            </div>
+          )}
           <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
             <div className="text-center mb-8 mt-4">
               <Eye className="w-16 h-16 text-purple-400 mx-auto mb-4 drop-shadow-lg" />
@@ -1368,7 +1408,15 @@ export default function App() {
     // MASON
     if (gameState.phase === PHASES.NIGHT_MASON) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-950 via-cyan-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center">
+        <div className="min-h-screen bg-gradient-to-br from-blue-950 via-cyan-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
+          {myPlayer && (
+            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-blue-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+                {myPlayer.name[0]}
+              </div>
+              <span className="text-xs font-bold text-blue-200">{myPlayer.name}</span>
+            </div>
+          )}
           <div className="max-w-md w-full">
             <div className="mb-8">
               <Hammer className="w-24 h-24 text-blue-400 mx-auto mb-4 drop-shadow-lg" />
@@ -1446,6 +1494,14 @@ export default function App() {
   if (gameState.phase === PHASES.DAY_REVEAL) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+        {myPlayer && (
+          <div className="absolute top-4 right-4 bg-white/80 backdrop-blur border border-orange-200 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+              {myPlayer.name[0]}
+            </div>
+            <span className="text-xs font-bold text-slate-600">{myPlayer.name}</span>
+          </div>
+        )}
         {/* Animated sun rays */}
         <div className="absolute inset-0 opacity-20">
           {[...Array(12)].map((_, i) => (
@@ -1512,7 +1568,15 @@ export default function App() {
     const totalPlayers = alivePlayers.length;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex flex-col relative">
+        {myPlayer && (
+          <div className="absolute top-4 right-4 bg-white/80 backdrop-blur border border-orange-200 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+              {myPlayer.name[0]}
+            </div>
+            <span className="text-xs font-bold text-slate-600">{myPlayer.name}</span>
+          </div>
+        )}
         <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
           {/* Header */}
           <div className="text-center mb-6">
@@ -1566,7 +1630,10 @@ export default function App() {
                     </div>
 
                     <div className="flex-1 text-left">
-                      <div className="font-bold text-lg">{p.name}</div>
+                      <div className="font-bold text-lg">
+                        {p.name}
+                        {p.id === user.uid && <span className="text-sm text-orange-600 ml-2">(You)</span>}
+                      </div>
                       <div className="text-xs text-slate-500 flex items-center gap-2">
                         {voteCount > 0 && (
                           <span className="bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold">
@@ -1650,7 +1717,7 @@ export default function App() {
 
 // --- SUBCOMPONENTS ---
 
-function NightActionUI({ title, subtitle, color, players, onAction, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
+function NightActionUI({ title, subtitle, color, players, onAction, extras, multiSelect, maxSelect, canSkip, phaseEndTime, myPlayer }) {
   const [targets, setTargets] = useState([]);
   const [now, setNow] = useState(() => Date.now());
 
@@ -1711,7 +1778,15 @@ function NightActionUI({ title, subtitle, color, players, onAction, extras, mult
   const theme = colorThemes[color] || colorThemes.purple;
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${theme.bg} text-slate-100 p-4 flex flex-col`}>
+    <div className={`min-h-screen bg-gradient-to-br ${theme.bg} text-slate-100 p-4 flex flex-col relative`}>
+      {myPlayer && (
+        <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-slate-700 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
+            {myPlayer.name[0]}
+          </div>
+          <span className="text-xs font-bold text-slate-300">{myPlayer.name}</span>
+        </div>
+      )}
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
         {/* Header */}
         <div className="text-center mb-8 mt-4">
@@ -1809,7 +1884,11 @@ function DeadScreen({ winner, isGameOver, onReset, isHost, dayLog, players, love
     if (!winner) return false;
     if (winner === 'LOVERS') return lovers && lovers.includes(p.id);
     if (winner === 'VILLAGERS') return ROLES[p.role.toUpperCase()].alignment === 'good';
-    if (winner === 'WEREWOLVES') return ROLES[p.role.toUpperCase()].alignment === 'evil';
+    if (winner === 'WEREWOLVES') {
+      const role = ROLES[p.role.toUpperCase()];
+      if (role.id === ROLES.SORCERER.id) return !!p.foundSeer;
+      return role.alignment === 'evil';
+    }
     if (winner === 'JESTER') return p.role === ROLES.JESTER.id;
     if (winner === 'TANNER') return p.role === ROLES.TANNER.id;
     return false;
