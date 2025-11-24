@@ -279,7 +279,11 @@ export default function App() {
         doppelgangerTarget: finalActions.doppelgangerCopy || gameState.doppelgangerTarget
       });
     } else {
-      if (checkWinCondition(newPlayers)) return;
+      const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+      if (winResult) {
+        updateGame({ players: newPlayers, ...winResult, phase: PHASES.GAME_OVER });
+        return;
+      }
 
       await updateGame({
         players: newPlayers,
@@ -301,16 +305,19 @@ export default function App() {
 
     // Handle Doppelganger and Lover deaths
     handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
-    const loverDeaths = handleLoverDeaths(newPlayers, gameState.lovers);
+    handleLoverDeaths(newPlayers, gameState.lovers);
     
     // Combine deaths
-    const allDeaths = [victim, ...loverDeaths];
     newPlayers = newPlayers.filter(p => p.isAlive);
 
 
     let log = gameState.dayLog + ` The Hunter shot ${victim.name}!`;
 
-    if (checkWin(newPlayers)) return;
+    const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+    if (winResult) {
+      updateGame({ players: newPlayers, dayLog: log, ...winResult, phase: PHASES.GAME_OVER });
+      return;
+    }
 
     const wasNightDeath = gameState.dayLog.includes("died");
 
@@ -321,33 +328,7 @@ export default function App() {
     });
   };
 
-  const checkWin = (currentPlayers) => {
-    // Host is now a player, so we don't filter them out.
-    const activePlayers = currentPlayers;
 
-    const activeWolves = activePlayers.filter(p => p.isAlive && p.role === ROLES.WEREWOLF.id).length;
-    const good = activePlayers.filter(p => p.isAlive && p.role !== ROLES.WEREWOLF.id && p.role !== ROLES.JESTER.id).length;
-
-    // Lovers Win: Only lovers alive
-    if (gameState.lovers && gameState.lovers.length === 2) {
-      const loversAlive = activePlayers.filter(p => gameState.lovers.includes(p.id) && p.isAlive).length === 2;
-      const othersAlive = activePlayers.filter(p => !gameState.lovers.includes(p.id) && p.isAlive).length;
-      if (loversAlive && othersAlive === 0) {
-        updateGame({ players: currentPlayers, winner: 'LOVERS', winners: [...(gameState.winners || []), 'LOVERS'], phase: PHASES.GAME_OVER });
-        return true;
-      }
-    }
-
-    if (activeWolves === 0) {
-      updateGame({ players: currentPlayers, winner: 'VILLAGERS', winners: [...(gameState.winners || []), 'VILLAGERS'], phase: PHASES.GAME_OVER });
-      return true;
-    }
-    if (activeWolves >= good) {
-      updateGame({ players: currentPlayers, winner: 'WEREWOLVES', winners: [...(gameState.winners || []), 'WEREWOLVES'], phase: PHASES.GAME_OVER });
-      return true;
-    }
-    return false;
-  };
 
   // --- NEW VOTING SYSTEM ---
   const castVote = async (targetId) => {
@@ -432,7 +413,18 @@ export default function App() {
       return;
     }
 
-    if (checkWin(newPlayers)) return;
+    const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+    if (winResult) {
+      updateGame({
+        players: newPlayers,
+        dayLog: `${victim.name} was voted out.`,
+        ...winResult,
+        phase: PHASES.GAME_OVER,
+        votes: {},
+        lockedVotes: []
+      });
+      return;
+    }
 
     await updateGame({
       players: newPlayers,
@@ -855,7 +847,7 @@ export default function App() {
 
     // WAITING SCREEN (If not my turn OR I am dead)
     if (!amAlive) {
-      return <DeadScreen winner={null} winners={gameState?.winners || []} />;
+      return <DeadScreen winners={gameState?.winners || []} />;
     }
 
     if (!isMyTurn) {
@@ -1329,7 +1321,6 @@ export default function App() {
   if (gameState.phase === PHASES.GAME_OVER) {
     return (
       <DeadScreen
-        winner={gameState.winner}
         winners={gameState.winners}
         isGameOver={gameState.phase === PHASES.GAME_OVER}
         onReset={() => updateGame({ phase: PHASES.LOBBY, players: [], dayLog: "", nightActions: {}, votes: {}, lockedVotes: [], winners: [] })}
