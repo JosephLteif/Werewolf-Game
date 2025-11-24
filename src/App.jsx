@@ -1087,7 +1087,7 @@ export default function App() {
         <NightActionUI
           title="Cupid" subtitle="Choose TWO lovers." color="purple"
           players={gameState.players.filter(p => p.isAlive && p.id !== user.uid)}
-          onAction={(ids) => advanceNight('cupidLovers', ids)}
+          onAction={(ids) => advanceNight('cupidLinks', ids)}
           myPlayer={myPlayer}
           multiSelect={true}
           maxSelect={2}
