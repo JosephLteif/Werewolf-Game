@@ -74,6 +74,12 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState("");
   const [seerMessage, setSeerMessage] = useState(null);
   const [selectedVote, setSelectedVote] = useState(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- AUTH & INIT ---
   useEffect(() => {
@@ -171,7 +177,9 @@ export default function App() {
           [ROLES.CUPID.id]: false,
           [ROLES.MINION.id]: false,
           [ROLES.MASON.id]: false
-        }
+        },
+        actionWaitTime: 30,
+        votingWaitTime: 60
       },
       winner: null,
       updatedAt: Date.now()
@@ -234,6 +242,40 @@ export default function App() {
     const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', `room_${roomCode}`);
     await updateDoc(roomRef, { ...updates, updatedAt: Date.now() });
   };
+
+  // --- TIMER CHECK (HOST ONLY) ---
+  useEffect(() => {
+    if (!isHost || !gameState || !gameState.phaseEndTime) return;
+
+    if (now > gameState.phaseEndTime) {
+      // Time's up!
+      if (gameState.phase === PHASES.DAY_VOTE) {
+        resolveVoting();
+      } else if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(gameState.phase)) {
+        // For night actions, timeout means skipping/advancing with null
+        // We need to know WHICH action to skip.
+        // This is a bit tricky because advanceNight takes specific arguments.
+        // But we can infer the action based on the phase.
+
+        let actionKey = null;
+        if (gameState.phase === PHASES.NIGHT_WEREWOLF) actionKey = 'wolfTarget';
+        if (gameState.phase === PHASES.NIGHT_DOCTOR) actionKey = 'doctorProtect';
+        if (gameState.phase === PHASES.NIGHT_SEER) actionKey = null; // Seer just views
+        if (gameState.phase === PHASES.NIGHT_SORCERER) actionKey = null; // Sorcerer just views
+        if (gameState.phase === PHASES.NIGHT_VIGILANTE) actionKey = 'vigilanteTarget';
+        if (gameState.phase === PHASES.NIGHT_CUPID) actionKey = 'cupidLinks';
+
+        // Special handling for Cupid who needs an array
+        const value = actionKey === 'cupidLinks' ? [] : null;
+
+        advanceNight(actionKey, value);
+      } else if ([PHASES.NIGHT_MINION, PHASES.NIGHT_MASON, PHASES.NIGHT_INTRO, PHASES.ROLE_REVEAL, PHASES.DAY_REVEAL].includes(gameState.phase)) {
+        // Info phases - just move on? 
+        // Actually, ROLE_REVEAL and DAY_REVEAL usually wait for user input or host.
+        // Let's only auto-advance the Action phases for now as requested.
+      }
+    }
+  }, [now, isHost, gameState]);
 
   // --- GAME LOGIC ---
 
@@ -319,6 +361,7 @@ export default function App() {
 
     await updateGame({
       phase: firstPhase,
+      phaseEndTime: Date.now() + (gameState.settings.actionWaitTime * 1000),
       nightActions: { wolfTarget: null, doctorProtect: null, vigilanteTarget: null, sorcererCheck: null, cupidLinks: [] }
     });
   };
@@ -382,6 +425,14 @@ export default function App() {
     } else {
       // If we just finished Cupid, save lovers
       let updates = { nightActions: newActions, phase: nextPhase };
+
+      // Set timer for next phase if it's an action phase
+      if ([PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_SORCERER, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_CUPID].includes(nextPhase)) {
+        updates.phaseEndTime = Date.now() + (gameState.settings.actionWaitTime * 1000);
+      } else {
+        updates.phaseEndTime = null; // Clear timer for non-timed phases
+      }
+
       if (gameState.phase === PHASES.NIGHT_CUPID && newActions.cupidLinks?.length === 2) {
         updates.lovers = newActions.cupidLinks;
       }
@@ -767,6 +818,24 @@ export default function App() {
           </h3>
 
           <div className="flex justify-between items-center">
+            <span className="text-sm font-bold text-slate-400">Action Timer (s)</span>
+            <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
+              {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, gameState.settings.actionWaitTime - 5) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+              <span className="font-mono px-2 w-8 text-center">{gameState.settings.actionWaitTime}</span>
+              {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, actionWaitTime: gameState.settings.actionWaitTime + 5 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-bold text-slate-400">Voting Timer (s)</span>
+            <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
+              {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, gameState.settings.votingWaitTime - 10) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+              <span className="font-mono px-2 w-8 text-center">{gameState.settings.votingWaitTime}</span>
+              {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, votingWaitTime: gameState.settings.votingWaitTime + 10 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
             <span className="text-sm font-bold text-red-400">Wolf Count</span>
             <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
               {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, wolfCount: Math.max(1, gameState.settings.wolfCount - 1) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
@@ -1019,6 +1088,7 @@ export default function App() {
           myPlayer={myPlayer}
           multiSelect={true}
           maxSelect={2}
+          phaseEndTime={gameState.phaseEndTime}
         />
       );
     }
@@ -1032,6 +1102,7 @@ export default function App() {
           onAction={(id) => advanceNight('wolfTarget', id)}
           myPlayer={myPlayer}
           extras={(p) => p.role === ROLES.WEREWOLF.id && <span className="text-xs text-red-500 font-bold ml-2">(ALLY)</span>}
+          phaseEndTime={gameState.phaseEndTime}
         />
       );
     }
@@ -1106,6 +1177,10 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+                <div className="text-center text-purple-400 font-mono font-bold text-2xl">
+                  {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
+                </div>
+                <button onClick={() => advanceNight(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
               </>
             )}
           </div>
@@ -1121,6 +1196,8 @@ export default function App() {
           players={gameState.players.filter(p => p.isAlive)}
           onAction={(id) => advanceNight('doctorProtect', id)}
           myPlayer={myPlayer}
+          canSkip={true}
+          phaseEndTime={gameState.phaseEndTime}
         />
       );
     }
@@ -1166,6 +1243,10 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+                <div className="text-center text-purple-400 font-mono font-bold text-2xl mt-2">
+                  {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
+                </div>
+                <button onClick={() => advanceNight(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
               </>
             )}
           </div>
@@ -1222,6 +1303,8 @@ export default function App() {
             }
           }}
           myPlayer={myPlayer}
+          canSkip={true}
+          phaseEndTime={gameState.phaseEndTime}
         />
       );
     }
@@ -1277,7 +1360,7 @@ export default function App() {
           </div>
           {isHost ? (
             <button
-              onClick={() => updateGame({ phase: PHASES.DAY_VOTE, votes: {}, lockedVotes: [] })}
+              onClick={() => updateGame({ phase: PHASES.DAY_VOTE, votes: {}, lockedVotes: [], phaseEndTime: Date.now() + (gameState.settings.votingWaitTime * 1000) })}
               className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-orange-900/30 transition-all hover:scale-105"
             >
               Start Voting
@@ -1327,6 +1410,11 @@ export default function App() {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               <span className="text-xs font-bold text-slate-700">{lockedCount} / {totalPlayers} Locked</span>
             </div>
+            {gameState.phaseEndTime && (
+              <div className="mt-2 text-2xl font-mono font-black text-orange-500">
+                {Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000))}s
+              </div>
+            )}
           </div>
 
           {/* Player Cards */}
@@ -1443,8 +1531,16 @@ export default function App() {
 
 // --- SUBCOMPONENTS ---
 
-function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, extras, multiSelect, maxSelect }) {
+function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, extras, multiSelect, maxSelect, canSkip, phaseEndTime }) {
   const [targets, setTargets] = useState([]);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeLeft = phaseEndTime ? Math.max(0, Math.ceil((phaseEndTime - now) / 1000)) : null;
 
   const toggleTarget = (id) => {
     if (multiSelect) {
@@ -1502,6 +1598,11 @@ function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, ex
         <div className="text-center mb-8 mt-4">
           <h2 className={`text-4xl font-black ${theme.text} mb-2 drop-shadow-lg`}>{title}</h2>
           <p className="text-slate-400 text-base">{subtitle}</p>
+          {timeLeft !== null && (
+            <div className={`text-3xl font-mono font-black ${theme.text} mt-2`}>
+              {timeLeft}s
+            </div>
+          )}
           {multiSelect && (
             <div className="mt-3 inline-flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-full border border-slate-700">
               <span className="text-xs font-bold text-slate-400">
@@ -1549,7 +1650,7 @@ function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, ex
         </div>
 
         {/* Action Button */}
-        <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800">
+        <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800 space-y-3">
           <button
             disabled={targets.length === 0 || (multiSelect && targets.length < maxSelect)}
             onClick={() => onAction(multiSelect ? targets : targets[0])}
@@ -1558,6 +1659,15 @@ function NightActionUI({ title, subtitle, color, players, onAction, myPlayer, ex
             <Check className="w-5 h-5" />
             Confirm Action
           </button>
+
+          {canSkip && (
+            <button
+              onClick={() => onAction(multiSelect ? [] : null)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl transition-all"
+            >
+              Skip Action
+            </button>
+          )}
         </div>
       </div>
     </div>
