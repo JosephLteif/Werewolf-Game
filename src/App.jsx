@@ -855,31 +855,45 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {Object.values(ROLES).filter(r => r.id !== 'villager' && r.id !== 'werewolf').map(r => {
-              const isActive = gameState.settings.activeRoles[r.id];
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => isHost ? updateGame({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
-                  className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
-                         ${isActive ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-500'}
-                         ${!isHost ? 'cursor-help opacity-80' : 'hover:opacity-80'}
-                    `}
-                >
-                  <r.icon className="w-3 h-3" />
-                  {r.name}
-                  {isHost && (
-                    <div
-                      onClick={(e) => { e.stopPropagation(); setShowRoleInfo(r.id); }}
-                      className="ml-1 p-1 hover:bg-white/20 rounded-full cursor-help"
-                    >
-                      <Info className="w-3 h-3" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+          <div className="space-y-4">
+            {['good', 'evil', 'neutral'].map(alignment => (
+              <div key={alignment}>
+                <h4 className="text-xs font-bold uppercase text-slate-500 mb-2 tracking-widest">{alignment} Roles</h4>
+                <div className="flex flex-wrap gap-2">
+                  {Object.values(ROLES).filter(r => r.id !== 'villager' && r.id !== 'werewolf' && r.alignment === alignment).map(r => {
+                    const isActive = gameState.settings.activeRoles[r.id];
+                    const alignmentColors = {
+                      good: 'bg-blue-600 border-blue-500',
+                      evil: 'bg-red-600 border-red-500',
+                      neutral: 'bg-purple-600 border-purple-500'
+                    };
+                    const activeColor = alignmentColors[r.alignment];
+
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => isHost ? updateGame({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
+                        className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
+                               ${isActive ? `${activeColor} text-white` : 'bg-slate-900 border-slate-700 text-slate-500'}
+                               ${!isHost ? 'cursor-help opacity-80' : 'hover:opacity-80'}
+                          `}
+                      >
+                        <r.icon className="w-3 h-3" />
+                        {r.name}
+                        {isHost && (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); setShowRoleInfo(r.id); }}
+                            className="ml-1 p-1 hover:bg-white/20 rounded-full cursor-help"
+                          >
+                            <Info className="w-3 h-3" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           {isHost && (() => {
