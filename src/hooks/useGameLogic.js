@@ -289,9 +289,14 @@ export function useGameLogic(
     }
 
     // Vigilante Shot
-    if (finalActions.vigilanteTarget) {
-      const victim = newPlayers.find((p) => p.id === finalActions.vigilanteTarget);
-      if (victim && victim.id !== finalActions.doctorProtect && victim.isAlive) {
+    if (
+      finalActions.vigilanteTarget &&
+      finalActions.vigilanteTarget !== finalActions.doctorProtect
+    ) {
+      const victim = newPlayers.find(
+        (p) => p.id === finalActions.vigilanteTarget
+      );
+      if (victim && victim.isAlive) {
         victim.isAlive = false;
         deaths.push(victim);
       }
@@ -310,13 +315,17 @@ export function useGameLogic(
 
         if (l1 && l2) {
           if (!l1.isAlive && l2.isAlive) {
-            l2.isAlive = false;
-            deaths.push(l2);
-            loversDied = true;
+            if (l2.id !== finalActions.doctorProtect) {
+              l2.isAlive = false;
+              deaths.push(l2);
+              loversDied = true;
+            }
           } else if (!l2.isAlive && l1.isAlive) {
-            l1.isAlive = false;
-            deaths.push(l1);
-            loversDied = true;
+            if (l1.id !== finalActions.doctorProtect) {
+              l1.isAlive = false;
+              deaths.push(l1);
+              loversDied = true;
+            }
           }
         }
       }
@@ -370,6 +379,19 @@ export function useGameLogic(
   const handleHunterShot = async (targetId) => {
     let newPlayers = [...players];
     const victim = newPlayers.find((p) => p.id === targetId);
+
+    // Check if the victim was protected by the doctor
+    if (victim && gameState.nightActions.doctorProtect === victim.id) {
+      // If protected, they survive the hunter's shot
+      let log = gameState.dayLog + ` The Hunter tried to shoot ${victim.name}, but they were protected!`;
+      await updateGame({
+        players: newPlayers,
+        dayLog: log,
+        phase: PHASES.NIGHT_INTRO,
+      });
+      return;
+    }
+
     victim.isAlive = false;
 
     // Lovers Check for Hunter Shot
@@ -535,9 +557,8 @@ export function useGameLogic(
       await updateGame({
         players: newPlayers,
         winners: [...currentWinners, winnerRole],
-        dayLog: `${victim.name} was voted out. They were the ${
-          ROLES[victim.role.toUpperCase()].name
-        }!`,
+        dayLog: `${victim.name} was voted out. They were the ${ROLES[victim.role.toUpperCase()].name
+          }!`,
         phase: PHASES.NIGHT_INTRO, // Continue game
         votes: {},
         lockedVotes: [],
