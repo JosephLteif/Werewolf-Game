@@ -16,8 +16,8 @@ function generateRoomCode(length = 4) {
 
 function defaultSettings() {
   return {
-    actionWaitTime: 30,
-    votingWaitTime: 60,
+    actionWaitTime: 60,
+    votingWaitTime: 240,
     wolfCount: 1,
     activeRoles: {
       cupid: false,
