@@ -112,7 +112,7 @@ export function useGameLogic(
       phase: firstPhase,
       phaseEndTime: now + gameState.settings.actionWaitTime * 1000,
       nightActions: {
-        wolfTarget: null,
+        werewolfVotes: {},
         doctorProtect: null,
         vigilanteTarget: null,
         sorcererCheck: null,
@@ -136,8 +136,28 @@ export function useGameLogic(
         // Actually, the UI handles the selection, we only call advanceNight when CONFIRMING
         // So actionValue here should be the FINAL array
         newActions.cupidLinks = actionValue;
+      } else if (actionType === 'werewolfVote') {
+        // Store individual werewolf votes
+        newActions.werewolfVotes = {
+          ...(newActions.werewolfVotes || {}),
+          [actionValue.voterId]: actionValue.targetId,
+        };
       } else {
         newActions[actionType] = actionValue;
+      }
+    }
+
+    // Special check for Werewolf Voting completion
+    if (gameState.phase === PHASES.NIGHT_WEREWOLF) {
+      const aliveWerewolves = players.filter(
+        (pl) => pl.role === ROLES.WEREWOLF.id && pl.isAlive
+      );
+      const werewolvesVoted = Object.keys(newActions.werewolfVotes || {}).length;
+
+      if (aliveWerewolves.length > 0 && werewolvesVoted < aliveWerewolves.length) {
+        // Stay in current phase, just update votes
+        await updateGame({ nightActions: newActions });
+        return;
       }
     }
 
@@ -193,10 +213,19 @@ export function useGameLogic(
         nextPhase = p;
         break;
       }
+      // Werewolf check removed from here as it's handled above
       if (p === PHASES.NIGHT_WEREWOLF) {
-        nextPhase = p;
-        break;
-      } // Wolves always wake up
+        // This block would only be reached if we are looping *past* werewolf, 
+        // which means we are not currently in werewolf phase.
+        // But if we are finding the *next* phase and it happens to be werewolf (e.g. from Cupid -> Wolf),
+        // we should just enter it.
+        // The voting check is for *exiting* the phase.
+        const aliveWolves = players.filter(pl => pl.role === ROLES.WEREWOLF.id && pl.isAlive);
+        if (aliveWolves.length > 0) {
+          nextPhase = p;
+          break;
+        }
+      }
       if (p === PHASES.NIGHT_MINION && hasRole(ROLES.MINION.id)) {
         nextPhase = p;
         break;
@@ -276,12 +305,37 @@ export function useGameLogic(
 
     let deaths = [];
 
+    // Aggregate Werewolf Votes
+    const werewolfVotes = finalActions.werewolfVotes || {};
+    const voteCounts = {};
+    Object.values(werewolfVotes).forEach((targetId) => {
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+    });
+
+    let maxVotes = 0;
+    let wolfTargets = [];
+    Object.entries(voteCounts).forEach(([targetId, count]) => {
+      if (count > maxVotes) {
+        maxVotes = count;
+        wolfTargets = [targetId];
+      } else if (count === maxVotes) {
+        wolfTargets.push(targetId);
+      }
+    });
+
+    // If there's a tie, randomly select one target
+    let determinedWolfTarget = null;
+    if (wolfTargets.length > 0) {
+      determinedWolfTarget =
+        wolfTargets[Math.floor(Math.random() * wolfTargets.length)];
+    }
+
     // Wolf Kill
     if (
-      finalActions.wolfTarget &&
-      finalActions.wolfTarget !== finalActions.doctorProtect
+      determinedWolfTarget &&
+      determinedWolfTarget !== finalActions.doctorProtect
     ) {
-      const victim = newPlayers.find((p) => p.id === finalActions.wolfTarget);
+      const victim = newPlayers.find((p) => p.id === determinedWolfTarget);
       if (victim) {
         victim.isAlive = false;
         deaths.push(victim);
@@ -366,7 +420,12 @@ export function useGameLogic(
       players: newPlayers,
       dayLog: log,
       phase: nextPhase,
-      nightActions: finalActions,
+      // Clear specific night actions for the next round
+      nightActions: {
+        ...finalActions,
+        werewolfVotes: {}, // Reset werewolf votes for next night
+        wolfTarget: null, // Ensure wolfTarget is cleared as it's derived
+      },
       lovers:
         finalActions.cupidLinks && finalActions.cupidLinks.length === 2
           ? finalActions.cupidLinks

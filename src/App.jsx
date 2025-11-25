@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Moon, Sun, Shield, Eye, Skull, Users, Play, RotateCcw, Check, Fingerprint, Crosshair, Smile, Zap, Heart, Sparkles, Ghost, Hammer, Info, Copy, Crown, Radio } from 'lucide-react';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { ROLES, PHASES } from './constants';
@@ -13,6 +13,7 @@ import RoleRevealScreen from './components/screens/RoleRevealScreen';
 import NightIntroScreen from './components/screens/NightIntroScreen';
 import DayRevealScreen from './components/screens/DayRevealScreen';
 import DayVoteScreen from './components/screens/DayVoteScreen';
+import WerewolfNightActionScreen from './components/screens/WerewolfNightActionScreen';
 import { rtdb } from "./firebase";
 
 
@@ -319,12 +320,12 @@ export default function App() {
     // WEREWOLF
     if (gameState.phase === PHASES.NIGHT_WEREWOLF) {
       return (
-        <NightActionScreen
-          title="Werewolf" subtitle="Choose a victim together." color="red"
-          players={players.filter(p => p.isAlive)}
-          onAction={(id) => advanceNight('wolfTarget', id)}
+        <WerewolfNightActionScreen
+          gameState={gameState}
+          players={players}
+          user={user}
           myPlayer={myPlayer}
-          extras={(p) => p.role === ROLES.WEREWOLF.id && <span className="text-xs text-red-500 font-bold ml-2">(ALLY)</span>}
+          advanceNight={advanceNight}
           phaseEndTime={gameState.phaseEndTime}
         />
       );

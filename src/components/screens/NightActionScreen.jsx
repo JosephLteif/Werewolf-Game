@@ -11,8 +11,7 @@ export default function NightActionScreen({
   multiSelect,
   maxSelect,
   canSkip,
-  phaseEndTime,
-  myPlayer
+  phaseEndTime
 }) {
   const [targets, setTargets] = useState([]);
   const [now, setNow] = useState(() => Date.now());

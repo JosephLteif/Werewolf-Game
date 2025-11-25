@@ -54,7 +54,7 @@ function initialRoomState(hostUser, code) {
       doctorProtect: null,
       sorcererCheck: null,
       vigilanteTarget: null,
-      wolfTarget: null,
+      werewolfVotes: {},
       cupidLinks: [],
     },
     vigilanteAmmo: {},
