@@ -1,5 +1,7 @@
 import { ROLES, PHASES } from '../constants';
-import { checkWin, getPlayersByRole, findPlayerById } from '../utils/gameUtils';
+import { checkWinCondition } from '../utils/winConditions';
+import { getPlayersByRole, findPlayerById } from '../utils/playersUtils';
+import { handleDoppelgangerTransformation, determineFirstNightPhase } from '../utils/gameLogic';
 
 // Helper functions for night actions
 const aggregateWerewolfVotes = (werewolfVotes) => {
@@ -68,16 +70,7 @@ const handleLoverDeaths = (newPlayers, gameState, doctorProtect, deaths) => {
   }
 };
 
-const handleDoppelgangerTransformationOnDeath = (newPlayers, gameState, deaths) => {
-  deaths.forEach((victim) => {
-    if (gameState.doppelgangerTarget === victim.id) {
-      const doppelganger = getPlayersByRole(newPlayers, ROLES.DOPPELGANGER.id)[0];
-      if (doppelganger && doppelganger.isAlive) {
-        doppelganger.role = victim.role;
-      }
-    }
-  });
-};
+
 
 const checkSorcererSuccess = (newPlayers, sorcererCheck) => {
   if (sorcererCheck) {
@@ -172,23 +165,7 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, nightAction
 };
 
 export const startNight = async (gameState, updateGame, players, now) => {
-  const hasCupid = players.some(
-    (p) => p.role === ROLES.CUPID.id && p.isAlive
-  );
-  const hasLovers = gameState.lovers && gameState.lovers.length > 0;
-
-  let firstPhase = PHASES.NIGHT_WEREWOLF;
-
-  const hasDoppelganger = players.some(
-    (p) => p.role === ROLES.DOPPELGANGER.id && p.isAlive
-  );
-  const hasDoppelgangerTarget = gameState.doppelgangerTarget;
-
-  if (hasDoppelganger && !hasDoppelgangerTarget) {
-    firstPhase = PHASES.NIGHT_DOPPELGANGER;
-  } else if (hasCupid && !hasLovers) {
-    firstPhase = PHASES.NIGHT_CUPID;
-  }
+  let firstPhase = determineFirstNightPhase(players, gameState);
 
   await updateGame({
     phase: firstPhase,
@@ -321,8 +298,9 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
   handleLoverDeaths(newPlayers, gameState, finalActions.doctorProtect, deaths);
 
   // Doppelgänger Transformation (Night Death)
-  handleDoppelgangerTransformationOnDeath(newPlayers, gameState, deaths);
-
+  deaths.forEach(victim => {
+    handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
+  });
   // Check Hunter
   const hunterDied = deaths.find((p) => p.role === ROLES.HUNTER.id);
   let nextPhase = PHASES.DAY_REVEAL;
@@ -335,7 +313,15 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
     log += ' The Hunter died and seeks revenge!';
     nextPhase = PHASES.HUNTER_ACTION;
   } else {
-    if (checkWin(newPlayers, gameState, updateGame)) return;
+    const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+    if (winResult) {
+      await updateGame({
+        players: newPlayers,
+        ...winResult,
+        phase: PHASES.GAME_OVER,
+      });
+      return;
+    }
   }
 
   await updateGame({
@@ -398,7 +384,15 @@ export const handleHunterShot = async (gameState, updateGame, players, targetId)
 
   let log = gameState.dayLog + ` The Hunter shot ${victim.name}!`;
 
-  if (checkWin(newPlayers, gameState, updateGame)) return;
+  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+  if (winResult) {
+    await updateGame({
+      players: newPlayers,
+      ...winResult,
+      phase: PHASES.GAME_OVER,
+    });
+    return;
+  }
 
   const wasNightDeath = gameState.dayLog.includes('died');
 

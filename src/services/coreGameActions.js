@@ -1,6 +1,6 @@
-import { assignRolesAndStartGame, markPlayerReady } from '../services/roles';
-import { startNight, advanceNight, resolveNight, handleHunterShot } from '../services/nightActions';
-import { castPlayerVote, lockPlayerVote, resolveDayVoting } from '../services/voting';
+import { assignRolesAndStartGame, markPlayerReady } from './roles';
+import { startNight, advanceNight, resolveNight, handleHunterShot } from './nightActions';
+import { castPlayerVote, lockPlayerVote, resolveDayVoting } from './voting';
 
 export function coreGameActions(
   gameState,

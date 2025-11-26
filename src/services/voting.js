@@ -1,5 +1,7 @@
 import { ROLES, PHASES } from '../constants';
-import { checkWin, findPlayerById } from '../utils/gameUtils';
+import { checkWinCondition } from '../utils/winConditions';
+import { findPlayerById } from '../utils/playersUtils';
+import { handleDoppelgangerTransformation } from '../utils/gameLogic';
 
 /**
  * Voting Service
@@ -108,16 +110,7 @@ const handleJesterTannerWin = async (victim, newPlayers, gameState, updateGame) 
   return true;
 };
 
-const handleDoppelgangerTransformationOnVote = (victim, newPlayers, gameState) => {
-  if (gameState.doppelgangerTarget === victim.id) {
-    const doppelganger = newPlayers.find(
-      (p) => p.role === ROLES.DOPPELGANGER.id
-    );
-    if (doppelganger && doppelganger.isAlive) {
-      doppelganger.role = victim.role;
-    }
-  }
-};
+
 
 const handleLoverDeathOnVote = (victim, newPlayers, gameState) => {
   if (gameState.lovers && gameState.lovers.includes(victim.id)) {
@@ -171,7 +164,7 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
   }
 
   // Doppelgänger Transformation (Voting Death)
-  handleDoppelgangerTransformationOnVote(victim, newPlayers, gameState);
+  handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
 
   // Lovers Check
   handleLoverDeathOnVote(victim, newPlayers, gameState);
@@ -181,7 +174,15 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
     if (await handleHunterVoteDeath(victim, newPlayers, gameState, updateGame)) return;
   }
 
-  if (checkWin(newPlayers, gameState, updateGame)) return;
+  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+  if (winResult) {
+    await updateGame({
+      players: newPlayers,
+      ...winResult,
+      phase: PHASES.GAME_OVER,
+    });
+    return;
+  }
 
   await updateGame({
     players: newPlayers,

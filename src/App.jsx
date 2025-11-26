@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Shield, Eye, Skull, Users, Play, RotateCcw, Check, Fingerprint, Crosshair, Smile, Zap, Heart, Sparkles, Ghost, Hammer, Info, Copy, Crown, Radio } from 'lucide-react';
+import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info } from 'lucide-react';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { ROLES, PHASES } from './constants';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './rooms';
 import { useAuth } from './hooks/useAuth';
 import { useGameState } from './hooks/useGameState';
-import { coreGameActions } from './hooks/coreGameActions';
+import { coreGameActions } from './services/coreGameActions';
 import NightActionScreen from './components/screens/NightActionScreen';
 import DeadScreen from './components/screens/DeadScreen';
 import LobbyScreen from './components/screens/LobbyScreen';

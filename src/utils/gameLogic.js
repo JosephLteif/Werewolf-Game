@@ -66,76 +66,6 @@ export function determineFirstNightPhase(players, gameState) {
 }
 
 /**
- * Calculates the next night phase in the sequence
- */
-export function calculateNextNightPhase(currentPhase, players, gameState, newActions) {
-    const sequence = [
-        PHASES.NIGHT_DOPPELGANGER,
-        PHASES.NIGHT_CUPID,
-        PHASES.NIGHT_WEREWOLF,
-        PHASES.NIGHT_MINION,
-        PHASES.NIGHT_SORCERER,
-        PHASES.NIGHT_DOCTOR,
-        PHASES.NIGHT_SEER,
-        PHASES.NIGHT_MASON,
-        PHASES.NIGHT_VIGILANTE
-    ];
-
-    const currentIdx = sequence.indexOf(currentPhase);
-    let nextPhase = 'RESOLVE';
-
-    const hasRole = (rid) => players.some(pl => pl.role === rid && pl.isAlive);
-
-    for (let i = currentIdx + 1; i < sequence.length; i++) {
-        const p = sequence[i];
-
-        // Skip phases that only happen once
-        if (p === PHASES.NIGHT_CUPID && (gameState.lovers && gameState.lovers.length > 0)) continue;
-        if (p === PHASES.NIGHT_DOPPELGANGER && (gameState.doppelgangerTarget || newActions.doppelgangerCopy)) continue;
-
-        // Check if phase should be activated
-        if (p === PHASES.NIGHT_DOPPELGANGER && hasRole(ROLES.DOPPELGANGER.id) && !gameState.doppelgangerTarget) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_CUPID && hasRole(ROLES.CUPID.id) && (!gameState.lovers || gameState.lovers.length === 0)) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_WEREWOLF) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_MINION && hasRole(ROLES.MINION.id)) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_SORCERER && hasRole(ROLES.SORCERER.id)) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_DOCTOR && hasRole(ROLES.DOCTOR.id)) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_SEER && hasRole(ROLES.SEER.id)) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_MASON && hasRole(ROLES.MASON.id)) {
-            nextPhase = p;
-            break;
-        }
-        if (p === PHASES.NIGHT_VIGILANTE && hasRole(ROLES.VIGILANTE.id)) {
-            nextPhase = p;
-            break;
-        }
-    }
-
-    return nextPhase;
-}
-
-/**
  * Handles Doppelgänger transformation when their target dies
  */
 export function handleDoppelgangerTransformation(players, doppelgangerTarget, victimId) {
@@ -147,35 +77,4 @@ export function handleDoppelgangerTransformation(players, doppelgangerTarget, vi
             doppelganger.role = victim.role;
         }
     }
-}
-
-/**
- * Handles lover deaths (if one dies, the other dies too)
- */
-export function handleLoverDeaths(players, lovers) {
-    const deaths = [];
-    let loversDied = true;
-
-    while (loversDied) {
-        loversDied = false;
-        if (lovers && lovers.length === 2) {
-            const [l1Id, l2Id] = lovers;
-            const l1 = players.find(p => p.id === l1Id);
-            const l2 = players.find(p => p.id === l2Id);
-
-            if (l1 && l2) {
-                if (!l1.isAlive && l2.isAlive) {
-                    l2.isAlive = false;
-                    deaths.push(l2);
-                    loversDied = true;
-                } else if (!l2.isAlive && l1.isAlive) {
-                    l1.isAlive = false;
-                    deaths.push(l1);
-                    loversDied = true;
-                }
-            }
-        }
-    }
-
-    return deaths;
 }
