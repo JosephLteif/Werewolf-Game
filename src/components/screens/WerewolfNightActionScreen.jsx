@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Skull } from 'lucide-react';
 import { ROLES } from '../../constants';
+import VoterAvatars from '../VoterAvatars';
 
 export default function WerewolfNightActionScreen({
   gameState,
@@ -156,21 +157,8 @@ export default function WerewolfNightActionScreen({
                         <span>{displayedVoteCount} {displayedVoteCount === 1 ? 'vote' : 'votes'}</span>
 
                         {/* Show avatars of voters */}
-                        <div className="flex -space-x-2 ml-2">
-                          {votesByTarget[p.id]?.map(voterId => {
-                            const voter = players.find(pl => pl.id === voterId);
-                            if (!voter) return null;
-                            return (
-                              <div
-                                key={voterId}
-                                className="w-6 h-6 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
-                                style={{ backgroundColor: voter.avatarColor }}
-                                title={voter.name}
-                              >
-                                {voter.name[0]}
-                              </div>
-                            );
-                          })}
+                        <div className="ml-2">
+                          <VoterAvatars voterIds={votesByTarget[p.id]} players={players} size="6" borderColor="border-slate-900" />
                         </div>
                       </div>
                     )}

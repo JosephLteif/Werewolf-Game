@@ -1,5 +1,6 @@
 
 import { Check } from 'lucide-react';
+import VoterAvatars from '../VoterAvatars';
 
 export default function DayVoteScreen({ gameState, players, amAlive, castVote, lockVote, now, user }) {
   // Calculate vote counts
@@ -98,22 +99,7 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
                       )}
 
                       {/* Show avatars of voters */}
-                      <div className="flex -space-x-2">
-                        {votesByTarget[p.id]?.map(voterId => {
-                          const voter = players.find(pl => pl.id === voterId);
-                          if (!voter) return null;
-                          return (
-                            <div
-                              key={voterId}
-                              className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-white shadow-sm"
-                              style={{ backgroundColor: voter.avatarColor }}
-                              title={voter.name}
-                            >
-                              {voter.name[0]}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <VoterAvatars voterIds={votesByTarget[p.id]} players={players} />
 
                       {isPlayerLocked && (
                         <span className="bg-green-500 text-white px-2 py-0.5 rounded-full font-bold text-[10px]">
@@ -146,6 +132,10 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
                     {voteCounts['skip']}
                   </span>
                 )}
+
+                {/* Show avatars of voters for skip */}
+                <VoterAvatars voterIds={votesByTarget['skip']} players={players} />
+
                 {myVote === 'skip' && <Check className="w-5 h-5 text-slate-600" />}
               </div>
             </div>
