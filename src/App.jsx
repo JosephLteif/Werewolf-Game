@@ -14,6 +14,7 @@ import NightIntroScreen from './components/screens/NightIntroScreen';
 import DayRevealScreen from './components/screens/DayRevealScreen';
 import DayVoteScreen from './components/screens/DayVoteScreen';
 import WerewolfNightActionScreen from './components/screens/WerewolfNightActionScreen';
+import TeammateList from './components/TeammateList';
 import { rtdb } from "./firebase";
 
 
@@ -147,6 +148,13 @@ export default function App() {
   const myPlayer = players.find(p => p.id === user?.uid);
   const amAlive = myPlayer?.isAlive;
 
+  const wrapGameContent = (children) => (
+    <>
+      <TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />
+      {children}
+    </>
+  );
+
   if (!joined || !gameState) {
     return (
       <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6">
@@ -222,7 +230,7 @@ export default function App() {
 
   // --- ROLE REVEAL ---
   if (gameState.phase === PHASES.ROLE_REVEAL) {
-    return (
+    return wrapGameContent(
       <RoleRevealScreen
         myPlayer={myPlayer}
         markReady={markReady}
@@ -249,12 +257,12 @@ export default function App() {
 
     // NIGHT INTRO
     if (gameState.phase === PHASES.NIGHT_INTRO) {
-      return <NightIntroScreen isHost={isHost} startNight={startNight} nightIntroStars={nightIntroStars} />;
+      return wrapGameContent(<NightIntroScreen isHost={isHost} startNight={startNight} nightIntroStars={nightIntroStars} />);
     }
 
     // WAITING SCREEN (If not my turn OR I am dead)
     if (!amAlive) {
-      return (
+      return wrapGameContent(
         <DeadScreen
           winner={null}
           winners={gameState?.winners || []}
@@ -269,7 +277,7 @@ export default function App() {
     }
 
     if (!isMyTurn) {
-      return (
+      return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-indigo-900/30 flex items-center justify-center mb-6 animate-pulse">
@@ -291,7 +299,7 @@ export default function App() {
 
     // CUPID
     if (gameState.phase === PHASES.NIGHT_CUPID) {
-      return (
+      return wrapGameContent(
         <NightActionScreen
           title="Cupid" subtitle="Choose TWO lovers." color="purple"
           players={players.filter(p => p.isAlive && p.id !== user.uid)}
@@ -306,7 +314,7 @@ export default function App() {
 
     // DOPPELGANGER
     if (gameState.phase === PHASES.NIGHT_DOPPELGANGER) {
-      return (
+      return wrapGameContent(
         <NightActionScreen
           title="Doppelgänger" subtitle="Choose a player to copy if they die." color="slate"
           players={players.filter(p => p.isAlive && p.id !== user.uid)}
@@ -319,7 +327,7 @@ export default function App() {
 
     // WEREWOLF
     if (gameState.phase === PHASES.NIGHT_WEREWOLF) {
-      return (
+      return wrapGameContent(
         <WerewolfNightActionScreen
           gameState={gameState}
           players={players}
@@ -333,7 +341,7 @@ export default function App() {
 
     // MINION
     if (gameState.phase === PHASES.NIGHT_MINION) {
-      return (
+      return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-red-950 via-rose-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
           {myPlayer && (
             <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-red-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
@@ -369,7 +377,7 @@ export default function App() {
 
     // SORCERER
     if (gameState.phase === PHASES.NIGHT_SORCERER) {
-      return (
+      return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-purple-950 via-pink-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
           {myPlayer && (
             <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-purple-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
@@ -435,7 +443,7 @@ export default function App() {
 
     // DOCTOR
     if (gameState.phase === PHASES.NIGHT_DOCTOR) {
-      return (
+      return wrapGameContent(
         <NightActionScreen
           title="Doctor" subtitle="Protect someone." color="blue"
           players={players.filter(p => p.isAlive)}
@@ -449,7 +457,7 @@ export default function App() {
 
     // SEER
     if (gameState.phase === PHASES.NIGHT_SEER) {
-      return (
+      return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
           {myPlayer && (
             <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-purple-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
@@ -510,7 +518,7 @@ export default function App() {
 
     // MASON
     if (gameState.phase === PHASES.NIGHT_MASON) {
-      return (
+      return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-blue-950 via-cyan-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
           {myPlayer && (
             <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-blue-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
@@ -550,7 +558,7 @@ export default function App() {
     // VIGILANTE
     if (gameState.phase === PHASES.NIGHT_VIGILANTE) {
       const ammo = gameState.vigilanteAmmo[user.uid] || 0;
-      return (
+      return wrapGameContent(
         <NightActionScreen
           title={`Vigilante (${ammo} ammo)`}
           subtitle={ammo > 0 ? "Choose your target carefully." : "You're out of ammo."}
@@ -575,7 +583,7 @@ export default function App() {
   // --- HUNTER ACTION ---
   if (gameState.phase === PHASES.HUNTER_ACTION) {
     if (myPlayer.role === ROLES.HUNTER.id && !myPlayer.isAlive && !gameState.dayLog.includes("shot")) {
-      return (
+      return wrapGameContent(
         <div className="min-h-screen bg-red-950 text-white p-6 flex flex-col items-center justify-center">
           <Crosshair className="w-16 h-16 mb-4" />
           <h2 className="text-2xl font-bold mb-4">REVENGE!</h2>
@@ -588,14 +596,14 @@ export default function App() {
             ))}
           </div>
         </div>
-      )
+      );
     }
-    return <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center p-6 text-center">Waiting for Hunter...</div>;
+    return wrapGameContent(<div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center p-6 text-center">Waiting for Hunter...</div>);
   }
 
   // --- DAY PHASES ---
   if (gameState.phase === PHASES.DAY_REVEAL) {
-    return (
+    return wrapGameContent(
       <DayRevealScreen
         myPlayer={myPlayer}
         gameState={gameState}
@@ -607,7 +615,7 @@ export default function App() {
   }
 
   if (gameState.phase === PHASES.DAY_VOTE) {
-    return (
+    return wrapGameContent(
       <DayVoteScreen
         myPlayer={myPlayer}
         gameState={gameState}
@@ -623,7 +631,7 @@ export default function App() {
 
   // --- GAME OVER ---
   if (gameState.phase === PHASES.GAME_OVER) {
-    return (
+    return wrapGameContent(
       <DeadScreen
         winner={gameState.winner}
         winners={gameState.winners}
