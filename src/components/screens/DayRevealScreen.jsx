@@ -2,7 +2,7 @@
 import { Sun } from 'lucide-react';
 import { PHASES } from '../../constants';
 
-export default function DayRevealScreen({ myPlayer, gameState, isHost, updateGame, now }) {
+export default function DayRevealScreen({ gameState, isHost, updateGame, now }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
       {/* Animated sun rays */}

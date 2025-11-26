@@ -1,7 +1,7 @@
 
 import { Check } from 'lucide-react';
 
-export default function DayVoteScreen({ myPlayer, gameState, players, amAlive, castVote, lockVote, now, user }) {
+export default function DayVoteScreen({ gameState, players, amAlive, castVote, lockVote, now, user }) {
   // Calculate vote counts
   const voteCounts = {};
   const alivePlayers = players.filter(p => p.isAlive);

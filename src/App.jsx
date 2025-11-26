@@ -16,6 +16,7 @@ import DayVoteScreen from './components/screens/DayVoteScreen';
 import WerewolfNightActionScreen from './components/screens/WerewolfNightActionScreen';
 import TeammateList from './components/TeammateList';
 import PlayerRoleDisplay from './components/PlayerRoleDisplay';
+import ActiveRolesPanel from './components/ActiveRolesPanel';
 import { rtdb } from "./firebase";
 
 
@@ -138,7 +139,16 @@ export default function App() {
 
   const wrapGameContent = (children) => (
     <>
-      <TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />
+      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
+        <TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />
+        {gameState.settings.showActiveRolesPanel && (
+          <ActiveRolesPanel
+            activeRoles={gameState.settings.activeRoles}
+            wolfCount={gameState.settings.wolfCount}
+            playerCount={players.length}
+          />
+        )}
+      </div>
       <PlayerRoleDisplay myPlayer={myPlayer} />
       {children}
     </>
@@ -151,7 +161,7 @@ export default function App() {
           <h1 className="text-5xl font-black tracking-tighter text-indigo-500 flex items-center justify-center gap-3">
             <Moon className="w-12 h-12" /> NIGHTFALL
           </h1>
-          <p className="text-slate-400">Multiplayer • Join Room</p>
+          <p className="text-slate-400">Local Multiplayer • Join Room</p>
         </div>
 
         <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-slate-700 space-y-4">
@@ -184,7 +194,18 @@ export default function App() {
               <div className="flex-grow border-t border-slate-700"></div>
             </div>
             <button onClick={createRoom} disabled={!user} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-lg font-bold">Create New Room</button>
+            <button onClick={() => setShowRoleInfo('RULES')} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-lg font-bold flex items-center justify-center gap-2">
+              <Info className="w-4 h-4" /> Rule Book
+            </button>
           </div>
+
+          {user && (
+            <div className="text-center pt-2">
+              <div className="text-xs text-slate-600 mb-1">ID: {user.uid.slice(0, 6)}...</div>
+              <button onClick={resetIdentity} className="text-xs text-red-400 hover:text-red-300 underline">Reset Identity</button>
+              <div className="text-[10px] text-slate-600 mt-2">Tip: Use Incognito windows to test multiple players.</div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -551,7 +572,6 @@ export default function App() {
   if (gameState.phase === PHASES.DAY_REVEAL) {
     return wrapGameContent(
       <DayRevealScreen
-        myPlayer={myPlayer}
         gameState={gameState}
         isHost={isHost}
         updateGame={updateGame}
@@ -563,7 +583,6 @@ export default function App() {
   if (gameState.phase === PHASES.DAY_VOTE) {
     return wrapGameContent(
       <DayVoteScreen
-        myPlayer={myPlayer}
         gameState={gameState}
         players={players}
         amAlive={amAlive}
