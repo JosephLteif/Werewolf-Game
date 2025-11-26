@@ -7,7 +7,8 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
     if (!showRoleInfo) return null;
 
     const isRules = showRoleInfo === 'RULES';
-    const role = isRules ? null : Object.values(ROLES).find(r => r.id === showRoleInfo);
+    const isAllRoles = showRoleInfo === 'ALL_ROLES';
+    const role = (isRules || isAllRoles) ? null : Object.values(ROLES).find(r => r.id === showRoleInfo);
 
     return (
         <div
@@ -18,7 +19,7 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                 className="bg-slate-800 p-6 rounded-2xl max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
             >
-                {isRules ? (
+                {isRules && (
                     <>
                         <h3 className="text-2xl font-black text-indigo-400 mb-4 flex items-center gap-2">
                             <Info className="w-6 h-6" /> Rule Book
@@ -50,7 +51,26 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                             </section>
                         </div>
                     </>
-                ) : (
+                )}
+                {isAllRoles && (
+                    <>
+                        <h3 className="text-2xl font-black text-indigo-400 mb-4 flex items-center gap-2">
+                            <Info className="w-6 h-6" /> All Available Roles
+                        </h3>
+                        <div className="space-y-4">
+                            {Object.values(ROLES).filter(r => r.selectable !== false).map(r => (
+                                <div key={r.id} className="bg-slate-900 p-3 rounded-xl flex items-center gap-3 border border-slate-700">
+                                    {React.createElement(r.icon, { className: "w-8 h-8 text-indigo-400" })}
+                                    <div className="flex-1">
+                                        <h4 className="text-lg font-bold">{r.name}</h4>
+                                        <p className="text-xs text-slate-400">{r.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+                {(!isRules && !isAllRoles) && role && (
                     <>
                         <div className="flex items-center gap-4 mb-4">
                             {React.createElement(role.icon, { className: "w-12 h-12 text-indigo-400" })}

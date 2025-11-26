@@ -15,6 +15,7 @@ import DayRevealScreen from './components/screens/DayRevealScreen';
 import DayVoteScreen from './components/screens/DayVoteScreen';
 import WerewolfNightActionScreen from './components/screens/WerewolfNightActionScreen';
 import TeammateList from './components/TeammateList';
+import PlayerRoleDisplay from './components/PlayerRoleDisplay';
 import { rtdb } from "./firebase";
 
 
@@ -138,6 +139,7 @@ export default function App() {
   const wrapGameContent = (children) => (
     <>
       <TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />
+      <PlayerRoleDisplay myPlayer={myPlayer} />
       {children}
     </>
   );
@@ -330,14 +332,6 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_MINION) {
       return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-red-950 via-rose-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
-          {myPlayer && (
-            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-red-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-                {myPlayer.name[0]}
-              </div>
-              <span className="text-xs font-bold text-red-200">{myPlayer.name}</span>
-            </div>
-          )}
           <div className="max-w-md w-full">
             <div className="mb-8">
               <Ghost className="w-24 h-24 text-red-400 mx-auto mb-4 drop-shadow-lg" />
@@ -366,14 +360,6 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_SORCERER) {
       return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-purple-950 via-pink-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
-          {myPlayer && (
-            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-purple-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-                {myPlayer.name[0]}
-              </div>
-              <span className="text-xs font-bold text-purple-200">{myPlayer.name}</span>
-            </div>
-          )}
           <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
             <div className="text-center mb-8 mt-4">
               <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4 drop-shadow-lg" />
@@ -446,14 +432,6 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_SEER) {
       return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
-          {myPlayer && (
-            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-purple-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-                {myPlayer.name[0]}
-              </div>
-              <span className="text-xs font-bold text-purple-200">{myPlayer.name}</span>
-            </div>
-          )}
           <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
             <div className="text-center mb-8 mt-4">
               <Eye className="w-16 h-16 text-purple-400 mx-auto mb-4 drop-shadow-lg" />
@@ -507,14 +485,6 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_MASON) {
       return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-blue-950 via-cyan-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
-          {myPlayer && (
-            <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-blue-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-                {myPlayer.name[0]}
-              </div>
-              <span className="text-xs font-bold text-blue-200">{myPlayer.name}</span>
-            </div>
-          )}
           <div className="max-w-md w-full">
             <div className="mb-8">
               <Hammer className="w-24 h-24 text-blue-400 mx-auto mb-4 drop-shadow-lg" />

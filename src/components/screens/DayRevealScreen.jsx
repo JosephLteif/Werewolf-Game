@@ -5,14 +5,6 @@ import { PHASES } from '../../constants';
 export default function DayRevealScreen({ myPlayer, gameState, isHost, updateGame, now }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-      {myPlayer && (
-        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur border border-orange-200 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-            {myPlayer.name[0]}
-          </div>
-          <span className="text-xs font-bold text-slate-600">{myPlayer.name}</span>
-        </div>
-      )}
       {/* Animated sun rays */}
       <div className="absolute inset-0 opacity-20">
         {[...Array(12)].map((_, i) => (

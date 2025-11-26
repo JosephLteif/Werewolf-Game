@@ -24,14 +24,6 @@ export default function DayVoteScreen({ myPlayer, gameState, players, amAlive, c
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex flex-col relative">
-      {myPlayer && (
-        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur border border-orange-200 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
-          <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: myPlayer.avatarColor }}>
-            {myPlayer.name[0]}
-          </div>
-          <span className="text-xs font-bold text-slate-600">{myPlayer.name}</span>
-        </div>
-      )}
       <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
         {/* Header */}
         <div className="text-center mb-6">
