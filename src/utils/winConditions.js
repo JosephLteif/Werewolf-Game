@@ -62,8 +62,10 @@ export function isPlayerWinner(player, winners, lovers) {
 
     if (winners.includes('WEREWOLVES')) {
         const role = ROLES[player.role.toUpperCase()];
-        if (role.id === ROLES.SORCERER.id && player.foundSeer) {
-            isWinner = true;
+        if (role.id === ROLES.SORCERER.id) {
+            if (player.foundSeer) {
+                isWinner = true;
+            }
         } else if (role.alignment === 'evil') {
             isWinner = true;
         }
