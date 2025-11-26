@@ -5,7 +5,7 @@ import { ROLES, PHASES } from './constants';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './rooms';
 import { useAuth } from './hooks/useAuth';
 import { useGameState } from './hooks/useGameState';
-import { useGameLogic } from './hooks/useGameLogic';
+import { coreGameActions } from './hooks/coreGameActions';
 import NightActionScreen from './components/screens/NightActionScreen';
 import DeadScreen from './components/screens/DeadScreen';
 import LobbyScreen from './components/screens/LobbyScreen';
@@ -64,12 +64,12 @@ export default function App() {
   const {
     startGame,
     markReady,
-    startNight,
-    advanceNight,
-    handleHunterShot,
+    startNightPhase,
+    advanceNightPhase,
+    handleHunterShotAction,
     castVote,
     lockVote,
-  } = useGameLogic(gameState, updateGame, players, user, isHost, now);
+  } = coreGameActions(gameState, updateGame, players, user, isHost, now);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -257,7 +257,7 @@ export default function App() {
 
     // NIGHT INTRO
     if (gameState.phase === PHASES.NIGHT_INTRO) {
-      return wrapGameContent(<NightIntroScreen isHost={isHost} startNight={startNight} nightIntroStars={nightIntroStars} />);
+      return wrapGameContent(<NightIntroScreen isHost={isHost} startNight={startNightPhase} nightIntroStars={nightIntroStars} />);
     }
 
     // WAITING SCREEN (If not my turn OR I am dead)
@@ -303,7 +303,7 @@ export default function App() {
         <NightActionScreen
           title="Cupid" subtitle="Choose TWO lovers." color="purple"
           players={players.filter(p => p.isAlive && p.id !== user.uid)}
-          onAction={(ids) => advanceNight('cupidLinks', ids)}
+          onAction={(ids) => advanceNightPhase('cupidLinks', ids)}
           myPlayer={myPlayer}
           multiSelect={true}
           maxSelect={2}
@@ -318,7 +318,7 @@ export default function App() {
         <NightActionScreen
           title="Doppelgänger" subtitle="Choose a player to copy if they die." color="slate"
           players={players.filter(p => p.isAlive && p.id !== user.uid)}
-          onAction={(id) => advanceNight('doppelgangerCopy', id)}
+          onAction={(id) => advanceNightPhase('doppelgangerCopy', id)}
           myPlayer={myPlayer}
           phaseEndTime={gameState.phaseEndTime}
         />
@@ -333,7 +333,7 @@ export default function App() {
           players={players}
           user={user}
           myPlayer={myPlayer}
-          advanceNight={advanceNight}
+          advanceNight={advanceNightPhase}
           phaseEndTime={gameState.phaseEndTime}
         />
       );
@@ -369,7 +369,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <button onClick={() => advanceNight(null, null)} className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
+            <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
           </div>
         </div>
       );
@@ -402,7 +402,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     setSeerMessage(null);
-                    advanceNight('sorcererCheck', sorcererTarget);
+                    advanceNightPhase('sorcererCheck', sorcererTarget);
                     setSorcererTarget(null);
                   }}
                   className="w-full max-w-md bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
@@ -433,7 +433,7 @@ export default function App() {
                 <div className="text-center text-purple-400 font-mono font-bold text-2xl">
                   {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
                 </div>
-                <button onClick={() => advanceNight(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
+                <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
               </>
             )}
           </div>
@@ -447,7 +447,7 @@ export default function App() {
         <NightActionScreen
           title="Doctor" subtitle="Protect someone." color="blue"
           players={players.filter(p => p.isAlive)}
-          onAction={(id) => advanceNight('doctorProtect', id)}
+          onAction={(id) => advanceNightPhase('doctorProtect', id)}
           myPlayer={myPlayer}
           canSkip={true}
           phaseEndTime={gameState.phaseEndTime}
@@ -480,7 +480,7 @@ export default function App() {
                   <p className="text-2xl font-bold">{seerMessage}</p>
                 </div>
                 <button
-                  onClick={() => { setSeerMessage(null); advanceNight(null, null); }}
+                  onClick={() => { setSeerMessage(null); advanceNightPhase(null, null); }}
                   className="w-full max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
                 >
                   Continue
@@ -508,7 +508,7 @@ export default function App() {
                 <div className="text-center text-purple-400 font-mono font-bold text-2xl">
                   {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
                 </div>
-                <button onClick={() => advanceNight(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
+                <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
               </>
             )}
           </div>
@@ -550,7 +550,7 @@ export default function App() {
                 <div className="text-slate-400 italic bg-slate-900/50 p-6 rounded-2xl border border-slate-700">You are the only Mason.</div>
               )}
             </div>
-            <button onClick={() => advanceNight(null, null)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
+            <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
           </div>
         </div>
       );
@@ -567,9 +567,9 @@ export default function App() {
           onAction={(id) => {
             if (ammo > 0 && id) {
               updateGame({ vigilanteAmmo: { ...gameState.vigilanteAmmo, [user.uid]: 0 } });
-              advanceNight('vigilanteTarget', id);
+              advanceNightPhase('vigilanteTarget', id);
             } else {
-              advanceNight('vigilanteTarget', null);
+              advanceNightPhase('vigilanteTarget', null);
             }
           }}
           myPlayer={myPlayer}
@@ -590,7 +590,7 @@ export default function App() {
           <p className="mb-6 text-center">Select someone to take with you.</p>
           <div className="w-full space-y-2">
             {players.filter(p => p.isAlive).map(p => (
-              <button key={p.id} onClick={() => handleHunterShot(p.id)} className="w-full p-4 bg-red-900/50 border border-red-500 rounded-xl font-bold">
+              <button key={p.id} onClick={() => handleHunterShotAction(p.id)} className="w-full p-4 bg-red-900/50 border border-red-500 rounded-xl font-bold">
                 {p.name}
               </button>
             ))}

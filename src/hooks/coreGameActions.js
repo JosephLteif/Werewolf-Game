@@ -2,7 +2,7 @@ import { assignRolesAndStartGame, markPlayerReady } from '../services/roles';
 import { startNight, advanceNight, resolveNight, handleHunterShot } from '../services/nightActions';
 import { castPlayerVote, lockPlayerVote, resolveDayVoting } from '../services/voting';
 
-export function useGameLogic(
+export function coreGameActions(
   gameState,
   updateGame,
   players,
