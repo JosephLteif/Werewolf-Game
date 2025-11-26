@@ -22,6 +22,7 @@ export default function WerewolfNightActionScreen({
   const alivePlayers = players.filter(p => p.isAlive);
   const votingWerewolves = alivePlayers.filter(p => p.role === ROLES.WEREWOLF.id);
   const totalVotingWerewolves = votingWerewolves.length;
+  const confirmedVotesCount = Object.values(gameState.nightActions?.werewolfVotes || {}).length;
 
   // Combine confirmed and provisional votes, with confirmed taking precedence
   const effectiveWerewolfVotes = {};
@@ -58,14 +59,8 @@ export default function WerewolfNightActionScreen({
     votesByTarget[targetId].push(voterId);
   });
 
-  const myProvisionalVote = gameState.nightActions?.werewolfProvisionalVotes?.[user.uid];
   const myConfirmedVote = gameState.nightActions?.werewolfVotes?.[user.uid];
-  const myVote = myConfirmedVote || myProvisionalVote; // My current effective vote
-
-  // All werewolves have an effective vote (either provisional or confirmed)
-  const allWerewolvesHaveVoted = votingWerewolves.every(
-    (ww) => gameState.nightActions?.werewolfVotes?.[ww.id] || gameState.nightActions?.werewolfProvisionalVotes?.[ww.id]
-  );
+  const myVote = myConfirmedVote; // My current effective vote
 
   const handleCastVote = (targetId) => {
     setSelectedTargetId(targetId);
@@ -78,7 +73,7 @@ export default function WerewolfNightActionScreen({
     }
   };
 
-  if (myVote && allWerewolvesHaveVoted) {
+  if (myConfirmedVote) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
         <div className="relative">
@@ -111,7 +106,7 @@ export default function WerewolfNightActionScreen({
           )}
           <div className="mt-3 inline-flex items-center gap-2 bg-white/10 text-red-100 px-4 py-2 rounded-full shadow-sm border border-red-700">
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
-            <span className="text-xs font-bold">{werewolvesWhoVoted} / {totalVotingWerewolves} Werewolves Voted</span>
+            <span className="text-xs font-bold">{confirmedVotesCount} / {totalVotingWerewolves} Werewolves Voted</span>
           </div>
         </div>
 

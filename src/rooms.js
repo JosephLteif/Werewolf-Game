@@ -6,13 +6,7 @@ import {
   onValue,
   serverTimestamp,
 } from "firebase/database";
-
-function generateRoomCode(length = 4) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let code = "";
-  for (let i = 0; i < length; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-  return code;
-}
+import { generateRoomCode } from "./utils"; // Import generateRoomCode from utils.js
 
 function defaultSettings() {
   return {
@@ -71,7 +65,7 @@ function initialRoomState(hostUser, code) {
  */
 export async function createRoom(hostUser, maxAttempts = 10) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const code = generateRoomCode(4);
+    const code = generateRoomCode();
     const roomRef = ref(rtdb, `rooms/${code}`);
 
     // Check existence
