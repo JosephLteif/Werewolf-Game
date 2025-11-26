@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info } from 'lucide-react';
+import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info, Check } from 'lucide-react';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { ROLES, PHASES } from './constants';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './rooms';
@@ -493,6 +493,10 @@ export default function App() {
 
     // MASON
     if (gameState.phase === PHASES.NIGHT_MASON) {
+      const myMasonReady = gameState.nightActions?.masonsReady?.[user.uid];
+      const aliveMasons = players.filter(p => p.role === ROLES.MASON.id && p.isAlive);
+      const masonsReadyCount = Object.keys(gameState.nightActions?.masonsReady || {}).length;
+
       return wrapGameContent(
         <div className="min-h-screen bg-gradient-to-br from-blue-950 via-cyan-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
           <div className="max-w-md w-full">
@@ -502,8 +506,8 @@ export default function App() {
               <p className="text-slate-400">Your trusted allies</p>
             </div>
             <div className="space-y-3 mb-8">
-              {players.filter(p => p.role === ROLES.MASON.id && p.id !== user.uid).length > 0 ? (
-                players.filter(p => p.role === ROLES.MASON.id && p.id !== user.uid).map(p => (
+              {aliveMasons.filter(p => p.id !== user.uid).length > 0 ? (
+                aliveMasons.filter(p => p.id !== user.uid).map(p => (
                   <div key={p.id} className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-2 border-blue-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
@@ -517,7 +521,19 @@ export default function App() {
                 <div className="text-slate-400 italic bg-slate-900/50 p-6 rounded-2xl border border-slate-700">You are the only Mason.</div>
               )}
             </div>
-            <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
+            {myMasonReady ? (
+              <div className="text-center py-4">
+                <div className="inline-flex items-center gap-2 bg-green-900/50 text-green-400 px-4 py-2 rounded-full font-bold">
+                  <Check className="w-5 h-5" />
+                  Waiting for others...
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {masonsReadyCount} / {aliveMasons.length} Masons ready
+                </p>
+              </div>
+            ) : (
+              <button onClick={() => advanceNightPhase('masonReady', user.uid)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
+            )}
           </div>
         </div>
       );

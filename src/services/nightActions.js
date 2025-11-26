@@ -177,6 +177,7 @@ export const startNight = async (gameState, updateGame, players, now) => {
       sorcererCheck: null,
       cupidLinks: [],
       doppelgangerCopy: null,
+      masonsReady: {},
     },
   });
 };
@@ -219,6 +220,12 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
     case 'sorcererCheck':
       newActions.sorcererCheck = actionValue;
       break;
+    case 'masonReady':
+      newActions.masonsReady = {
+        ...(newActions.masonsReady || {}),
+        [actionValue]: true,
+      };
+      break;
     default:
       if (actionType) {
         newActions[actionType] = actionValue;
@@ -236,6 +243,21 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
     if (aliveWerewolves.length > 0 && werewolvesVoted < aliveWerewolves.length) {
       await updateGame({ nightActions: newActions });
       return;
+    }
+  }
+
+  // Special check for Mason acknowledgment
+  if (gameState.phase === PHASES.NIGHT_MASON) {
+    const aliveMasons = players.filter(
+      (pl) => pl.role === ROLES.MASON.id && pl.isAlive
+    );
+    // If there's only one mason, they can proceed immediately.
+    if (aliveMasons.length > 1) {
+      const masonsReadyCount = Object.keys(newActions.masonsReady || {}).length;
+      if (masonsReadyCount < aliveMasons.length) {
+        await updateGame({ nightActions: newActions });
+        return; // Wait for all masons
+      }
     }
   }
 
