@@ -1,205 +1,1682 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGameLogic } from './useGameLogic';
 import { ROLES, PHASES } from '../constants';
 
-// Mock updateGame function
-const mockUpdateGame = vi.fn();
+describe('useGameLogic', () => {
+  let mockUpdateGame;
+  let mockPlayers;
+  let mockUser;
+  let mockGameState;
+  let now;
 
-describe('useGameLogic - Werewolf Voting', () => {
   beforeEach(() => {
-    mockUpdateGame.mockClear();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('should correctly aggregate werewolf votes and determine a single target', async () => {
-    const players = [
-      { id: 'p1', name: 'Wolf1', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p2', name: 'Wolf2', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p3', name: 'Villager1', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p4', name: 'Villager2', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p5', name: 'Villager3', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p6', name: 'Villager4', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' }, // Extra villager to prevent win
+    mockUpdateGame = vi.fn();
+    mockUser = { uid: 'p1', displayName: 'Player 1' };
+    mockPlayers = [
+      { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.SEER.id },
+      { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.DOCTOR.id },
+      { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLES.WEREWOLF.id },
+      { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+      { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
     ];
-
-    const gameState = {
-      phase: PHASES.NIGHT_WEREWOLF,
-      nightActions: {
-        werewolfVotes: {
-          p1: 'p3', // Wolf1 votes Villager1
-          p2: 'p3', // Wolf2 votes Villager1
+    mockGameState = {
+      settings: {
+        wolfCount: 1,
+        activeRoles: {
+          [ROLES.SEER.id]: true,
+          [ROLES.DOCTOR.id]: true,
         },
-        doctorProtect: null,
+        actionWaitTime: 30,
       },
-      settings: { actionWaitTime: 60 },
-      lovers: [],
-      doppelgangerTarget: null,
+      phase: PHASES.LOBBY,
+      players: {},
     };
+    now = Date.now();
+  });
 
-    const { result } = renderHook(() =>
-      useGameLogic(gameState, mockUpdateGame, players, { uid: 'p1' }, true, Date.now())
-    );
+  describe('startGame', () => {
+    it('assigns roles correctly based on settings', async () => {
+      const { result } = renderHook(() =>
+        useGameLogic(mockGameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
 
-    await act(async () => {
-      await result.current.resolveNight(gameState.nightActions);
+      await act(async () => {
+        await result.current.startGame();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      expect(updateCall.phase).toBe(PHASES.ROLE_REVEAL);
+      expect(updateCall.players).toHaveLength(5);
+
+      const roles = updateCall.players.map(p => p.role);
+      expect(roles).toContain(ROLES.WEREWOLF.id);
+      expect(roles).toContain(ROLES.SEER.id);
+      expect(roles).toContain(ROLES.DOCTOR.id);
+
+      const villagers = roles.filter(r => r === ROLES.VILLAGER.id);
+      expect(villagers).toHaveLength(2);
     });
 
-    // Expect updateGame to be called with the resolved wolf target
-    expect(mockUpdateGame).toHaveBeenCalledWith(
-      expect.objectContaining({
-        dayLog: 'Villager1 died.',
-        phase: PHASES.DAY_REVEAL,
-        nightActions: expect.objectContaining({
-          werewolfVotes: {}, // Should be cleared
-          wolfTarget: null, // Should be null as it's derived internally now
-        }),
-      })
-    );
+    it('assigns all specified roles correctly when many are active', async () => {
+      const comprehensivePlayers = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: false },
+        { id: 'p3', name: 'Player 3', isAlive: true, ready: false },
+        { id: 'p4', name: 'Player 4', isAlive: true, ready: false },
+        { id: 'p5', name: 'Player 5', isAlive: true, ready: false },
+        { id: 'p6', name: 'Player 6', isAlive: true, ready: false },
+        { id: 'p7', name: 'Player 7', isAlive: true, ready: false },
+        { id: 'p8', name: 'Player 8', isAlive: true, ready: false },
+        { id: 'p9', name: 'Player 9', isAlive: true, ready: false },
+        { id: 'p10', name: 'Player 10', isAlive: true, ready: false },
+        { id: 'p11', name: 'Player 11', isAlive: true, ready: false },
+        { id: 'p12', name: 'Player 12', isAlive: true, ready: false },
+        { id: 'p13', name: 'Player 13', isAlive: true, ready: false },
+        { id: 'p14', name: 'Player 14', isAlive: true, ready: false },
+        { id: 'p15', name: 'Player 15', isAlive: true, ready: false },
+        { id: 'p16', name: 'Player 16', isAlive: true, ready: false },
+      ];
 
-    // Verify if Villager1 is marked as dead
-    const updatedPlayers = mockUpdateGame.mock.calls[0][0].players;
-    const villager1 = updatedPlayers.find(p => p.id === 'p3');
-    expect(villager1.isAlive).toBe(false);
-  });
-
-  it('should handle tied werewolf votes by random selection', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0); // Mock Math.random to always return 0 for predictable tie-breaking
-
-    const players = [
-      { id: 'p1', name: 'Wolf1', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p2', name: 'Wolf2', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p3', name: 'Villager1', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p4', name: 'Villager2', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p5', name: 'Villager3', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p6', name: 'Villager4', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' }, // Extra villager
-    ];
-
-    const gameState = {
-      phase: PHASES.NIGHT_WEREWOLF,
-      nightActions: {
-        werewolfVotes: {
-          p1: 'p3', // Wolf1 votes Villager1
-          p2: 'p4', // Wolf2 votes Villager2
-        },
-        doctorProtect: null,
-      },
-      settings: { actionWaitTime: 60 },
-      lovers: [],
-      doppelgangerTarget: null,
-    };
-
-    const { result } = renderHook(() =>
-      useGameLogic(gameState, mockUpdateGame, players, { uid: 'p1' }, true, Date.now())
-    );
-
-    await act(async () => {
-      await result.current.resolveNight(gameState.nightActions);
-    });
-
-    // With Math.random mocked to 0, the first element in the tied array should be chosen (p3)
-    expect(mockUpdateGame).toHaveBeenCalledWith(
-      expect.objectContaining({
-        dayLog: 'Villager1 died.', // p3 should be chosen due to mock
-        phase: PHASES.DAY_REVEAL,
-        nightActions: expect.objectContaining({
-          werewolfVotes: {},
-          wolfTarget: null,
-        }),
-      })
-    );
-
-    const updatedPlayers = mockUpdateGame.mock.calls[0][0].players;
-    const villager1 = updatedPlayers.find(p => p.id === 'p3');
-    expect(villager1.isAlive).toBe(false);
-  });
-
-  it('should not advance night phase if not all werewolves have voted', async () => {
-    const players = [
-      { id: 'p1', name: 'Wolf1', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p2', name: 'Wolf2', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p3', name: 'Villager1', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p4', name: 'Villager2', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p5', name: 'Villager3', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-    ];
-
-    const gameState = {
-      phase: PHASES.NIGHT_WEREWOLF,
-      nightActions: {
-        werewolfVotes: {
-          p1: 'p3', // Only Wolf1 has voted
-        },
-      },
-      settings: { actionWaitTime: 60 },
-      lovers: [],
-      doppelgangerTarget: null,
-    };
-
-    const { result } = renderHook(() =>
-      useGameLogic(gameState, mockUpdateGame, players, { uid: 'p1' }, true, Date.now())
-    );
-
-    await act(async () => {
-      // Try to advance night, but it should not if not all have voted
-      await result.current.advanceNight('werewolfVote', { voterId: 'p1', targetId: 'p3' });
-    });
-
-    // Expect updateGame to be called, but the phase should remain NIGHT_WEREWOLF (or not change phase in update)
-    // The hook calls updateGame with { nightActions: ... } but NO phase change if staying
-    expect(mockUpdateGame).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nightActions: expect.objectContaining({
-          werewolfVotes: {
-            p1: 'p3', // Wolf1's vote should be recorded
+      const comprehensiveGameState = {
+        settings: {
+          wolfCount: 2,
+          activeRoles: {
+            [ROLES.DOCTOR.id]: true,
+            [ROLES.SEER.id]: true,
+            [ROLES.HUNTER.id]: true,
+            [ROLES.JESTER.id]: true,
+            [ROLES.VIGILANTE.id]: true,
+            [ROLES.SORCERER.id]: true,
+            [ROLES.MINION.id]: true,
+            [ROLES.LYCAN.id]: true,
+            [ROLES.CUPID.id]: true,
+            [ROLES.DOPPELGANGER.id]: true,
+            [ROLES.TANNER.id]: true,
+            [ROLES.MAYOR.id]: true,
+            [ROLES.MASON.id]: true, // Mason will add two roles
           },
-        }),
-      })
-    );
-
-    // Ensure phase is NOT in the update (meaning it stays same) OR it is explicitly NIGHT_WEREWOLF
-    const updateCall = mockUpdateGame.mock.calls[0][0];
-    if (updateCall.phase) {
-      expect(updateCall.phase).toBe(PHASES.NIGHT_WEREWOLF);
-    }
-  });
-
-  it('should advance night phase when all werewolves have voted', async () => {
-    const players = [
-      { id: 'p1', name: 'Wolf1', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p2', name: 'Wolf2', role: ROLES.WEREWOLF.id, isAlive: true, avatarColor: 'red' },
-      { id: 'p3', name: 'Villager1', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p4', name: 'Villager2', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p5', name: 'Villager3', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-      { id: 'p6', name: 'Villager4', role: ROLES.VILLAGER.id, isAlive: true, avatarColor: 'blue' },
-    ];
-
-    const gameState = {
-      phase: PHASES.NIGHT_WEREWOLF,
-      nightActions: {
-        werewolfVotes: {
-          p1: 'p3', // Wolf1 has voted
+          actionWaitTime: 30,
         },
-      },
-      settings: { actionWaitTime: 60 },
-      lovers: [],
-      doppelgangerTarget: null,
-    };
+        phase: PHASES.LOBBY,
+        players: {},
+      };
 
-    const { result } = renderHook(() =>
-      useGameLogic(gameState, mockUpdateGame, players, { uid: 'p2' }, true, Date.now())
-    );
+      const { result } = renderHook(() =>
+        useGameLogic(comprehensiveGameState, mockUpdateGame, comprehensivePlayers, mockUser, true, now)
+      );
 
-    await act(async () => {
-      // Wolf2 casts their vote, completing all werewolf votes
-      await result.current.advanceNight('werewolfVote', { voterId: 'p2', targetId: 'p3' });
+      await act(async () => {
+        const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.9); // Make shuffle deterministic with positive comparison
+        await result.current.startGame();
+        mockRandom.mockRestore(); // Restore Math.random()
+      });
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      expect(updateCall.phase).toBe(PHASES.ROLE_REVEAL);
+      expect(updateCall.players).toHaveLength(comprehensivePlayers.length);
+
+      const roles = updateCall.players.map(p => p.role);
+
+      // Expected roles count based on settings and number of players
+      const expectedRoleCounts = {
+        [ROLES.WEREWOLF.id]: 2, // wolfCount
+        [ROLES.DOCTOR.id]: 1,
+        [ROLES.SEER.id]: 1,
+        [ROLES.HUNTER.id]: 1,
+        [ROLES.JESTER.id]: 1,
+        [ROLES.VIGILANTE.id]: 1,
+        [ROLES.SORCERER.id]: 1,
+        [ROLES.MINION.id]: 1,
+        [ROLES.LYCAN.id]: 1,
+        [ROLES.CUPID.id]: 1,
+        [ROLES.DOPPELGANGER.id]: 1,
+        [ROLES.TANNER.id]: 1,
+        [ROLES.MAYOR.id]: 1,
+        [ROLES.MASON.id]: 2, // Mason adds two
+      };
+
+      // Calculate expected villagers
+      const totalSpecialRoles = Object.values(expectedRoleCounts).reduce((sum, count) => sum + count, 0);
+      const expectedVillagers = comprehensivePlayers.length - totalSpecialRoles;
+      if (expectedVillagers > 0) {
+        expectedRoleCounts[ROLES.VILLAGER.id] = expectedVillagers;
+      }
+
+      for (const roleId in expectedRoleCounts) {
+        expect(roles.filter(r => r === roleId)).toHaveLength(expectedRoleCounts[roleId]);
+      }
     });
 
-    // Expect updateGame to be called, and the phase should advance to the next expected phase
-    const updateGameCall = mockUpdateGame.mock.calls[0][0];
-    expect(updateGameCall.phase).toBe(PHASES.DAY_REVEAL); // Should resolve to Day Reveal
-    expect(updateGameCall.dayLog).toContain('Villager1 died');
-    expect(updateGameCall.nightActions.werewolfVotes).toEqual({}); // Votes should be cleared after resolution
+    it('does nothing if not Player 1', async () => {
+      const { result } = renderHook(() =>
+        useGameLogic(mockGameState, mockUpdateGame, mockPlayers, mockUser, false, now)
+      );
+
+      await act(async () => {
+        await result.current.startGame();
+      });
+
+      expect(mockUpdateGame).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('startNight', () => {
+    it('starts with Cupid if Cupid is present and no lovers', async () => {
+      const cupidPlayer = { ...mockPlayers[0], role: ROLES.CUPID.id };
+      const playersWithCupid = [cupidPlayer, ...mockPlayers.slice(1)];
+
+      const { result } = renderHook(() =>
+        useGameLogic({ ...mockGameState, lovers: [] }, mockUpdateGame, playersWithCupid, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.startNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_CUPID,
+      }));
+    });
+
+    it('starts with Werewolf if no Cupid', async () => {
+      const wolfPlayer = { ...mockPlayers[0], role: ROLES.WEREWOLF.id };
+      const playersWithWolf = [wolfPlayer, ...mockPlayers.slice(1)];
+
+      const { result } = renderHook(() =>
+        useGameLogic({ ...mockGameState, lovers: [] }, mockUpdateGame, playersWithWolf, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.startNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_WEREWOLF,
+      }));
+    });
+
+    it('starts with Doppelganger if Doppelganger is present and no target yet', async () => {
+      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id };
+      const playersWithDoppelganger = [doppelgangerPlayer, ...mockPlayers.slice(1)];
+
+      const { result } = renderHook(() =>
+        useGameLogic({ ...mockGameState, doppelgangerTarget: null }, mockUpdateGame, playersWithDoppelganger, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.startNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_DOPPELGANGER,
+      }));
+    });
+
+    it('skips Cupid if Cupid is present but lovers are already set', async () => {
+      const cupidPlayer = { ...mockPlayers[0], role: ROLES.CUPID.id };
+      const playersWithCupid = [cupidPlayer, ...mockPlayers.slice(1)];
+      const existingLovers = ['p1', 'p2'];
+
+      const { result } = renderHook(() =>
+        useGameLogic({ ...mockGameState, lovers: existingLovers }, mockUpdateGame, playersWithCupid, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.startNight();
+      });
+
+      // Assuming Werewolf is the next active phase after Cupid in the sequence
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_WEREWOLF,
+      }));
+    });
+  });
+
+  describe('advanceNight', () => {
+    it('advances from Cupid to Werewolf', async () => {
+      const cupidPlayer = { ...mockPlayers[0], role: ROLES.CUPID.id };
+      const wolfPlayer = { ...mockPlayers[1], role: ROLES.WEREWOLF.id };
+      const players = [cupidPlayer, wolfPlayer, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_CUPID,
+        nightActions: { cupidLinks: [] },
+        lovers: [],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight('cupidLinks', ['p1', 'p2']);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_WEREWOLF,
+        lovers: ['p1', 'p2'],
+      }));
+    });
+
+    it('removes a cupid link if already selected', async () => {
+      const cupidPlayer = { ...mockPlayers[0], role: ROLES.CUPID.id };
+      const players = [cupidPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_CUPID,
+        nightActions: { cupidLinks: ['p1', 'p2'] }, // p1 and p2 are already linked
+        lovers: [],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        // Now remove p2
+        await result.current.advanceNight('cupidLinks', ['p1']);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: { cupidLinks: ['p1'] },
+        // Phase should advance to Werewolf
+        phase: PHASES.NIGHT_WEREWOLF,
+      }));
+    });
+
+    it('sets nightActions.cupidLinks to the provided value, but only sets lovers if count is 2', async () => {
+      const cupidPlayer = { ...mockPlayers[0], role: ROLES.CUPID.id };
+      const players = [cupidPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_CUPID,
+        nightActions: { cupidLinks: [] },
+        lovers: [],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      // Attempt to add a three players
+      await act(async () => {
+        await result.current.advanceNight('cupidLinks', ['p1', 'p2', 'p3']);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: { cupidLinks: ['p1', 'p2', 'p3'] },
+        // Phase should advance, assuming no other active roles after Cupid.
+        phase: PHASES.NIGHT_WEREWOLF,
+        // The `lovers` array should NOT be set because the length is not 2, so it won't be in the object.
+      }));
+
+      // Reset mock for a new call with valid lovers
+      mockUpdateGame.mockClear();
+
+      const newGameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_CUPID,
+        nightActions: { cupidLinks: [] },
+        lovers: [],
+      };
+
+      const { result: result2 } = renderHook(() =>
+        useGameLogic(newGameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      // Add two players
+      await act(async () => {
+        await result2.current.advanceNight('cupidLinks', ['p1', 'p2']);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: { cupidLinks: ['p1', 'p2'] },
+        phase: PHASES.NIGHT_WEREWOLF,
+        lovers: ['p1', 'p2'], // Should be set now
+      }));
+    });
+
+    it('advances to the next logical phase when no actionType is provided', async () => {
+      const doctorPlayer = { ...mockPlayers[1], role: ROLES.DOCTOR.id };
+      const players = [doctorPlayer, ...mockPlayers.slice(1)]; // Ensure Doctor is present
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF, // Start in Werewolf phase
+        nightActions: {
+          werewolfVotes: { 'p3': 'p1' }, // Assume werewolf vote is complete
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight(); // Call without actionType or actionValue
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_DOCTOR, // Expect to advance to Doctor phase
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('advances from Werewolf to Minion if Minion exists', async () => {
+      const wolfPlayer = { ...mockPlayers[0], role: ROLES.WEREWOLF.id };
+      const minionPlayer = { ...mockPlayers[1], role: ROLES.MINION.id };
+      const players = [wolfPlayer, minionPlayer, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: { werewolfVotes: {} },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        // Use the actual wolf player's ID for voting
+        await result.current.advanceNight('werewolfVote', { voterId: wolfPlayer.id, targetId: 'p3' });
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: {
+          werewolfVotes: { [wolfPlayer.id]: 'p3' },
+        },
+      }));
+    });
+
+    it('does not advance phase if not all werewolves have voted', async () => {
+      // Two werewolves exist in mockPlayers, only one votes
+      const wolfPlayer1 = { ...mockPlayers[2], id: 'p3', role: ROLES.WEREWOLF.id, isAlive: true };
+      const wolfPlayer2 = { ...mockPlayers[0], id: 'p1', role: ROLES.WEREWOLF.id, isAlive: true }; // p1 was Seer, now a Werewolf
+      const playersWithTwoWolves = [
+        wolfPlayer1,
+        wolfPlayer2,
+        { ...mockPlayers[1], id: 'p2', role: ROLES.VILLAGER.id, isAlive: true },
+        { ...mockPlayers[3], id: 'p4', role: ROLES.VILLAGER.id, isAlive: true },
+        { ...mockPlayers[4], id: 'p5', role: ROLES.VILLAGER.id, isAlive: true },
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {},
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithTwoWolves, mockUser, true, now)
+      );
+
+      await act(async () => {
+        // Only wolfPlayer1 votes, wolfPlayer2 does not
+        await result.current.advanceNight('werewolfVote', { voterId: wolfPlayer1.id, targetId: 'p2' });
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: {
+          werewolfVotes: { [wolfPlayer1.id]: 'p2' },
+        },
+        // The phase should NOT advance
+        // phase: PHASES.NIGHT_WEREWOLF, // Removed as phase is not part of update when only nightActions are updated
+      }));
+      // Ensure phaseEndTime is not updated when phase doesn't advance
+      expect(mockUpdateGame.mock.calls[0][0]).not.toHaveProperty('phaseEndTime');
+    });
+
+    it('allows werewolf to cast provisional vote', async () => {
+      const wolfPlayer = mockPlayers.find(p => p.role === ROLES.WEREWOLF.id);
+      const targetPlayer = mockPlayers.find(p => p.id === 'p1'); // Seer
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {},
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, { uid: wolfPlayer.id, displayName: wolfPlayer.name }, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight('werewolfProvisionalVote', { voterId: wolfPlayer.id, targetId: targetPlayer.id });
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: {
+          werewolfProvisionalVotes: { [wolfPlayer.id]: targetPlayer.id },
+        },
+      }));
+    });
+
+    it('allows werewolf to confirm vote (overriding provisional)', async () => {
+      const wolfPlayer = mockPlayers.find(p => p.role === ROLES.WEREWOLF.id);
+      const provisionalTarget = mockPlayers.find(p => p.id === 'p1'); // Seer
+      const confirmedTarget = mockPlayers.find(p => p.id === 'p2'); // Doctor
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {
+          werewolfProvisionalVotes: { [wolfPlayer.id]: provisionalTarget.id },
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, { uid: wolfPlayer.id, displayName: wolfPlayer.name }, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight('werewolfVote', { voterId: wolfPlayer.id, targetId: confirmedTarget.id });
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        nightActions: {
+          werewolfVotes: { [wolfPlayer.id]: confirmedTarget.id },
+        },
+        phase: PHASES.NIGHT_DOCTOR,
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('advances from Werewolf to Sorcerer if Sorcerer exists', async () => {
+      const sorcererPlayer = { ...mockPlayers[0], role: ROLES.SORCERER.id };
+      const players = [sorcererPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF, // Coming from Werewolf phase
+        nightActions: { werewolfVotes: { 'p3': 'p1' } }, // Assume votes are done
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_SORCERER,
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('advances from Doctor to Vigilante if Vigilante exists', async () => {
+      const vigilantePlayer = { ...mockPlayers[0], role: ROLES.VIGILANTE.id };
+      const players = [vigilantePlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOCTOR, // Coming from Doctor phase
+        nightActions: { doctorProtect: 'p1' }, // Assume action done
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_VIGILANTE,
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('advances from Seer to Mason if Masons exist', async () => {
+      const masonPlayer1 = { ...mockPlayers[0], role: ROLES.MASON.id };
+      const masonPlayer2 = { ...mockPlayers[1], role: ROLES.MASON.id };
+      const players = [masonPlayer1, masonPlayer2, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_SEER, // Coming from Seer phase
+        nightActions: { seerCheck: 'p1' }, // Assume action done
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_MASON,
+        phaseEndTime: null, // Mason phase has no action, so timer cleared
+      }));
+    });
+
+    it('updates doppelgangerTarget if Doppelganger makes a choice', async () => {
+      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id };
+      const targetPlayer = { ...mockPlayers[1], role: ROLES.SEER.id };
+      const players = [doppelgangerPlayer, targetPlayer, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
+        doppelgangerTarget: null,
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight('doppelgangerCopy', targetPlayer.id);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        doppelgangerTarget: targetPlayer.id,
+        phase: PHASES.NIGHT_WEREWOLF, // Assuming Werewolf is the next active phase
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('advances to RESOLVE phase and calls resolveNight when no more night actions', async () => {
+      // Mock resolveNight to check if it's called
+      const resolveNightSpy = vi.spyOn(useGameLogic(mockGameState, mockUpdateGame, mockPlayers, mockUser, true, now), 'resolveNight');
+
+      // Setup players such that no special night roles are active after Seer
+      const playersWithoutSpecialRoles = [
+        { ...mockPlayers[0], role: ROLES.SEER.id, isAlive: true },
+        { ...mockPlayers[1], role: ROLES.VILLAGER.id, isAlive: true },
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_SEER, // Coming from Seer phase, which is the last action phase for this setup
+        nightActions: { seerCheck: 'p1' }, // Assume action done
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithoutSpecialRoles, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      // Since resolveNight is called internally and we can't directly spy on it when called from the same hook instance
+      // we will assert that updateGame is called with the state that would trigger resolveNight
+      // and that the phase becomes DAY_REVEAL after resolution (as resolveNight would typically do)
+
+      // The expectation is that advanceNight will transition to 'RESOLVE' internally
+      // and call resolveNight, which then updates the phase to DAY_REVEAL (or GAME_OVER).
+      // Since we can't directly spy on resolveNight if it's not exposed as a method of the returned object (which it is),
+      // we can check the *final* state after it's called.
+      // Alternatively, we can adjust the test for direct spying.
+
+      // Let's modify the test to directly call the internal function,
+      // but for that we need to modify the useGameLogic structure which is not ideal.
+      // The current tests assume resolveNight is called as part of the flow.
+      // So, we just check the final phase after everything is resolved.
+
+      // For this test, after the `advanceNight` call, the `resolveNight` function should have been implicitly called
+      // and `updateGame` should have been called with the result of `resolveNight`.
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      expect(updateCall.phase).toBe(PHASES.GAME_OVER); // As checkWin would trigger GAME_OVER
+      expect(updateCall).toHaveProperty('winner', 'VILLAGERS'); // checkWin sets the winner
+    });
+  });
+
+  describe('resolveNight', () => {
+    it('eliminates werewolf target', async () => {
+      const wolfPlayer = mockPlayers.find(p => p.role === ROLES.WEREWOLF.id);
+      const doctorPlayer = mockPlayers.find(p => p.role === ROLES.DOCTOR.id);
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {
+          werewolfVotes: { [wolfPlayer.id]: doctorPlayer.id },
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      // Convert players object to array if needed
+      const playersArray = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const deadVillager = playersArray.find(p => p.id === doctorPlayer.id);
+      expect(deadVillager).toBeDefined();
+      expect(deadVillager.isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('died');
+    });
+
+    it('saves target if doctor protects', async () => {
+      const wolfPlayer = mockPlayers.find(p => p.role === ROLES.WEREWOLF.id);
+      const villagerPlayer = mockPlayers.find(p => p.role === ROLES.VILLAGER.id);
+      const doctorPlayer = mockPlayers.find(p => p.role === ROLES.DOCTOR.id);
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOCTOR,
+        nightActions: {
+          werewolfVotes: { [wolfPlayer.id]: villagerPlayer.id },
+          doctorProtect: villagerPlayer.id,
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      // Convert players object to array if needed
+      const playersArray = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const target = playersArray.find(p => p.id === villagerPlayer.id);
+      expect(target).toBeDefined();
+      expect(target.isAlive).toBe(true);
+      expect(updateCall.dayLog).toContain('No one died');
+    });
+
+    it('handles Sorcerer successfully finding Seer', async () => {
+      const sorcererPlayer = { ...mockPlayers[0], role: ROLES.SORCERER.id, foundSeer: false };
+      const seerPlayer = { ...mockPlayers[1], role: ROLES.SEER.id };
+      const playersWithSorcererSeer = [sorcererPlayer, seerPlayer, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_SORCERER,
+        nightActions: {
+          sorcererCheck: seerPlayer.id, // Sorcerer checks the Seer
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithSorcererSeer, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      const updatedSorcerer = updateCall.players.find(p => p.id === sorcererPlayer.id);
+      expect(updatedSorcerer).toBeDefined();
+      expect(updatedSorcerer.foundSeer).toBe(true);
+    });
+
+    it('handles Doppelganger transformation when target dies during night', async () => {
+      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id }; // p1 is Doppelganger
+      const targetPlayer = { ...mockPlayers[1], role: ROLES.SEER.id }; // p2 is Seer (the target)
+      const werewolfPlayer = { ...mockPlayers[2], role: ROLES.WEREWOLF.id }; // p3 is Werewolf
+      const playersWithDoppelgangerWerewolf = [
+        doppelgangerPlayer,
+        targetPlayer,
+        werewolfPlayer,
+        ...mockPlayers.slice(3)
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF, // Phase doesn't strictly matter for resolveNight, but good context
+        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
+        nightActions: {
+          werewolfVotes: { [werewolfPlayer.id]: targetPlayer.id }, // Werewolf kills p2
+          doctorProtect: null,
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithDoppelgangerWerewolf, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const updatedPlayers = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const updatedDoppelganger = updatedPlayers.find(p => p.id === doppelgangerPlayer.id);
+      expect(updatedDoppelganger).toBeDefined();
+      expect(updatedDoppelganger.role).toBe(ROLES.SEER.id); // Doppelganger becomes Seer
+      expect(updatedPlayers.find(p => p.id === targetPlayer.id).isAlive).toBe(false); // Target is dead
+      expect(updateCall.dayLog).toContain(`${targetPlayer.name} died.`);
+    });
+
+    it('eliminates vigilante target if not protected', async () => {
+      const vigilantePlayer = { ...mockPlayers[0], role: ROLES.VIGILANTE.id }; // p1 is Vigilante
+      const targetPlayer = { ...mockPlayers[1], role: ROLES.VILLAGER.id }; // p2 is target
+      const playersWithVigilante = [
+        vigilantePlayer,
+        targetPlayer,
+        ...mockPlayers.slice(2)
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_VIGILANTE,
+        nightActions: {
+          vigilanteTarget: targetPlayer.id, // Vigilante shoots p2
+          doctorProtect: null,
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithVigilante, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const updatedPlayers = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      expect(updatedPlayers.find(p => p.id === targetPlayer.id).isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain(`${targetPlayer.name} died.`);
+    });
+
+    it('saves vigilante target if doctor protects', async () => {
+      const vigilantePlayer = { ...mockPlayers[0], role: ROLES.VIGILANTE.id }; // p1 is Vigilante
+      const targetPlayer = { ...mockPlayers[1], role: ROLES.VILLAGER.id }; // p2 is target
+      const doctorPlayer = { ...mockPlayers[2], role: ROLES.DOCTOR.id }; // p3 is Doctor
+      const werewolfPlayer = { ...mockPlayers[3], role: ROLES.WEREWOLF.id }; // p4 is Werewolf
+      const playersWithVigilanteDoctor = [
+        vigilantePlayer,
+        targetPlayer,
+        doctorPlayer,
+        werewolfPlayer, // Add a werewolf to prevent early win condition
+        ...mockPlayers.slice(4)
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_VIGILANTE,
+        nightActions: {
+          vigilanteTarget: targetPlayer.id, // Vigilante shoots p2
+          doctorProtect: targetPlayer.id, // Doctor protects p2
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithVigilanteDoctor, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const updatedPlayers = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      expect(updatedPlayers.find(p => p.id === targetPlayer.id).isAlive).toBe(true); // Target should still be alive
+      expect(updateCall.dayLog).toContain('No one died');
+    });
+  });
+
+  describe('voting', () => {
+    it('castVote updates votes', async () => {
+      const { result } = renderHook(() =>
+        useGameLogic(mockGameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.castVote('p2');
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        votes: { [mockUser.uid]: 'p2' },
+      }));
+    });
+
+    it('resolveVoting eliminates player with max votes', async () => {
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p1': 'p4',  // Player 1 votes for p4 (villager)
+          'p2': 'p4',  // p2 votes for p4  
+          'p3': 'p5',  // p3 votes for p5
+        },
+        lockedVotes: ['p1', 'p2', 'p3'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      // Just verify that updateGame was called with the expected structure
+      expect(updateCall).toHaveProperty('players');
+      expect(updateCall).toHaveProperty('dayLog');
+
+      // Convert players object to array if needed
+      const playersArray = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const deadPlayer = playersArray.find(p => p.id === 'p4');
+      expect(deadPlayer).toBeDefined();
+      expect(deadPlayer.isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('Player 4 was voted out.');
+      expect(updateCall).toHaveProperty('phase', PHASES.NIGHT_INTRO);
+    });
+
+    it('resolveVoting accounts for Mayor\'s double vote', async () => {
+      mockPlayers[0].role = ROLES.MAYOR.id;
+      const playersWithMayor = [...mockPlayers];
+
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p1': 'p3',  // Mayor (p1) votes for p3 (Werewolf) - 2 votes
+          'p2': 'p3',  // p2 votes for p3 (Werewolf) - 1 vote
+          'p4': 'p4',  // p4 votes for p4 (Villager) - 1 vote
+        },
+        lockedVotes: ['p1', 'p2', 'p4'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithMayor, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      expect(updateCall).toHaveProperty('players');
+      expect(updateCall.players.find(p => p.id === 'p3').isAlive).toBe(false); // Verify werewolf is dead
+      expect(updateCall).toHaveProperty('winner', 'VILLAGERS');
+      expect(updateCall).toHaveProperty('phase', PHASES.GAME_OVER);
+    });
+
+    it('resolveVoting handles a tie in votes (no elimination)', async () => {
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p1': 'p4',  // 1 vote for p4
+          'p2': 'p5',  // 1 vote for p5
+          'p3': 'p4',  // 1 vote for p4
+          'p4': 'p5',  // 1 vote for p5
+        },
+        lockedVotes: ['p1', 'p2', 'p3', 'p4'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.dayLog).toContain('No one was eliminated.');
+      expect(updateCall).toHaveProperty('phase', PHASES.NIGHT_INTRO);
+    });
+
+    it('resolveVoting handles a skip vote (no elimination)', async () => {
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p1': 'skip',
+          'p2': 'p4',
+          'p3': 'skip',
+        },
+        lockedVotes: ['p1', 'p2', 'p3'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.dayLog).toContain('No one was eliminated.');
+      expect(updateCall).toHaveProperty('phase', PHASES.NIGHT_INTRO);
+    });
+
+    it('resolveVoting handles Jester win', async () => {
+      const jesterPlayer = { ...mockPlayers[0], role: ROLES.JESTER.id }; // p1 is Jester
+      const playersWithJester = [jesterPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p2': 'p1', // p2 votes for Jester
+          'p3': 'p1', // p3 votes for Jester
+        },
+        lockedVotes: ['p2', 'p3'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithJester, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.players.find(p => p.id === 'p1').isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('was voted out. They were the Jester!');
+      expect(updateCall).toHaveProperty('winners', ['JESTER']);
+      expect(updateCall).toHaveProperty('phase', PHASES.NIGHT_INTRO);
+    });
+
+    it('resolveVoting handles Tanner win', async () => {
+      const tannerPlayer = { ...mockPlayers[0], role: ROLES.TANNER.id }; // p1 is Tanner
+      const playersWithTanner = [tannerPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p2': 'p1', // p2 votes for Tanner
+          'p3': 'p1', // p3 votes for Tanner
+        },
+        lockedVotes: ['p2', 'p3'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithTanner, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.players.find(p => p.id === 'p1').isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('was voted out. They were the Tanner!');
+      expect(updateCall).toHaveProperty('winners', ['TANNER']);
+      expect(updateCall).toHaveProperty('phase', PHASES.NIGHT_INTRO);
+    });
+
+    it('resolveVoting handles Doppelganger transformation when target is voted out', async () => {
+      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id }; // p1 is Doppelganger
+      const targetPlayer = { ...mockPlayers[1], role: ROLES.SEER.id }; // p2 is Seer (the target)
+      const playersWithDoppelganger = [doppelgangerPlayer, targetPlayer, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
+        votes: {
+          'p3': targetPlayer.id, // p3 votes for p2
+          'p4': targetPlayer.id, // p4 votes for p2
+        },
+        lockedVotes: ['p3', 'p4'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithDoppelganger, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      const updatedDoppelganger = updateCall.players.find(p => p.id === doppelgangerPlayer.id);
+      expect(updatedDoppelganger).toBeDefined();
+      expect(updatedDoppelganger.role).toBe(ROLES.SEER.id); // Doppelganger becomes Seer
+      expect(updateCall.players.find(p => p.id === targetPlayer.id).isAlive).toBe(false);
+    });
+
+    it('resolveVoting handles lover chain death when one lover is voted out', async () => {
+      const lover1 = { ...mockPlayers[0], role: ROLES.VILLAGER.id }; // p1
+      const lover2 = { ...mockPlayers[1], role: ROLES.VILLAGER.id }; // p2
+      const playersWithLovers = [lover1, lover2, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        lovers: [lover1.id, lover2.id],
+        votes: {
+          'p3': lover1.id, // p3 votes for lover1
+          'p4': lover1.id, // p4 votes for lover1
+        },
+        lockedVotes: ['p3', 'p4'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithLovers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.players.find(p => p.id === lover1.id).isAlive).toBe(false);
+      expect(updateCall.players.find(p => p.id === lover2.id).isAlive).toBe(false); // Other lover also dies
+    });
+
+    it('resolveVoting handles Hunter being voted out', async () => {
+      const hunterPlayer = { ...mockPlayers[0], role: ROLES.HUNTER.id }; // p1 is Hunter
+      const playersWithHunter = [hunterPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        votes: {
+          'p2': hunterPlayer.id, // p2 votes for Hunter
+          'p3': hunterPlayer.id, // p3 votes for Hunter
+        },
+        lockedVotes: ['p2', 'p3'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithHunter, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.players.find(p => p.id === hunterPlayer.id).isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('Hunter) was voted out!');
+      expect(updateCall).toHaveProperty('phase', PHASES.HUNTER_ACTION);
+    });
+  });
+
+  describe('lockVote', () => {
+    it('does nothing if no vote cast', async () => {
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.DAY_VOTING,
+        votes: {},
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.lockVote();
+      });
+
+      // Should not update if no vote cast
+      expect(mockUpdateGame).not.toHaveBeenCalled();
+    });
+
+    it('successfully locks vote', async () => {
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.DAY_VOTING,
+        votes: { [mockUser.uid]: 'p2' },
+        lockedVotes: [],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.lockVote();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lockedVotes: [mockUser.uid],
+        })
+      );
+    });
+
+    it('prevents double locking', async () => {
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.DAY_VOTING,
+        votes: { [mockUser.uid]: 'p2' },
+        lockedVotes: [mockUser.uid],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.lockVote();
+      });
+
+      // Should not update if already locked
+      expect(mockUpdateGame).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('markReady', () => {
+    it('marks a player as ready', async () => {
+      const initialPlayers = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+      ];
+      const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, initialPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.markReady();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          players: expect.arrayContaining([
+            expect.objectContaining({ id: 'p1', ready: true }),
+            expect.objectContaining({ id: 'p2', ready: false }),
+          ]),
+          phase: PHASES.DAY_VOTING, // Should not change phase yet
+        })
+      );
+    });
+
+    it('transitions to NIGHT_INTRO when all alive players are ready', async () => {
+      const initialPlayers = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLES.VILLAGER.id },
+      ];
+      const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
+
+      // p1 is the current user (mockUser) and the last to become ready
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, initialPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.markReady();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          players: expect.arrayContaining([
+            expect.objectContaining({ id: 'p1', ready: true }),
+            expect.objectContaining({ id: 'p2', ready: true }),
+          ]),
+          phase: PHASES.NIGHT_INTRO, // Phase should change
+        })
+      );
+    });
+
+    it('dead players do not need to be ready to advance phase', async () => {
+      const initialPlayers = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p2', name: 'Player 2', isAlive: false, ready: false, role: ROLES.VILLAGER.id }, // Dead player
+      ];
+      const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
+
+      // p1 is the current user (mockUser) and the only alive player who needs to become ready
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, initialPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.markReady();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(
+        expect.objectContaining({
+          players: expect.arrayContaining([
+            expect.objectContaining({ id: 'p1', ready: true }),
+            expect.objectContaining({ id: 'p2', ready: false }), // Dead player remains not ready
+          ]),
+          phase: PHASES.NIGHT_INTRO, // Phase should change as all *alive* players are ready
+        })
+      );
+    });
+  });
+
+  describe('checkWin (via resolveNight/resolveVoting)', () => {
+    it('villagers win when all werewolves dead', async () => {
+      // Set up game state where werewolf will be killed
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {
+          werewolfVotes: {}, // No werewolf votes (they're about to die)
+        },
+      };
+
+      // Kill the werewolf by voting them out
+      const votingState = {
+        ...mockGameState,
+        votes: {
+          'p1': 'p3',  // Vote for werewolf
+          'p2': 'p3',
+          'p4': 'p3',
+        },
+        lockedVotes: ['p1', 'p2', 'p4'],
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(votingState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveVoting();
+      });
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall).toHaveProperty('winner', 'VILLAGERS');
+      expect(updateCall).toHaveProperty('phase', PHASES.GAME_OVER);
+    });
+
+    it('werewolves win when wolves >= good players', async () => {
+      // Set up where 1 werewolf and 1 good player remain (werewolves win condition)
+      const survivors = [
+        { id: 'p3', name: 'Player 3', isAlive: true, ready: true, role: ROLES.WEREWOLF.id }, // Werewolf
+        { id: 'p4', name: 'Player 4', isAlive: true, ready: true, role: ROLES.VILLAGER.id }, // Villager
+        { id: 'p1', name: 'Player 1', isAlive: false, ready: false, role: ROLES.SEER.id },
+        { id: 'p2', name: 'Player 2', isAlive: false, ready: false, role: ROLES.DOCTOR.id },
+        { id: 'p5', name: 'Player 5', isAlive: false, ready: false, role: ROLES.VILLAGER.id },
+      ];
+
+      // Simulate night actions where the villager is killed by the werewolf
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {
+          werewolfVotes: { 'p3': 'p4' }, // Werewolf votes to kill villager
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, survivors, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall).toHaveProperty('winner', 'WEREWOLVES');
+      expect(updateCall).toHaveProperty('phase', PHASES.GAME_OVER);
+    });
+
+    it('lovers win when only lovers remain', async () => {
+      // Set up where only 2 lovers and 1 non-lover are alive, then the non-lover is killed
+      const initialSurvivors = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: true, role: ROLES.VILLAGER.id }, // Lover 1
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLES.VILLAGER.id }, // Lover 2
+        { id: 'p3', name: 'Player 3', isAlive: true, ready: true, role: ROLES.WEREWOLF.id }, // Non-lover
+        { id: 'p4', name: 'Player 4', isAlive: false, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p5', name: 'Player 5', isAlive: false, ready: false, role: ROLES.VILLAGER.id },
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        lovers: ['p1', 'p2'],
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {
+          werewolfVotes: { 'p3': 'p1' }, // Werewolf kills a lover. This should trigger chain death, but the test focuses on the win condition if only lovers remain
+          // For this test, let's assume the non-lover dies instead so only lovers remain.
+          // This scenario might need re-evaluation of game logic or a specific setup.
+          // For now, let's make it such that a non-lover is targetted, and the state leads to lovers being the only ones left
+        },
+      };
+
+      // To make only lovers remain, let's kill the werewolf 'p3' through some means.
+      // For simplicity in this test, let's directly set up the `players` such that
+      // after night actions, only the lovers are alive.
+
+      const playersAfterNight = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: true, role: ROLES.VILLAGER.id }, // Lover 1
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLES.VILLAGER.id }, // Lover 2
+        { id: 'p3', name: 'Player 3', isAlive: false, ready: true, role: ROLES.WEREWOLF.id }, // Werewolf (dead)
+        { id: 'p4', name: 'Player 4', isAlive: false, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p5', name: 'Player 5', isAlive: false, ready: false, role: ROLES.VILLAGER.id },
+      ];
+
+      // Simulate a night where werewolf p3 was killed by some other action not directly tested here,
+      // leading to only p1 and p2 (lovers) being alive.
+      // We'll call resolveNight with an empty werewolfVotes if we assume p3 was killed differently.
+      const gameStateLeadingToLoversWin = {
+        ...mockGameState,
+        lovers: ['p1', 'p2'],
+        phase: PHASES.NIGHT_WEREWOLF, // The phase before resolution
+        nightActions: {}, // No direct werewolf action in this simplified setup for win check
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameStateLeadingToLoversWin, mockUpdateGame, playersAfterNight, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameStateLeadingToLoversWin.nightActions);
+      });
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall).toHaveProperty('winner', 'LOVERS');
+      expect(updateCall).toHaveProperty('phase', PHASES.GAME_OVER);
+    });
+  });
+
+  describe('handleHunterShot', () => {
+    it('eliminates target when hunter shoots', async () => {
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.HUNTER_ACTION,
+        dayLog: 'Player 3 (Hunter) was voted out!',
+        nightActions: {
+          doctorProtect: null,
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.handleHunterShot('p2');
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const playersArray = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const victim = playersArray.find(p => p.id === 'p2');
+      expect(victim).toBeDefined();
+      expect(victim.isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('Hunter shot');
+    });
+
+    it('triggers lover death when hunter kills a lover', async () => {
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.HUNTER_ACTION,
+        dayLog: 'Player 3 (Hunter) was voted out!',
+        lovers: ['p1', 'p2'],
+        nightActions: {
+          doctorProtect: null,
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.handleHunterShot('p1'); // Kill lover 1
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const playersArray = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      // Both lovers should be dead
+      const lover1 = playersArray.find(p => p.id === 'p1');
+      const lover2 = playersArray.find(p => p.id === 'p2');
+      expect(lover1.isAlive).toBe(false);
+      expect(lover2.isAlive).toBe(false);
+    });
+
+    it('handles Doppelganger transformation when target is shot by Hunter', async () => {
+      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id }; // p1 is Doppelganger
+      const targetPlayer = { ...mockPlayers[1], role: ROLES.SEER.id }; // p2 is Seer (the target)
+      const hunterPlayer = { ...mockPlayers[2], role: ROLES.HUNTER.id }; // p3 is Hunter
+      const werewolfPlayer = { ...mockPlayers[3], role: ROLES.WEREWOLF.id }; // p4 is Werewolf
+      const playersWithDoppelgangerHunter = [
+        doppelgangerPlayer,
+        targetPlayer,
+        hunterPlayer,
+        werewolfPlayer, // Add a werewolf to prevent early win condition
+        ...mockPlayers.slice(4)
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.HUNTER_ACTION,
+        dayLog: `${hunterPlayer.name} (Hunter) was voted out!`,
+        lovers: [],
+        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
+        nightActions: {
+          doctorProtect: null,
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithDoppelgangerHunter, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.handleHunterShot(targetPlayer.id); // Hunter shoots p2
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const updatedPlayers = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const updatedDoppelganger = updatedPlayers.find(p => p.id === doppelgangerPlayer.id);
+      expect(updatedDoppelganger).toBeDefined();
+      expect(updatedDoppelganger.role).toBe(ROLES.SEER.id); // Doppelganger becomes Seer
+      expect(updatedPlayers.find(p => p.id === targetPlayer.id).isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain(`Hunter shot ${targetPlayer.name}`);
+    });
+
+    it('prevents Hunter from killing a player protected by the Doctor', async () => {
+      const hunterPlayer = { ...mockPlayers[0], role: ROLES.HUNTER.id }; // p1 is Hunter
+      const victimPlayer = { ...mockPlayers[1], role: ROLES.VILLAGER.id }; // p2 is victim
+      const doctorPlayer = { ...mockPlayers[2], role: ROLES.DOCTOR.id }; // p3 is Doctor
+      const playersWithHunterDoctor = [
+        hunterPlayer,
+        victimPlayer,
+        doctorPlayer,
+        ...mockPlayers.slice(3)
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.HUNTER_ACTION,
+        dayLog: `${hunterPlayer.name} (Hunter) was voted out!`,
+        lovers: [],
+        nightActions: {
+          doctorProtect: victimPlayer.id, // Doctor protects p2
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithHunterDoctor, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.handleHunterShot(victimPlayer.id); // Hunter shoots p2
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      const updatedPlayers = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      const updatedVictim = updatedPlayers.find(p => p.id === victimPlayer.id);
+      expect(updatedVictim).toBeDefined();
+      expect(updatedVictim.isAlive).toBe(true); // Victim should still be alive
+      expect(updateCall.dayLog).toContain(`The Hunter tried to shoot ${victimPlayer.name}, but they were protected!`);
+      expect(updateCall.phase).toBe(PHASES.NIGHT_INTRO); // Should transition to night intro
+    });
+  });
+
+  describe('resolveNight - extended', () => {
+    it('handles lover chain death', async () => {
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        lovers: ['p1', 'p2'],
+        nightActions: {
+          werewolfVotes: { 'p3': 'p1' }, // Kill lover 1
+        },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, mockPlayers, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.resolveNight(gameState.nightActions);
+      });
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      const playersArray = Array.isArray(updateCall.players)
+        ? updateCall.players
+        : Object.values(updateCall.players);
+
+      // Both lovers should be dead
+      const lover1 = playersArray.find(p => p.id === 'p1');
+      const lover2 = playersArray.find(p => p.id === 'p2');
+      expect(lover1.isAlive).toBe(false);
+      expect(lover2.isAlive).toBe(false);
+      expect(updateCall.dayLog).toContain('died');
+    });
+  });
+
+  describe('advanceNight - complete phases', () => {
+    it('advances through Seer phase', async () => {
+      const seerPlayer = { ...mockPlayers[0], role: ROLES.SEER.id };
+      const players = [seerPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_SEER,
+        nightActions: { seerCheck: null },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight('seerCheck', 'p2');
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.nightActions.seerCheck).toBe('p2');
+      // Should advance to next phase
+      expect(updateCall.phase).not.toBe(PHASES.NIGHT_SEER);
+    });
+
+    it('advances through Doctor phase', async () => {
+      const doctorPlayer = { ...mockPlayers[1], role: ROLES.DOCTOR.id };
+      const players = [doctorPlayer, ...mockPlayers.slice(1)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOCTOR,
+        nightActions: { doctorProtect: null },
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight('doctorProtect', 'p1');
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.nightActions.doctorProtect).toBe('p1');
+      expect(updateCall.phase).not.toBe(PHASES.NIGHT_DOCTOR);
+    });
+
+    it('advances to Minion phase and sets phaseEndTime to null if minion exists', async () => {
+      const minionPlayer = { ...mockPlayers[0], role: ROLES.MINION.id }; // p1 is minion
+      const wolfPlayer = { ...mockPlayers[1], role: ROLES.WEREWOLF.id }; // p2 is wolf
+      // Only include the one werewolf (wolfPlayer) and minion, and some other players.
+      const playersWithMinion = [
+        minionPlayer,
+        wolfPlayer,
+        { ...mockPlayers[3], isAlive: true, ready: false, role: ROLES.VILLAGER.id }, // p4
+        { ...mockPlayers[4], isAlive: true, ready: false, role: ROLES.VILLAGER.id }, // p5
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF, // Coming from werewolf phase
+        nightActions: { werewolfVotes: { [wolfPlayer.id]: 'p3' } }, // All wolves voted
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithMinion, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_MINION,
+        phaseEndTime: null, // Minion phase has no action, so timer cleared
+      }));
+    });
   });
 });

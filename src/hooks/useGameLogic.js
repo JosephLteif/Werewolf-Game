@@ -142,6 +142,18 @@ export function useGameLogic(
           ...(newActions.werewolfVotes || {}),
           [actionValue.voterId]: actionValue.targetId,
         };
+        // Clear provisional vote for this werewolf
+        if (newActions.werewolfProvisionalVotes) {
+          delete newActions.werewolfProvisionalVotes[actionValue.voterId];
+          if (Object.keys(newActions.werewolfProvisionalVotes).length === 0) {
+            delete newActions.werewolfProvisionalVotes;
+          }
+        }
+      } else if (actionType === 'werewolfProvisionalVote') {
+        newActions.werewolfProvisionalVotes = {
+          ...(newActions.werewolfProvisionalVotes || {}),
+          [actionValue.voterId]: actionValue.targetId,
+        };
       } else {
         newActions[actionType] = actionValue;
       }
