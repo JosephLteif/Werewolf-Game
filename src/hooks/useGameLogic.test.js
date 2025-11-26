@@ -588,6 +588,146 @@ describe('useGameLogic', () => {
       }));
     });
 
+    it('skips NIGHT_DOPPELGANGER if no Doppelganger is present', async () => {
+      // Setup players: One Cupid, one Werewolf, one Doctor, two Villagers (5 players total)
+      const players = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.CUPID.id },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.WEREWOLF.id },
+        { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLES.DOCTOR.id },
+        { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
+        doppelgangerTarget: null, // No target set, but no role exists
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      // Expect to skip Doppelganger and Cupid (if no Cupid), landing on Werewolf (if present)
+      // or directly to Doctor if Werewolf is also not present/skipped.
+      // In mockPlayers, there is a Werewolf.
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_CUPID, // CUPID is next in sequence.
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('skips NIGHT_CUPID if no Cupid is present or lovers are already set', async () => {
+      // Scenario 1: No Cupid present
+      let playersWithoutCupid = mockPlayers.filter(p => p.role !== ROLES.CUPID.id);
+      let gameStateNoCupid = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
+        doppelgangerTarget: 'p1', // Assume Doppelganger action already done
+        lovers: [],
+      };
+
+      let { result } = renderHook(() =>
+        useGameLogic(gameStateNoCupid, mockUpdateGame, playersWithoutCupid, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_WEREWOLF, // Expect to skip Cupid and land on Werewolf
+        phaseEndTime: expect.any(Number),
+      }));
+      mockUpdateGame.mockClear();
+
+      // Scenario 2: Cupid present, but lovers already set
+      let playersWithCupid = [{ ...mockPlayers[0], role: ROLES.CUPID.id }, ...mockPlayers.slice(1)];
+      let gameStateLoversSet = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
+        doppelgangerTarget: 'p1', // Assume Doppelganger action already done
+        lovers: ['p1', 'p2'], // Lovers already set
+      };
+
+      let { result: result2 } = renderHook(() =>
+        useGameLogic(gameStateLoversSet, mockUpdateGame, playersWithCupid, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result2.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_WEREWOLF, // Expect to skip Cupid and land on Werewolf
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('skips NIGHT_WEREWOLF if no Werewolves are present', async () => {
+      // Setup players with no Werewolves, but a Doctor exists
+      let playersWithoutWerewolf = mockPlayers.filter(p => p.role !== ROLES.WEREWOLF.id);
+      let doctorPlayer = { ...mockPlayers[1], role: ROLES.DOCTOR.id, isAlive: true };
+      let players = [doctorPlayer, ...playersWithoutWerewolf.slice(1)];
+
+      let gameStateNoWerewolf = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_CUPID, // Start in Cupid phase (assuming Cupid has finished or skipped)
+        lovers: ['p1', 'p2'], // Lovers already set to ensure Cupid is skipped
+      };
+
+      let { result } = renderHook(() =>
+        useGameLogic(gameStateNoWerewolf, mockUpdateGame, players, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      // Expect to skip Werewolf and land on Minion (if present) or Sorcerer (if present),
+      // or Doctor if both are also absent.
+      // In mockPlayers, a Doctor exists, but no Minion or Sorcerer.
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_DOCTOR, // Expect to skip MINION and SORCERER and land on DOCTOR.
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
+    it('skips multiple inactive phases to land on the next active phase', async () => {
+      // Setup players: only a Seer is present, no Doppelganger, Cupid, Werewolf, Minion, Sorcerer, Doctor, Mason, Vigilante
+      const seerPlayer = { ...mockPlayers[0], role: ROLES.SEER.id, isAlive: true };
+      const playersWithOnlySeer = [
+        seerPlayer,
+        { ...mockPlayers[1], role: ROLES.VILLAGER.id, isAlive: true },
+        { ...mockPlayers[2], role: ROLES.VILLAGER.id, isAlive: true },
+      ];
+
+      // Start the phase at Doppelganger, expecting it to skip all the way to Seer
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_DOPPELGANGER,
+        doppelgangerTarget: null, // No doppelganger anyway
+        lovers: ['p1', 'p2'], // Lovers set to skip Cupid
+      };
+
+      const { result } = renderHook(() =>
+        useGameLogic(gameState, mockUpdateGame, playersWithOnlySeer, mockUser, true, now)
+      );
+
+      await act(async () => {
+        await result.current.advanceNight();
+      });
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_SEER, // Expect to skip many phases and land on Seer
+        phaseEndTime: expect.any(Number),
+      }));
+    });
+
     it('advances to RESOLVE phase and calls resolveNight when no more night actions', async () => {
       // Mock resolveNight to check if it's called
       const resolveNightSpy = vi.spyOn(useGameLogic(mockGameState, mockUpdateGame, mockPlayers, mockUser, true, now), 'resolveNight');
