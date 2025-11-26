@@ -127,11 +127,7 @@ export function useGameLogic(
       if (actionType === 'cupidLinks') {
         // Accumulate lovers
         const current = newActions.cupidLinks || [];
-        if (current.includes(actionValue)) {
-          newActions.cupidLinks = current.filter((id) => id !== actionValue);
-        } else if (current.length < 2) {
-          newActions.cupidLinks = [...current, actionValue];
-        }
+
         // If we don't have 2 yet, just update state and return (don't advance phase)
         // Actually, the UI handles the selection, we only call advanceNight when CONFIRMING
         // So actionValue here should be the FINAL array
