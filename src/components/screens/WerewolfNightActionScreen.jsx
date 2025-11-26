@@ -38,8 +38,6 @@ export default function WerewolfNightActionScreen({
     // If neither, their effective vote is undefined (or null, which works the same for counting)
   });
 
-  const werewolvesWhoVoted = Object.keys(effectiveWerewolfVotes).length;
-
   // Calculate werewolf vote counts from effective votes
   const werewolfVoteCounts = {};
   alivePlayers.forEach(p => werewolfVoteCounts[p.id] = 0);

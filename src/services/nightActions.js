@@ -1,5 +1,5 @@
 import { ROLES, PHASES } from '../constants';
-import { checkWin, getAlivePlayers, getPlayersByRole, findPlayerById } from '../utils/gameUtils';
+import { checkWin, getPlayersByRole, findPlayerById } from '../utils/gameUtils';
 
 // Helper functions for night actions
 const aggregateWerewolfVotes = (werewolfVotes) => {
@@ -123,8 +123,7 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, nightAction
         }
         break;
       case PHASES.NIGHT_WEREWOLF:
-        const aliveWolves = players.filter(pl => pl.role === ROLES.WEREWOLF.id && pl.isAlive);
-        if (aliveWolves.length > 0) {
+        if (hasRole(ROLES.WEREWOLF.id)) {
           nextPhase = p;
           return nextPhase;
         }

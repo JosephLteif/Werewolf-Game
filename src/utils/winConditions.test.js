@@ -4,7 +4,6 @@ import { ROLES } from '../constants';
 
 describe('Win Conditions Service', () => {
   let mockPlayers;
-  let mockGameState;
 
   beforeEach(() => {
     mockPlayers = [
@@ -14,18 +13,6 @@ describe('Win Conditions Service', () => {
       { id: 'p4', name: 'Player 4', isAlive: true, role: ROLES.VILLAGER.id },
       { id: 'p5', name: 'Player 5', isAlive: true, role: ROLES.VILLAGER.id },
     ];
-    mockGameState = {
-      settings: {
-        wolfCount: 1,
-        activeRoles: {
-          [ROLES.SEER.id]: true,
-          [ROLES.DOCTOR.id]: true,
-        },
-        actionWaitTime: 30,
-      },
-      phase: null, // Not relevant for checkWinCondition itself, but good for context
-      players: {},
-    };
   });
 
   describe('checkWinCondition', () => {

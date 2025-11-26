@@ -1,20 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as nightActions from './nightActions';
 import { ROLES, PHASES } from '../constants';
-import * as gameUtils from '../utils/gameUtils';
 import * as winConditions from '../utils/winConditions';
 
 
 describe('Night Actions Service', () => {
   let mockUpdateGame;
   let mockPlayers;
-  let mockUser;
   let mockGameState;
   let now;
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     mockUpdateGame = vi.fn();
-    mockUser = { uid: 'p1', displayName: 'Player 1' };
     mockPlayers = [
       { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.SEER.id },
       { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.DOCTOR.id },
@@ -37,11 +35,6 @@ describe('Night Actions Service', () => {
     now = Date.now();
 
   });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('startNight', () => {
     it('starts with Cupid if Cupid is present and no lovers', async () => {
       const cupidPlayer = { ...mockPlayers[0], role: ROLES.CUPID.id };
@@ -650,7 +643,6 @@ describe('Night Actions Service', () => {
     it('saves target if doctor protects', async () => {
       const wolfPlayer = mockPlayers.find(p => p.role === ROLES.WEREWOLF.id);
       const villagerPlayer = mockPlayers.find(p => p.role === ROLES.VILLAGER.id);
-      const doctorPlayer = mockPlayers.find(p => p.role === ROLES.DOCTOR.id);
 
       const gameState = {
         ...mockGameState,

@@ -12,7 +12,6 @@ describe('Voting Service', () => {
   let mockPlayers;
   let mockUser;
   let mockGameState;
-  let now;
 
   beforeEach(() => {
     mockUpdateGame = vi.fn();
@@ -36,7 +35,6 @@ describe('Voting Service', () => {
       phase: PHASES.LOBBY,
       players: {},
     };
-    now = Date.now();
 
   });
 

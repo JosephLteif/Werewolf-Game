@@ -1,5 +1,4 @@
 import { ROLES, PHASES } from '../constants';
-import { getAlivePlayers } from '../utils/gameUtils';
 
 export const assignRolesAndStartGame = async (
   gameState,

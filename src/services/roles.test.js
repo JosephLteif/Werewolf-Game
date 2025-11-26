@@ -7,7 +7,6 @@ describe('Role Assignment and Readiness', () => {
   let mockPlayers;
   let mockUser;
   let mockGameState;
-  let now;
 
   beforeEach(() => {
     mockUpdateGame = vi.fn();
@@ -31,7 +30,6 @@ describe('Role Assignment and Readiness', () => {
       phase: PHASES.LOBBY,
       players: {},
     };
-    now = Date.now();
   });
 
   describe('assignRolesAndStartGame', () => {

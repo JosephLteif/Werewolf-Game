@@ -19,14 +19,14 @@ import { rtdb } from "./firebase";
 
 
 export default function App() {
-  const { user, error: authError, resetIdentity } = useAuth();
+  const { user, resetIdentity } = useAuth();
   // Local User State
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
 
-  const { gameState, isHost, error: gameError } = useGameState(user, roomCode, joined);
+  const { gameState, isHost } = useGameState(user, roomCode, joined);
 
   const players = gameState ? Object.entries(gameState.players || {}).map(([id, p]) => ({ id, ...p })) : [];
 
@@ -75,19 +75,6 @@ export default function App() {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (authError) {
-      setErrorMsg(authError);
-    }
-  }, [authError]);
-
-  useEffect(() => {
-    if (gameError) {
-      setErrorMsg(gameError);
-    }
-  }, [gameError]);
-
 
   // Ambient particles generated on mount (avoid impure Math.random() during render)
   const [roleRevealParticles, setRoleRevealParticles] = useState(null);
