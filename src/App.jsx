@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info, Check } from 'lucide-react';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { ROLES, PHASES } from './constants';
@@ -30,7 +30,9 @@ export default function App() {
 
   const { gameState, isHost } = useGameState(user, roomCode, joined);
 
-  const players = gameState ? Object.entries(gameState.players || {}).map(([id, p]) => ({ id, ...p })) : [];
+  const players = useMemo(() => (
+    gameState ? Object.entries(gameState.players || {}).map(([id, p]) => ({ id, ...p })) : []
+  ), [gameState]);
 
   // Local UI State
   const [errorMsg, setErrorMsg] = useState("");
@@ -39,7 +41,7 @@ export default function App() {
 
   const [now, setNow] = useState(() => Date.now());
 
-  const updateGame = async (updates) => {
+  const updateGame = useCallback(async (updates) => {
     if (!user || !roomCode) return;
 
     const payload = { ...updates };
@@ -61,7 +63,7 @@ export default function App() {
     });
 
     await update(ref(rtdb, `rooms/${roomCode}`), payload);
-  };
+  }, [user, roomCode]);
 
   const {
     startGame,
@@ -71,12 +73,34 @@ export default function App() {
     handleHunterShotAction,
     castVote,
     lockVote,
-  } = coreGameActions(gameState, updateGame, players, user, isHost, now);
+    resolveVoting,
+  } = useMemo(() => coreGameActions(gameState, updateGame, players, user, isHost, now), [gameState, updateGame, players, user, isHost, now]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Host-only effect to advance phase on timer expiry
+  useEffect(() => {
+    if (!isHost || !gameState?.phase) return;
+
+    const isWerewolfVote = gameState.phase === PHASES.NIGHT_WEREWOLF;
+    const isNightPhase = gameState.phase.startsWith('NIGHT_');
+    const isDayVote = gameState.phase === PHASES.DAY_VOTE;
+
+    if (gameState.phaseEndTime && now > gameState.phaseEndTime) {
+      if (isWerewolfVote) {
+        advanceNightPhase(null, null);
+      } else if (isNightPhase) {
+        // Timeout for any night action
+        advanceNightPhase(null, null);
+      } else if (isDayVote) {
+        // Timeout for day voting
+        resolveVoting();
+      }
+    }
+  }, [now, gameState?.phase, isHost, advanceNightPhase, gameState?.phaseEndTime, resolveVoting]);
 
   // Ambient particles generated on mount (avoid impure Math.random() during render)
   const [roleRevealParticles, setRoleRevealParticles] = useState(null);

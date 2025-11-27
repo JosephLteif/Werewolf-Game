@@ -234,7 +234,7 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   }
 
   // Special check for Werewolf Voting completion
-  if (gameState.phase === PHASES.NIGHT_WEREWOLF) {
+  if (gameState.phase === PHASES.NIGHT_WEREWOLF && actionType !== null) {
     const aliveWerewolves = players.filter(
       (pl) => pl.role === ROLES.WEREWOLF.id && pl.isAlive
     );
@@ -247,7 +247,7 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   }
 
   // Special check for Mason acknowledgment
-  if (gameState.phase === PHASES.NIGHT_MASON) {
+  if (gameState.phase === PHASES.NIGHT_MASON && actionType !== null) {
     const aliveMasons = players.filter(
       (pl) => pl.role === ROLES.MASON.id && pl.isAlive
     );

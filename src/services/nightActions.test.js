@@ -185,6 +185,31 @@ describe('Night Actions Service', () => {
       }));
     });
 
+    it('advances phase on timeout even if werewolves have not voted', async () => {
+      const wolfPlayer1 = { ...mockPlayers[2], id: 'p3', role: ROLES.WEREWOLF.id, isAlive: true };
+      const wolfPlayer2 = { ...mockPlayers[0], id: 'p1', role: ROLES.WEREWOLF.id, isAlive: true };
+      const playersWithTwoWolves = [
+        wolfPlayer1,
+        wolfPlayer2,
+        { ...mockPlayers[1], id: 'p2', role: ROLES.DOCTOR.id, isAlive: true },
+        { ...mockPlayers[3], id: 'p4', role: ROLES.VILLAGER.id, isAlive: true },
+        { ...mockPlayers[4], id: 'p5', role: ROLES.VILLAGER.id, isAlive: true },
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {},
+      };
+
+      await nightActions.advanceNight(gameState, mockUpdateGame, playersWithTwoWolves, now, null, null); // Pass null for actionType to simulate timeout
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      // It should advance to the next phase in the sequence (Minion, then Sorcerer, then Doctor)
+      expect(updateCall.phase).toBe(PHASES.NIGHT_DOCTOR);
+    });
+
     it('advances from Werewolf to Minion if Minion exists', async () => {
       const wolfPlayer = { ...mockPlayers[0], role: ROLES.WEREWOLF.id };
       const minionPlayer = { ...mockPlayers[1], role: ROLES.MINION.id };
@@ -528,26 +553,26 @@ describe('Night Actions Service', () => {
 
     it('advances to RESOLVE phase and calls resolveNight when no more night actions', async () => {
       // Mock checkWin to avoid complex win condition logic during this test
-            vi.spyOn(winConditions, 'checkWinCondition').mockReturnValueOnce({ isGameOver: true, winner: 'VILLAGERS', winners: ['VILLAGERS'] });
-      
-            const playersWithoutSpecialRoles = [
-              { ...mockPlayers[0], role: ROLES.SEER.id, isAlive: true },
-              { ...mockPlayers[1], role: ROLES.VILLAGER.id, isAlive: true },
-            ];
-      
-            const gameState = {
-              ...mockGameState,
-              phase: PHASES.NIGHT_SEER, // Coming from Seer phase, which is the last action phase for this setup
-              nightActions: { seerCheck: 'p1' }, // Assume action done
-            };
-      
-            await nightActions.advanceNight(gameState, mockUpdateGame, playersWithoutSpecialRoles, now);
-      
-            expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
-              phase: PHASES.GAME_OVER,
-              winner: 'VILLAGERS',
-            }));
-      
+      vi.spyOn(winConditions, 'checkWinCondition').mockReturnValueOnce({ isGameOver: true, winner: 'VILLAGERS', winners: ['VILLAGERS'] });
+
+      const playersWithoutSpecialRoles = [
+        { ...mockPlayers[0], role: ROLES.SEER.id, isAlive: true },
+        { ...mockPlayers[1], role: ROLES.VILLAGER.id, isAlive: true },
+      ];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_SEER, // Coming from Seer phase, which is the last action phase for this setup
+        nightActions: { seerCheck: 'p1' }, // Assume action done
+      };
+
+      await nightActions.advanceNight(gameState, mockUpdateGame, playersWithoutSpecialRoles, now);
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.GAME_OVER,
+        winner: 'VILLAGERS',
+      }));
+
 
     });
 

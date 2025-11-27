@@ -3,6 +3,7 @@ import {
   castPlayerVote,
   lockPlayerVote,
   resolveDayVoting,
+  determineVotingResult,
 } from './voting';
 import { ROLES, PHASES } from '../constants';
 
@@ -60,6 +61,27 @@ describe('Voting Service', () => {
       await castPlayerVote(lockedGameState, mockUpdateGame, mockUser, 'p2');
 
       expect(mockUpdateGame).not.toHaveBeenCalled();
+    });
+
+    it('allows a player to change their vote before locking', async () => {
+      const initialGameState = {
+        ...mockGameState,
+        phase: PHASES.DAY_VOTING,
+        votes: { [mockUser.uid]: 'p2' }, // Player 1 initially votes for Player 2
+        lockedVotes: [],
+      };
+
+      // Player 1 changes their vote to Player 3
+      await castPlayerVote(initialGameState, mockUpdateGame, mockUser, 'p3');
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        votes: { [mockUser.uid]: 'p3' },
+      }));
+
+      // Ensure the phase does not change and resolution is not triggered
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall).not.toHaveProperty('phase');
+      expect(updateCall).not.toHaveProperty('dayLog');
     });
   });
 
@@ -356,5 +378,152 @@ describe('Voting Service', () => {
       expect(updateCall.dayLog).toContain('Hunter) was voted out!');
       expect(updateCall).toHaveProperty('phase', PHASES.HUNTER_ACTION);
     });
-  });
-});
+
+    it('resolves day voting on timeout even if not all players have locked their votes', async () => {
+      // Set up scenario where some players have voted, but not all have locked
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.DAY_VOTING,
+        votes: {
+          'p1': 'p4', // Player 1 votes for p4
+          'p2': 'p4', // Player 2 votes for p4
+          'p3': 'p5', // Player 3 votes for p5
+        },
+        // Only p1 and p2 have locked their votes (out of 5 players)
+        lockedVotes: ['p1', 'p2'],
+      };
+
+      // Ensure 'resolveDayVoting' is called directly, simulating the timeout from App.jsx
+      await resolveDayVoting(gameState, mockUpdateGame, mockPlayers);
+
+      expect(mockUpdateGame).toHaveBeenCalled();
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+
+      // Assertions for expected state changes
+      // With p1 and p2 voting for p4, p4 should be eliminated
+      const updatedPlayers = Object.values(updateCall.players);
+      const eliminatedPlayer = updatedPlayers.find(p => p.id === 'p4');
+      expect(eliminatedPlayer).toBeDefined();
+      expect(eliminatedPlayer.isAlive).toBe(false);
+
+      expect(updateCall.dayLog).toContain('Player 4 was voted out.');
+      expect(updateCall.phase).toBe(PHASES.NIGHT_INTRO);
+      expect(updateCall.votes).toEqual({});
+      expect(updateCall.lockedVotes).toEqual([]);
+    });
+
+        it('ignores votes that are not locked', async () => {
+
+          const gameState = {
+
+            ...mockGameState,
+
+            phase: PHASES.DAY_VOTING,
+
+            votes: {
+
+              'p1': 'p4', // Locked
+
+              'p2': 'p4', // Locked
+
+              'p3': 'p5', // Not locked
+
+              'p4': 'p5', // Not locked
+
+              'p5': 'p5', // Not locked
+
+            },
+
+            lockedVotes: ['p1', 'p2'],
+
+          };
+
+    
+
+          await resolveDayVoting(gameState, mockUpdateGame, mockPlayers);
+
+    
+
+          expect(mockUpdateGame).toHaveBeenCalled();
+
+          const updateCall = mockUpdateGame.mock.calls[0][0];
+
+    
+
+          // p4 should be eliminated with 2 votes. p5 has 3 votes but they are not locked.
+
+          const updatedPlayers = Object.values(updateCall.players);
+
+          const eliminatedPlayer = updatedPlayers.find(p => p.id === 'p4');
+
+          expect(eliminatedPlayer).toBeDefined();
+
+          expect(eliminatedPlayer.isAlive).toBe(false);
+
+    
+
+          const notEliminatedPlayer = updatedPlayers.find(p => p.id === 'p5');
+
+          expect(notEliminatedPlayer.isAlive).toBe(true);
+
+    
+
+          expect(updateCall.dayLog).toContain('Player 4 was voted out.');
+
+        });
+
+      });
+
+    
+
+      describe('determineVotingResult', () => {
+
+        it('returns no_elimination if there are no votes', () => {
+
+          const result = determineVotingResult({});
+
+          expect(result.type).toBe('no_elimination');
+
+        });
+
+    
+
+        it('returns elimination with the correct victim', () => {
+
+          const voteCounts = { 'p1': 2, 'p2': 1 };
+
+          const result = determineVotingResult(voteCounts);
+
+          expect(result.type).toBe('elimination');
+
+          expect(result.victims).toEqual(['p1']);
+
+        });
+
+    
+
+        it('returns no_elimination on a tie', () => {
+
+          const voteCounts = { 'p1': 2, 'p2': 2 };
+
+          const result = determineVotingResult(voteCounts);
+
+          expect(result.type).toBe('no_elimination');
+
+        });
+
+    
+
+        it('returns no_elimination on a skip vote win', () => {
+
+          const voteCounts = { 'skip': 2, 'p2': 1 };
+
+          const result = determineVotingResult(voteCounts);
+
+          expect(result.type).toBe('no_elimination');
+
+        });
+
+      });
+
+    });

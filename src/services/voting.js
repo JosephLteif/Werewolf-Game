@@ -39,8 +39,8 @@ export function determineVotingResult(voteCounts) {
     }
   });
 
-  // Handle tie or skip
-  if (victims.length > 1 || victims[0] === 'skip') {
+  // Handle no votes, a tie, or a skip vote
+  if (victims.length !== 1 || victims[0] === 'skip') {
     return { type: 'no_elimination', victims: [] };
   }
 
@@ -134,7 +134,18 @@ const handleHunterVoteDeath = async (victim, newPlayers, gameState, updateGame) 
 };
 
 export const resolveDayVoting = async (gameState, updateGame, players) => {
-  const voteCounts = countVotes(gameState.votes, players);
+  const lockedVoterIds = gameState.lockedVotes || [];
+  const votesToCount = Object.entries(gameState.votes || {}).reduce(
+    (acc, [voterId, targetId]) => {
+      if (lockedVoterIds.includes(voterId)) {
+        acc[voterId] = targetId;
+      }
+      return acc;
+    },
+    {}
+  );
+
+  const voteCounts = countVotes(votesToCount, players);
   const { type, victims } = determineVotingResult(voteCounts);
 
   if (type === 'no_elimination') {
