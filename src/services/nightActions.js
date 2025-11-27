@@ -248,7 +248,11 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
 
   // Special check for Mason acknowledgment
   if (gameState.phase === PHASES.NIGHT_MASON && actionType !== null) {
-    const aliveMasons = players.filter(
+    const playersToUse = (gameState.players && Object.keys(gameState.players).length > 0)
+      ? Object.values(gameState.players)
+      : players;
+
+    const aliveMasons = playersToUse.filter(
       (pl) => pl.role === ROLES.MASON.id && pl.isAlive
     );
     // If there's only one mason, they can proceed immediately.
@@ -268,6 +272,9 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   } else {
     let updates = { nightActions: newActions, phase: nextPhase };
 
+    if (nextPhase === PHASES.NIGHT_MASON) {
+      updates.nightActions = { ...newActions, masonsReady: {} };
+    }
     // Set timer for next phase if it's an action phase
     const isTimedPhase = [
       PHASES.NIGHT_WEREWOLF,

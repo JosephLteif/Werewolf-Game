@@ -357,6 +357,47 @@ describe('Night Actions Service', () => {
       }));
     });
 
+    it('advances immediately if only one mason is alive and clicks ready', async () => {
+      const masonPlayer1 = { ...mockPlayers[0], role: ROLES.MASON.id, isAlive: true };
+      const masonPlayer2 = { ...mockPlayers[1], role: ROLES.MASON.id, isAlive: false }; // Dead mason
+      const players = [masonPlayer1, masonPlayer2, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_MASON,
+        nightActions: { masonsReady: {} },
+      };
+
+      await nightActions.advanceNight(gameState, mockUpdateGame, players, now, 'masonReady', masonPlayer1.id);
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(updateCall.phase).not.toBe(PHASES.NIGHT_MASON);
+    });
+
+    it('resets masonsReady when entering mason phase', async () => {
+      const masonPlayer1 = { ...mockPlayers[0], role: ROLES.MASON.id };
+      const masonPlayer2 = { ...mockPlayers[1], role: ROLES.MASON.id };
+      const players = [masonPlayer1, masonPlayer2, ...mockPlayers.slice(2)];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_SEER, // Coming from a phase before Mason
+        nightActions: {
+          seerCheck: 'p1',
+          masonsReady: { 'someOldId': true } // Old mason ready state
+        },
+      };
+
+      await nightActions.advanceNight(gameState, mockUpdateGame, players, now, 'seerCheck', 'p2');
+
+      expect(mockUpdateGame).toHaveBeenCalledWith(expect.objectContaining({
+        phase: PHASES.NIGHT_MASON,
+        nightActions: expect.objectContaining({
+          masonsReady: {},
+        }),
+      }));
+    });
+
     it('updates doppelgangerTarget if Doppelganger makes a choice', async () => {
       const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id };
       const targetPlayer = { ...mockPlayers[1], role: ROLES.SEER.id };
