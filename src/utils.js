@@ -1,60 +1,54 @@
-export const calculateGameBalance = (gameState, ROLES) => {
-    const { settings, players } = gameState;
+import { roleRegistry } from './roles/RoleRegistry';
 
-    const activeSpecialRolesCount = Object.entries(settings.activeRoles)
-        .filter(([id, isActive]) => isActive && id !== ROLES.MASON.id).length;
-    const masonCount = settings.activeRoles[ROLES.MASON.id] ? 2 : 0;
-    const totalRolesNeeded = settings.wolfCount + activeSpecialRolesCount + masonCount;
-    const playersCount = players.length;
+export const calculateGameBalance = (settings) => {
+    // Count active roles (excluding Mason which is counted separately)
+    const activeRoleCount = Object.entries(settings.activeRoles || {})
+        .filter(([id, isActive]) => isActive && id !== 'mason').length;
+    const masonCount = settings.activeRoles['mason'] ? 2 : 0;
+    const totalRoles = activeRoleCount + masonCount;
+    const playerCount = settings.wolfCount + totalRoles;
 
-    // Calculate balance weight
     let balanceWeight = 0;
 
-    // Add werewolf weights
-    balanceWeight += settings.wolfCount * ROLES.WEREWOLF.weight;
+    // Add werewolf weight
+    const werewolfRole = roleRegistry.getRole('werewolf');
+    balanceWeight += settings.wolfCount * werewolfRole.weight;
 
-    // Add active role weights
-    Object.entries(settings.activeRoles).forEach(([roleId, isActive]) => {
-        if (isActive) {
-            const role = Object.values(ROLES).find(r => r.id === roleId);
-            if (role) {
-                // Mason comes in pairs
-                if (roleId === ROLES.MASON.id) {
-                    balanceWeight += role.weight * 2;
-                } else {
-                    balanceWeight += role.weight;
+    // Add weight for each active role
+    if (settings.activeRoles) {
+        Object.entries(settings.activeRoles).forEach(([roleId, isActive]) => {
+            if (isActive) {
+                const role = roleRegistry.getRole(roleId);
+                if (role) {
+                    if (roleId === 'mason') {
+                        // Masons come in pairs
+                        balanceWeight += 2 * role.weight;
+                    } else {
+                        balanceWeight += role.weight;
+                    }
                 }
             }
-        }
-    });
-
-    // Add villager weights for remaining slots
-    const villagersCount = Math.max(0, playersCount - totalRolesNeeded);
-    balanceWeight += villagersCount * ROLES.VILLAGER.weight;
-
-    // Balance assessment
-    let balanceColor = 'text-green-400';
-    let balanceText = 'Balanced';
-    if (balanceWeight > 5) {
-        balanceColor = 'text-blue-400';
-        balanceText = 'Village Favored';
-    } else if (balanceWeight < -5) {
-        balanceColor = 'text-red-400';
-        balanceText = 'Wolves Favored';
-    } else if (balanceWeight > 0) {
-        balanceColor = 'text-cyan-400';
-        balanceText = 'Slight Village Advantage';
-    } else if (balanceWeight < 0) {
-        balanceColor = 'text-orange-400';
-        balanceText = 'Slight Wolf Advantage';
+        });
     }
 
+    // Calculate villagers needed to fill remaining slots
+    const villagersCount = playerCount - settings.wolfCount - totalRoles;
+    const villagerRole = roleRegistry.getRole('villager');
+    balanceWeight += villagersCount * villagerRole.weight;
+
     return {
+        playerCount,
         balanceWeight,
-        balanceColor,
-        balanceText,
-        villagersCount,
-        totalRolesNeeded,
-        playersCount
+        isBalanced: Math.abs(balanceWeight) <= 3,
     };
 };
+
+// Generate a random room code (4 uppercase letters)
+export function generateRoomCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}

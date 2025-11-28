@@ -1,10 +1,10 @@
 import React from 'react';
-import { ROLES } from '../constants';
+import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function PlayerRoleDisplay({ myPlayer }) {
   if (!myPlayer) return null;
 
-  const role = ROLES[myPlayer.role.toUpperCase()]; // Assuming myPlayer.role is the ID, e.g., 'WEREWOLF'
+  const role = roleRegistry.getRole(myPlayer.role); // Assuming myPlayer.role is the ID, e.g., 'WEREWOLF'
 
   return (
     <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">

@@ -1,7 +1,10 @@
-import { ROLES, PHASES, TEAMS } from '../constants';
+import { PHASES, TEAMS, ACTION_TYPES } from '../constants';
+import { NIGHT_PHASE_SEQUENCE } from '../constants/phases';
 import { checkWinCondition } from '../utils/winConditions';
 import { getPlayersByRole, findPlayerById } from '../utils/playersUtils';
 import { handleDoppelgangerTransformation, determineFirstNightPhase } from '../utils/gameLogic';
+import { roleRegistry } from '../roles/RoleRegistry';
+import { ROLE_IDS } from '../constants/roleIds';
 
 // Helper functions for night actions
 const aggregateWerewolfVotes = (werewolfVotes) => {
@@ -70,95 +73,45 @@ const handleLoverDeaths = (newPlayers, gameState, doctorProtect, deaths) => {
   }
 };
 
-
-
 const checkSorcererSuccess = (newPlayers, sorcererCheck) => {
   if (sorcererCheck) {
     const target = findPlayerById(newPlayers, sorcererCheck);
-    const sorcerer = getPlayersByRole(newPlayers, ROLES.SORCERER.id)[0];
-    if (target && target.role === ROLES.SEER.id && sorcerer) {
+    const sorcerer = getPlayersByRole(newPlayers, ROLE_IDS.SORCERER)[0];
+    if (target && target.role === ROLE_IDS.SEER && sorcerer) {
       sorcerer.foundSeer = true;
     }
   }
 };
 
 const getNextNightPhaseInternal = (currentPhase, players, gameState, nightActions) => {
-  const sequence = [
-    PHASES.NIGHT_DOPPELGANGER,
-    PHASES.NIGHT_CUPID,
-    PHASES.NIGHT_WEREWOLF,
-    PHASES.NIGHT_MINION,
-    PHASES.NIGHT_SORCERER,
-    PHASES.NIGHT_DOCTOR,
-    PHASES.NIGHT_SEER,
-    PHASES.NIGHT_MASON,
-    PHASES.NIGHT_VIGILANTE,
-  ];
+  const sequence = NIGHT_PHASE_SEQUENCE;
 
   let currentIdx = sequence.indexOf(currentPhase);
   let nextPhase = 'RESOLVE';
 
   for (let i = currentIdx + 1; i < sequence.length; i++) {
     const p = sequence[i];
-    const hasRole = (rid) => players.some((pl) => pl.role === rid && pl.isAlive);
 
-    switch (p) {
-      case PHASES.NIGHT_DOPPELGANGER:
-        if (hasRole(ROLES.DOPPELGANGER.id) && !gameState.doppelgangerTarget && !nightActions.doppelgangerCopy) {
-          nextPhase = p;
-          return nextPhase;
+    // Optimization: Check if any alive player has a role that wakes up in this phase
+    const activeRoleInPhase = players.some(pl => {
+      if (!pl.isAlive) return false;
+      const role = roleRegistry.getRole(pl.role);
+      return role && role.isWakeUpPhase(p);
+    });
+
+    if (activeRoleInPhase) {
+      // Special checks for one-time roles or specific conditions
+      if (p === PHASES.NIGHT_DOPPELGANGER) {
+        if (!gameState.doppelgangerTarget && !nightActions.doppelgangerCopy) {
+          return p;
         }
-        break;
-      case PHASES.NIGHT_CUPID:
-        if (hasRole(ROLES.CUPID.id) && (!gameState.lovers || gameState.lovers.length === 0)) {
-          nextPhase = p;
-          return nextPhase;
+      } else if (p === PHASES.NIGHT_CUPID) {
+        if (!gameState.lovers || gameState.lovers.length === 0) {
+          return p;
         }
-        break;
-      case PHASES.NIGHT_WEREWOLF:
-        if (hasRole(ROLES.WEREWOLF.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      case PHASES.NIGHT_MINION:
-        if (hasRole(ROLES.MINION.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      case PHASES.NIGHT_SORCERER:
-        if (hasRole(ROLES.SORCERER.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      case PHASES.NIGHT_DOCTOR:
-        if (hasRole(ROLES.DOCTOR.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      case PHASES.NIGHT_SEER:
-        if (hasRole(ROLES.SEER.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      case PHASES.NIGHT_MASON:
-        if (hasRole(ROLES.MASON.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      case PHASES.NIGHT_VIGILANTE:
-        if (hasRole(ROLES.VIGILANTE.id)) {
-          nextPhase = p;
-          return nextPhase;
-        }
-        break;
-      default:
-        break;
+      } else {
+        return p;
+      }
     }
   }
   return nextPhase;
@@ -186,14 +139,15 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   let newActions = { ...gameState.nightActions };
 
   switch (actionType) {
-    case 'cupidLinks':
+    case ACTION_TYPES.CUPID_LINK:
       newActions.cupidLinks = actionValue;
       break;
-    case 'werewolfVote':
-      newActions.werewolfVotes = {
-        ...(newActions.werewolfVotes || {}),
-        [actionValue.voterId]: actionValue.targetId,
-      };
+    case ACTION_TYPES.WEREWOLF_VOTE: {
+      // This is specific to Werewolf role
+      const wwRole = roleRegistry.getRole(ROLE_IDS.WEREWOLF);
+      const wwUpdates = wwRole.processNightAction(gameState, { id: actionValue.voterId }, { type: actionType, ...actionValue });
+      newActions = { ...newActions, ...wwUpdates };
+
       // Clear provisional vote for this werewolf
       if (newActions.werewolfProvisionalVotes) {
         delete newActions.werewolfProvisionalVotes[actionValue.voterId];
@@ -202,30 +156,43 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
         }
       }
       break;
-    case 'werewolfProvisionalVote':
+    }
+    case ACTION_TYPES.WEREWOLF_PROVISIONAL_VOTE:
       newActions.werewolfProvisionalVotes = {
         ...(newActions.werewolfProvisionalVotes || {}),
         [actionValue.voterId]: actionValue.targetId,
       };
       break;
-    case 'doppelgangerCopy':
-      newActions.doppelgangerCopy = actionValue;
+    case ACTION_TYPES.DOPPELGANGER_COPY: {
+      const dpRole = roleRegistry.getRole(ROLE_IDS.DOPPELGANGER);
+      const dpUpdates = dpRole.processNightAction(gameState, null, { type: actionType, targetId: actionValue });
+      newActions = { ...newActions, ...dpUpdates };
       break;
-    case 'doctorProtect':
-      newActions.doctorProtect = actionValue;
+    }
+    case ACTION_TYPES.DOCTOR_PROTECT: {
+      const docRole = roleRegistry.getRole(ROLE_IDS.DOCTOR);
+      const docUpdates = docRole.processNightAction(gameState, null, { type: actionType, targetId: actionValue });
+      newActions = { ...newActions, ...docUpdates };
       break;
-    case 'vigilanteTarget':
-      newActions.vigilanteTarget = actionValue;
+    }
+    case ACTION_TYPES.VIGILANTE_TARGET: {
+      const vigRole = roleRegistry.getRole(ROLE_IDS.VIGILANTE);
+      const vigUpdates = vigRole.processNightAction(gameState, null, { type: actionType, targetId: actionValue });
+      newActions = { ...newActions, ...vigUpdates };
       break;
-    case 'sorcererCheck':
-      newActions.sorcererCheck = actionValue;
+    }
+    case ACTION_TYPES.SORCERER_CHECK: {
+      const sorcRole = roleRegistry.getRole(ROLE_IDS.SORCERER);
+      const sorcUpdates = sorcRole.processNightAction(gameState, null, { type: actionType, targetId: actionValue });
+      newActions = { ...newActions, ...sorcUpdates };
       break;
-    case 'masonReady':
-      newActions.masonsReady = {
-        ...(newActions.masonsReady || {}),
-        [actionValue]: true,
-      };
+    }
+    case ACTION_TYPES.MASON_READY: {
+      const masonRole = roleRegistry.getRole(ROLE_IDS.MASON);
+      const masonUpdates = masonRole.processNightAction(gameState, { id: actionValue }, { type: actionType });
+      newActions = { ...newActions, ...masonUpdates };
       break;
+    }
     default:
       if (actionType) {
         newActions[actionType] = actionValue;
@@ -236,7 +203,7 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   // Special check for Werewolf Voting completion
   if (gameState.phase === PHASES.NIGHT_WEREWOLF && actionType !== null) {
     const aliveWerewolves = players.filter(
-      (pl) => pl.role === ROLES.WEREWOLF.id && pl.isAlive
+      (pl) => pl.role === ROLE_IDS.WEREWOLF && pl.isAlive
     );
     const werewolvesVoted = Object.keys(newActions.werewolfVotes || {}).length;
 
@@ -253,7 +220,7 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
       : players;
 
     const aliveMasons = playersToUse.filter(
-      (pl) => pl.role === ROLES.MASON.id && pl.isAlive
+      (pl) => pl.role === ROLE_IDS.MASON && pl.isAlive
     );
     // If there's only one mason, they can proceed immediately.
     if (aliveMasons.length > 1) {
@@ -316,13 +283,11 @@ const applyLoverTeamChanges = (players, loversIds) => {
   const lover2 = players.find(p => p.id === lover2Id);
 
   if (lover1 && lover2) {
-    const isWolfLover1 = lover1.role === ROLES.WEREWOLF.id;
-    const isWolfLover2 = lover2.role === ROLES.WEREWOLF.id;
-    const isVillagerLover1 = lover1.role !== ROLES.WEREWOLF.id; // Simplified, assuming non-werewolf is villager for this context
-    const isVillagerLover2 = lover2.role !== ROLES.WEREWOLF.id;
+    const lover1Role = roleRegistry.getRole(lover1.role);
+    const lover2Role = roleRegistry.getRole(lover2.role);
 
-    // Check for "Forbidden Love" (Wolf + Villager)
-    if ((isWolfLover1 && isVillagerLover2) || (isVillagerLover1 && isWolfLover2)) {
+    // Check for "Forbidden Love" (lovers from different teams)
+    if (lover1Role.team.id !== lover2Role.team.id) {
       // Change their alignment to the LOVERS team
       if (lover1.isAlive) {
         lover1.alignment = TEAMS.LOVERS;
@@ -365,7 +330,7 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
     handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
   });
   // Check Hunter
-  const hunterDied = deaths.find((p) => p.role === ROLES.HUNTER.id);
+  const hunterDied = deaths.find((p) => p.role === ROLE_IDS.HUNTER);
   let nextPhase = PHASES.DAY_REVEAL;
   let log =
     deaths.length > 0
@@ -439,7 +404,7 @@ export const handleHunterShot = async (gameState, updateGame, players, targetId)
 
   // Doppelgänger Transformation (Hunter Shot)
   if (gameState.doppelgangerTarget === victim.id) {
-    const doppelganger = getPlayersByRole(newPlayers, ROLES.DOPPELGANGER.id)[0];
+    const doppelganger = getPlayersByRole(newPlayers, ROLE_IDS.DOPPELGANGER)[0];
     if (doppelganger && doppelganger.isAlive) {
       doppelganger.role = victim.role;
     }

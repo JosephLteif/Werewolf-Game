@@ -5,7 +5,8 @@ import {
   resolveDayVoting,
   determineVotingResult,
 } from './voting';
-import { ROLES, PHASES } from '../constants';
+import { PHASES } from '../constants';
+import { ROLE_IDS } from '../constants/roleIds';
 
 
 describe('Voting Service', () => {
@@ -17,19 +18,19 @@ describe('Voting Service', () => {
   beforeEach(() => {
     mockUser = { uid: 'p1', displayName: 'Player 1' };
     mockPlayers = [
-      { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.SEER.id },
-      { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.DOCTOR.id },
-      { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLES.WEREWOLF.id },
-      { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
-      { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+      { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.SEER },
+      { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.DOCTOR },
+      { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLE_IDS.WEREWOLF },
+      { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+      { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
     // Initialize currentGameState for each test
     currentGameState = {
       settings: {
         wolfCount: 1,
         activeRoles: {
-          [ROLES.SEER.id]: true,
-          [ROLES.DOCTOR.id]: true,
+          [ROLE_IDS.SEER]: true,
+          [ROLE_IDS.DOCTOR]: true,
         },
         actionWaitTime: 30,
       },
@@ -159,7 +160,7 @@ describe('Voting Service', () => {
     });
 
     it('accounts for Mayor\'s double vote', async () => {
-      mockPlayers[0].role = ROLES.MAYOR.id; // p1 is Mayor
+      mockPlayers[0].role = ROLE_IDS.MAYOR; // p1 is Mayor
       currentGameState.votes = {
         'p1': 'p5', // Mayor (p1) votes for p5
         'p2': 'p5', // p2 votes for p5
@@ -206,8 +207,8 @@ describe('Voting Service', () => {
     });
 
     it('handles Doppelganger transformation when target is voted out', async () => {
-      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLES.DOPPELGANGER.id }; // p1 is Doppelganger
-      const targetPlayer = { ...mockPlayers[1], role: ROLES.SEER.id }; // p2 is Seer (the target)
+      const doppelgangerPlayer = { ...mockPlayers[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
+      const targetPlayer = { ...mockPlayers[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
       const playersWithDoppelganger = [doppelgangerPlayer, targetPlayer, ...mockPlayers.slice(2)];
 
       currentGameState.doppelgangerTarget = targetPlayer.id; // Doppelganger chose p2
@@ -222,13 +223,13 @@ describe('Voting Service', () => {
       expect(mockUpdateGame).toHaveBeenCalled();
       const updatedDoppelganger = currentGameState.players.find(p => p.id === doppelgangerPlayer.id);
       expect(updatedDoppelganger).toBeDefined();
-      expect(updatedDoppelganger.role).toBe(ROLES.SEER.id);
+      expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER);
       expect(currentGameState.players.find(p => p.id === targetPlayer.id).isAlive).toBe(false);
     });
 
     it('handles lover chain death when one lover is voted out', async () => {
-      const lover1 = { ...mockPlayers[0], role: ROLES.VILLAGER.id }; // p1
-      const lover2 = { ...mockPlayers[1], role: ROLES.VILLAGER.id }; // p2
+      const lover1 = { ...mockPlayers[0], role: ROLE_IDS.VILLAGER }; // p1
+      const lover2 = { ...mockPlayers[1], role: ROLE_IDS.VILLAGER }; // p2
       const playersWithLovers = [lover1, lover2, ...mockPlayers.slice(2)];
 
       currentGameState.lovers = [lover1.id, lover2.id];
@@ -246,7 +247,7 @@ describe('Voting Service', () => {
     });
 
     it('handles Hunter being voted out', async () => {
-      const hunterPlayer = { ...mockPlayers[0], role: ROLES.HUNTER.id }; // p1 is Hunter
+      const hunterPlayer = { ...mockPlayers[0], role: ROLE_IDS.HUNTER }; // p1 is Hunter
       const playersWithHunter = [hunterPlayer, ...mockPlayers.slice(1)];
 
       currentGameState.votes = {

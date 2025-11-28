@@ -1,7 +1,10 @@
 import React from 'react';
 import { Info, Copy } from 'lucide-react';
-import { ROLES, CUPID_FATES } from '../constants';
+import { ROLE_IDS } from '../constants/roleIds';
+import { Teams } from '../models/Team';
+import { CUPID_FATES } from '../constants';
 import { RoleInfoModal } from '../modals/RoleInfoModal';
+import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user }) {
   return (
@@ -79,7 +82,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
               type="checkbox"
               className="sr-only peer"
               checked={gameState.settings.showActiveRolesPanel || false}
-              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, showActiveRolesPanel: ! (gameState.settings.showActiveRolesPanel || false) } })}
+              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, showActiveRolesPanel: !(gameState.settings.showActiveRolesPanel || false) } })}
               disabled={!isHost}
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -93,7 +96,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
               type="checkbox"
               className="sr-only peer"
               checked={gameState.settings.cupidCanChooseSelf || false}
-              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, cupidCanChooseSelf: ! (gameState.settings.cupidCanChooseSelf || false) } })}
+              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false) } })}
               disabled={!isHost}
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -114,70 +117,77 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
         </div>
 
         <div className="space-y-4">
-          {['good', 'evil', 'neutral'].map(alignment => (
-            <div key={alignment}>
-              <h4 className="text-xs font-bold uppercase text-slate-500 mb-2 tracking-widest">{alignment} Roles</h4>
-              <div className="flex flex-wrap gap-2">
-                {Object.values(ROLES).filter(r => r.selectable !== false && r.id !== 'werewolf' && r.id !== 'villager' && r.alignment === alignment).map(r => {
-                  const isActive = gameState.settings.activeRoles[r.id];
-                  const alignmentColors = {
-                    good: 'bg-blue-600 border-blue-500',
-                    evil: 'bg-red-600 border-red-500',
-                    neutral: 'bg-purple-600 border-purple-500'
-                  };
-                  const activeColor = alignmentColors[r.alignment];
+          {['good', 'evil', 'neutral'].map(alignment => {
+            return (
+              <div key={alignment}>
+                <h4 className="text-xs font-bold uppercase text-slate-500 mb-2 tracking-widest">{alignment} Roles</h4>
+                <div className="flex flex-wrap gap-2">
+                  {roleRegistry.getAllRoles().filter(r => {
+                    if (r.selectable === false) return false;
+                    if (r.id === 'werewolf' || r.id === 'villager') return false;
+                    return r.alignment === alignment;
+                  }).map(r => {
+                    const isActive = gameState.settings.activeRoles[r.id];
+                    const alignmentColors = {
+                      good: 'bg-blue-600 border-blue-500',
+                      evil: 'bg-red-600 border-red-500',
+                      neutral: 'bg-purple-600 border-purple-500'
+                    };
+                    const activeColor = alignmentColors[alignment];
 
-                  return (
-                    <button
-                      key={r.id}
-                      onClick={() => isHost ? updateGame({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
-                      className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => isHost ? updateGame({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
+                        className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
                              ${isActive ? `${activeColor} text-white` : 'bg-slate-900 border-slate-700 text-slate-500'}
                              ${!isHost ? 'cursor-help opacity-80' : 'hover:opacity-80'}
                         `}
-                    >
-                      <r.icon className="w-3 h-3" />
-                      {r.name}
-                      <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${isActive ? 'bg-white/20' : 'bg-slate-800'}`}>
-                        {r.weight > 0 ? '+' : ''}{r.weight}
-                      </span>
-                      {isHost && (
-                        <div
-                          onClick={(e) => { e.stopPropagation(); setShowRoleInfo(r.id); }}
-                          className="ml-1 p-1 hover:bg-white/20 rounded-full cursor-help"
-                        >
-                          <Info className="w-3 h-3" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+                      >
+                        <r.icon className="w-3 h-3" />
+                        {r.name}
+                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${isActive ? 'bg-white/20' : 'bg-slate-800'}`}>
+                          {r.weight > 0 ? '+' : ''}{r.weight}
+                        </span>
+                        {isHost && (
+                          <div
+                            onClick={(e) => { e.stopPropagation(); setShowRoleInfo(r.id); }}
+                            className="ml-1 p-1 hover:bg-white/20 rounded-full cursor-help"
+                          >
+                            <Info className="w-3 h-3" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Game Balance - Visible to All Players */}
         {(() => {
           const activeSpecialRolesCount = Object.entries(gameState.settings.activeRoles)
-            .filter(([id, isActive]) => isActive && id !== ROLES.MASON.id).length;
-          const masonCount = gameState.settings.activeRoles[ROLES.MASON.id] ? 2 : 0;
+            .filter(([id, isActive]) => isActive && id !== ROLE_IDS.MASON).length;
+          const masonCount = gameState.settings.activeRoles[ROLE_IDS.MASON] ? 2 : 0;
           const totalRolesNeeded = gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
           const playersCount = players.length;
 
           // Calculate balance weight
           let balanceWeight = 0;
 
-          // Add werewolf weights
-          balanceWeight += gameState.settings.wolfCount * ROLES.WEREWOLF.weight;
+          // Add werewolf weights using role weight
+          const werewolfWeight = roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight;
+          balanceWeight += gameState.settings.wolfCount * werewolfWeight;
 
           // Add active role weights
           Object.entries(gameState.settings.activeRoles).forEach(([roleId, isActive]) => {
             if (isActive) {
-              const role = Object.values(ROLES).find(r => r.id === roleId);
+              const role = roleRegistry.getAllRoles().find(r => r.id === roleId);
               if (role) {
                 // Mason comes in pairs
-                if (roleId === ROLES.MASON.id) {
+                if (roleId === ROLE_IDS.MASON) {
                   balanceWeight += role.weight * 2;
                 } else {
                   balanceWeight += role.weight;
@@ -188,7 +198,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
 
           // Add villager weights for remaining slots
           const villagersCount = Math.max(0, playersCount - totalRolesNeeded);
-          balanceWeight += villagersCount * ROLES.VILLAGER.weight;
+          balanceWeight += villagersCount * roleRegistry.getRole(ROLE_IDS.VILLAGER).weight;
 
           // Balance assessment
           let balanceColor = 'text-green-400';
@@ -237,16 +247,16 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Werewolves</span>
                     <span className="font-mono text-slate-300">
-                      {gameState.settings.wolfCount} × {ROLES.WEREWOLF.weight} = {gameState.settings.wolfCount * ROLES.WEREWOLF.weight}
+                      {gameState.settings.wolfCount} × {roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight} = {gameState.settings.wolfCount * roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight}
                     </span>
                   </div>
 
                   {Object.entries(gameState.settings.activeRoles)
                     .filter(([, isActive]) => isActive)
                     .map(([roleId]) => {
-                      const role = Object.values(ROLES).find(r => r.id === roleId);
+                      const role = roleRegistry.getAllRoles().find(r => r.id === roleId);
                       if (!role) return null;
-                      const count = roleId === ROLES.MASON.id ? 2 : 1;
+                      const count = roleId === ROLE_IDS.MASON ? 2 : 1;
                       const totalWeight = role.weight * count;
                       return (
                         <div key={roleId} className="flex justify-between items-center">
@@ -262,7 +272,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Villagers</span>
                       <span className="font-mono text-slate-300">
-                        {villagersCount} × +{ROLES.VILLAGER.weight} = +{villagersCount * ROLES.VILLAGER.weight}
+                        {villagersCount} × +{roleRegistry.getRole(ROLE_IDS.VILLAGER).weight} = +{villagersCount * roleRegistry.getRole(ROLE_IDS.VILLAGER).weight}
                       </span>
                     </div>
                   )}

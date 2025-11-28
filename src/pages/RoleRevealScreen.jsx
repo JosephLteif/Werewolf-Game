@@ -1,10 +1,10 @@
 
 import { Check } from 'lucide-react';
-import { ROLES } from '../constants';
+import {roleRegistry} from "../roles/RoleRegistry.js";
 
 export default function RoleRevealScreen({ myPlayer, markReady, players, roleRevealParticles }) {
   if (!myPlayer) return <div>Loading...</div>;
-  const MyRole = ROLES[myPlayer.role.toUpperCase()];
+  const MyRole = roleRegistry.getRole(myPlayer.role);
 
   const alignmentColors = {
     good: { bg: 'from-blue-500/20 to-cyan-500/20', border: 'border-blue-400', text: 'text-blue-400', glow: 'shadow-blue-500/50' },
@@ -43,7 +43,7 @@ export default function RoleRevealScreen({ myPlayer, markReady, players, roleRev
             <MyRole.icon className={`w-32 h-32 ${colors.text} drop-shadow-2xl`} />
           </div>
           <div className={`text-4xl font-black ${colors.text} relative`}>{MyRole.name}</div>
-          <p className="text-slate-300 text-base leading-relaxed relative">{MyRole.desc}</p>
+          <p className="text-slate-300 text-base leading-relaxed relative">{MyRole.description}</p>
 
           {/* Alignment badge */}
           <div className={`px-4 py-2 rounded-full ${colors.border} border ${colors.text} text-xs font-bold uppercase tracking-wider relative`}>

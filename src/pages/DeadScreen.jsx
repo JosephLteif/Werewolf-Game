@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Skull, RotateCcw } from 'lucide-react';
-import { ROLES } from '../constants';
+import { ROLE_IDS } from '../constants/roleIds';
+import { roleRegistry } from "../roles/RoleRegistry.js";
 
 export default function DeadScreen({ winner, winners = [], isGameOver, onReset, isHost, dayLog, players, lovers }) {
   const winnerColors = {
@@ -20,16 +21,16 @@ export default function DeadScreen({ winner, winners = [], isGameOver, onReset, 
       isWinner = isWinner || (lovers && lovers.includes(p.id));
     }
     if (winners.includes('VILLAGERS')) {
-      isWinner = isWinner || (ROLES[p.role.toUpperCase()].alignment === 'good');
+      isWinner = isWinner || (roleRegistry.getRole(p.role).alignment === 'good');
     }
     if (winners.includes('WEREWOLVES')) {
-      const role = ROLES[p.role.toUpperCase()];
-      if (role.id === ROLES.SORCERER.id) isWinner = isWinner || !!p.foundSeer;
+      const role = roleRegistry.getRole(p.role);
+      if (role.id === ROLE_IDS.SORCERER) isWinner = isWinner || !!p.foundSeer;
       else isWinner = isWinner || (role.alignment === 'evil');
     }
 
     if (winners.includes('CUPID')) {
-      isWinner = isWinner || (p.role === ROLES.CUPID.id);
+      isWinner = isWinner || (p.role === ROLE_IDS.CUPID);
     }
     return isWinner;
   }) : [];
@@ -88,7 +89,7 @@ export default function DeadScreen({ winner, winners = [], isGameOver, onReset, 
                         {p.name[0]}
                       </div>
                       <span className="font-bold text-sm">{p.name}</span>
-                      <span className="text-xs text-slate-500">({ROLES[p.role.toUpperCase()].name})</span>
+                      <span className="text-xs text-slate-500">({roleRegistry.getRole(p.role).name})</span>
                     </div>
                   ))}
                 </div>

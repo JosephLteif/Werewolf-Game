@@ -1,7 +1,8 @@
-import { ROLES, PHASES } from '../constants';
+import { PHASES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { findPlayerById } from '../utils/playersUtils';
 import { handleDoppelgangerTransformation } from '../utils/gameLogic';
+import { ROLE_IDS } from '../constants/roleIds';
 
 /**
  * Voting Service
@@ -16,7 +17,7 @@ export function countVotes(votes, players) {
 
   Object.entries(votes || {}).forEach(([voterId, targetId]) => {
     const voter = players.find(p => p.id === voterId);
-    const weight = (voter && voter.role === ROLES.MAYOR.id && voter.isAlive) ? 2 : 1;
+    const weight = (voter && voter.role === ROLE_IDS.MAYOR && voter.isAlive) ? 2 : 1;
     voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
   });
 
@@ -80,13 +81,14 @@ export const lockPlayerVote = async (gameState, updateGame, players, user) => {
   if (lockedVotes.includes(user.uid)) return;
 
   const newLockedVotes = [...lockedVotes, user.uid];
-  const updatedGameStateAfterLock = await updateGame({ lockedVotes: newLockedVotes });
+  await updateGame({ lockedVotes: newLockedVotes });
 
   // Check if everyone has locked
   const alivePlayers = players.filter((p) => p.isAlive);
   if (newLockedVotes.length === alivePlayers.length) {
     // Trigger resolution
-    await resolveDayVoting(updatedGameStateAfterLock, updateGame, players);
+    const updatedGameState = { ...gameState, lockedVotes: newLockedVotes };
+    await resolveDayVoting(updatedGameState, updateGame, players);
   }
 };
 
@@ -161,7 +163,7 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
   handleLoverDeathOnVote(victim, newPlayers, gameState);
 
   // Hunter Vote Death
-  if (victim.role === ROLES.HUNTER.id) {
+  if (victim.role === ROLE_IDS.HUNTER) {
     if (await handleHunterVoteDeath(victim, newPlayers, gameState, updateGame)) return;
   }
 

@@ -20,7 +20,7 @@ The application follows a component-based architecture typical of React applicat
     *   `useGameState`: Manages the retrieval and synchronization of game state from Firebase Realtime Database.
     *   `useGameLogic`: Contains the core game rules, role assignments, night action resolution, day voting mechanics, and win condition checks.
 *   **Firebase Integration**: `firebase.js` initializes Firebase and exposes `auth` and `rtdb` instances. `rooms.js` provides functions for creating, joining, and subscribing to game rooms, managing the real-time database interactions.
-*   **Constants**: `constants/roles.js` and `constants/phases.js` define the game's roles and distinct phases, ensuring consistency throughout the application.
+*   **Constants**: `constants/ROLE_IDS.js` and `constants/phases.js` define the game's roles and distinct phases, ensuring consistency throughout the application.
 
 ## Building and Running
 

@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { getAlivePlayers, findPlayerById, getPlayersByRole, getPlayersByAlignment } from './playersUtils';
-import { ROLES } from '../constants/roles';
+import { ROLE_IDS } from '../constants/roleIds';
 
 // Mock player data
 const mockPlayers = [
-    { id: 'p1', name: 'Alice', isAlive: true, role: ROLES.SEER.id, alignment: 'GOOD' },
-    { id: 'p2', name: 'Bob', isAlive: false, role: ROLES.WEREWOLF.id, alignment: 'EVIL' },
-    { id: 'p3', name: 'Charlie', isAlive: true, role: ROLES.WEREWOLF.id, alignment: 'EVIL' },
-    { id: 'p4', name: 'Dana', isAlive: true, role: ROLES.VILLAGER.id, alignment: 'GOOD' },
-    { id: 'p5', name: 'Eve', isAlive: false, role: ROLES.VILLAGER.id, alignment: 'GOOD' },
+    { id: 'p1', name: 'Alice', isAlive: true, role: ROLE_IDS.SEER, alignment: 'GOOD' },
+    { id: 'p2', name: 'Bob', isAlive: false, role: ROLE_IDS.WEREWOLF, alignment: 'EVIL' },
+    { id: 'p3', name: 'Charlie', isAlive: true, role: ROLE_IDS.WEREWOLF, alignment: 'EVIL' },
+    { id: 'p4', name: 'Dana', isAlive: true, role: ROLE_IDS.VILLAGER, alignment: 'GOOD' },
+    { id: 'p5', name: 'Eve', isAlive: false, role: ROLE_IDS.VILLAGER, alignment: 'GOOD' },
 ];
 
 describe('playersUtils', () => {
@@ -35,14 +35,14 @@ describe('playersUtils', () => {
 
     describe('getPlayersByRole', () => {
         it('should return alive players with the specified role', () => {
-            const werewolves = getPlayersByRole(mockPlayers, ROLES.WEREWOLF.id);
+            const werewolves = getPlayersByRole(mockPlayers, ROLE_IDS.WEREWOLF);
             // Only p3 is alive and a werewolf
             expect(werewolves).toHaveLength(1);
             expect(werewolves[0].id).toBe('p3');
         });
 
         it('should return an empty array when no alive players match the role', () => {
-            const doctorPlayers = getPlayersByRole(mockPlayers, ROLES.DOCTOR.id);
+            const doctorPlayers = getPlayersByRole(mockPlayers, ROLE_IDS.DOCTOR);
             expect(doctorPlayers).toHaveLength(0);
         });
     });

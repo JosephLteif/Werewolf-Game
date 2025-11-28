@@ -1,4 +1,8 @@
-import { ROLES, TEAMS, CUPID_FATES } from '../constants';
+import { TEAMS, CUPID_FATES } from '../constants';
+import { roleRegistry } from '../roles/RoleRegistry';
+import { ROLE_IDS } from '../constants/roleIds';
+import { Teams } from '../models/Team';
+import { ALIGNMENTS } from '../constants/alignments';
 
 /**
  * Checks if the game has ended and determines the winner
@@ -11,8 +15,11 @@ export function checkWinCondition(players, lovers, currentWinners = [], gameSett
     // Calculate active wolves and good players based on their roles
     // These counts now include players who are part of Forbidden Love, as they still
     // contribute to their original team's win condition if the Lovers don't win.
-    const activeWolves = alivePlayers.filter(p => p.role === ROLES.WEREWOLF.id).length;
-    const good = alivePlayers.filter(p => ROLES[p.role.toUpperCase()] && ROLES[p.role.toUpperCase()].alignment === 'good').length;
+    const activeWolves = alivePlayers.filter(p => p.role === 'werewolf').length;
+    const good = alivePlayers.filter(p => {
+        const role = roleRegistry.getRole(p.role);
+        return role && role.alignment === ALIGNMENTS.GOOD;
+    }).length;
 
 
 
@@ -21,13 +28,12 @@ export function checkWinCondition(players, lovers, currentWinners = [], gameSett
         const [lover1Id, lover2Id] = lovers;
         const lover1 = players.find(p => p.id === lover1Id);
         const lover2 = players.find(p => p.id === lover2Id);
-        const cupidPlayer = players.find(p => p.role === ROLES.CUPID.id);
+        const cupidPlayer = players.find(p => p.role === ROLE_IDS.CUPID);
 
 
         if (lover1 && lover2 && lover1.isAlive && lover2.isAlive) {
             // Check for "Forbidden Love" (Wolf + Villager) - they would have TEAMS.LOVERS alignment
             if (lover1.alignment === TEAMS.LOVERS && lover2.alignment === TEAMS.LOVERS) {
-                // Path 3: Forbidden Love (Wolf + Villager) - They win if they are the last ones standing
                 // "Couple Win": Last two players alive are the lovers
                 if (alivePlayers.length === 2) {
                     return { winner: 'LOVERS', winners: [...currentWinners, 'LOVERS'], isGameOver: true };
@@ -75,23 +81,24 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
             isWinner = true;
         }
         // If Cupid is 'THIRD_WHEEL', they also win with the Lovers
-        if (gameSettings.cupidFateOption === CUPID_FATES.THIRD_WHEEL && player.role === ROLES.CUPID.id) {
+        if (gameSettings.cupidFateOption === CUPID_FATES.THIRD_WHEEL && player.role === ROLE_IDS.CUPID) {
             isWinner = true;
         }
     }
 
+    const playerRole = roleRegistry.getRole(player.role);
+    const teamId = player.alignment || playerRole.team.id;
 
-    if (winners.includes('VILLAGERS') && player.alignment === TEAMS.VILLAGE) {
+    if (winners.includes('VILLAGERS') && teamId === TEAMS.VILLAGE) {
         isWinner = true;
     }
 
     if (winners.includes('WEREWOLVES')) {
-        const role = ROLES[player.role.toUpperCase()];
-        if (role.id === ROLES.SORCERER.id) {
+        if (playerRole && playerRole.id === ROLE_IDS.SORCERER) {
             if (player.foundSeer) {
                 isWinner = true;
             }
-        } else if (player.alignment === TEAMS.WEREWOLF) {
+        } else if (teamId === TEAMS.WEREWOLF) {
             isWinner = true;
         }
     }
@@ -99,10 +106,10 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
 
 
     // Cupid wins only if explicitly part of winning team (e.g., 'CUPID' is in winners for throuple) AND not selfless
-    if (winners.includes('CUPID') && player.role === ROLES.CUPID.id) {
+    if (winners.includes('CUPID') && player.role === ROLE_IDS.CUPID) {
         isWinner = true;
     }
-    
+
 
 
     return isWinner;

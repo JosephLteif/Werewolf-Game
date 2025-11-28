@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ROLES } from '../constants';
+import { useState } from 'react';
+import { ROLE_IDS } from '../constants/roleIds';
 import { ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 export default function TeammateList({ players, myPlayer, gameState }) {
@@ -11,24 +11,24 @@ export default function TeammateList({ players, myPlayer, gameState }) {
     let relevantPlayers = [];
 
     // 1. Werewolf Logic (See Werewolves + Minions)
-    if (myPlayer.role === ROLES.WEREWOLF.id) {
+    if (myPlayer.role === ROLE_IDS.WEREWOLF) {
         title = "Pack & Allies";
         relevantPlayers = players.filter(p =>
-            (p.role === ROLES.WEREWOLF.id && p.id !== myPlayer.id)
+            (p.role === ROLE_IDS.WEREWOLF && p.id !== myPlayer.id)
         );
     }
     // 2. Minion Logic (See Werewolves)
-    else if (myPlayer.role === ROLES.MINION.id) {
+    else if (myPlayer.role === ROLE_IDS.MINION) {
         title = "My Masters";
-        relevantPlayers = players.filter(p => p.role === ROLES.WEREWOLF.id);
+        relevantPlayers = players.filter(p => p.role === ROLE_IDS.WEREWOLF);
     }
     // 3. Mason Logic (See Masons)
-    else if (myPlayer.role === ROLES.MASON.id) {
+    else if (myPlayer.role === ROLE_IDS.MASON) {
         title = "Fellow Masons";
-        relevantPlayers = players.filter(p => p.role === ROLES.MASON.id && p.id !== myPlayer.id);
+        relevantPlayers = players.filter(p => p.role === ROLE_IDS.MASON && p.id !== myPlayer.id);
     }
     // 4. Cupid Logic (See Lovers)
-    else if (myPlayer.role === ROLES.CUPID.id) {
+    else if (myPlayer.role === ROLE_IDS.CUPID) {
         title = "Lovers";
         if (gameState.lovers) {
             relevantPlayers = players.filter(p => gameState.lovers.includes(p.id));
@@ -84,7 +84,7 @@ export default function TeammateList({ players, myPlayer, gameState }) {
                                         <div className="flex-1 min-w-0">
                                             <div className="text-xs font-bold text-slate-200 truncate">{p.name}</div>
                                             <div className="text-[10px] text-slate-400 truncate">
-                                                {!p.isAlive ? '💀 Dead' : p.role === ROLES.MINION.id ? 'Minion' : p.role === ROLES.WEREWOLF.id ? 'Werewolf' : 'Ally'}
+                                                {!p.isAlive ? '💀 Dead' : p.role === ROLE_IDS.MINION ? 'Minion' : p.role === ROLE_IDS.WEREWOLF ? 'Werewolf' : 'Ally'}
                                             </div>
                                         </div>
                                     </div>

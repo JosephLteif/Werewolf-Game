@@ -1,52 +1,53 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ROLES, TEAMS, CUPID_FATES, PHASES } from '../constants';
+import { TEAMS, CUPID_FATES, PHASES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
+import { roleRegistry } from "../roles/RoleRegistry.js";
 // The following imports are not used in this test file:
 // import { resolveNight, startNight, advanceNight } from '../services/nightActions';
 // import { resolveDayVoting, castPlayerVote, lockPlayerVote } from '../services/voting';
 
 // Helper function to create a player
 const createPlayer = (id, roleId, isAlive = true, alignment = null, extraProps = {}) => ({
-  id,
-  name: `Player ${id.slice(1)}`,
-  isAlive,
-  role: roleId,
-  alignment: alignment || ROLES[roleId.toUpperCase()]?.alignment || 'neutral', // Default to role's alignment or neutral
-  ...extraProps,
+    id,
+    name: `Player ${id.slice(1)}`,
+    isAlive,
+    role: roleId,
+    alignment: alignment || roleRegistry.getRole(roleId.toUpperCase())?.alignment || 'neutral', // Default to role's alignment or neutral
+    ...extraProps,
 });
 
 // Helper function to create initial game state
 const createInitialGameState = (playersArray, settings = {}, initialPhase = PHASES.LOBBY) => {
-  const players = {};
-  playersArray.forEach(p => { players[p.id] = p; });
+    const players = {};
+    playersArray.forEach(p => { players[p.id] = p; });
 
-  return {
-    players,
-    phase: initialPhase,
-    settings: {
-      actionWaitTime: 10,
-      votingWaitTime: 10,
-      cupidFateOption: CUPID_FATES.SELFLESS, // Default cupid fate
-      ...settings,
-    },
-    dayLog: '',
-    nightActions: {
-      werewolfVotes: {},
-      doctorProtect: null,
-      vigilanteTarget: null,
-      sorcererCheck: null,
-      cupidLinks: [],
-      doppelgangerCopy: null,
-      masonsReady: {},
-    },
-    votes: {},
-    lockedVotes: [],
-    lovers: [],
-    winner: null,
-    winners: [],
-    doppelgangerTarget: null,
-    vigilanteAmmo: {},
-  };
+    return {
+        players,
+        phase: initialPhase,
+        settings: {
+            actionWaitTime: 10,
+            votingWaitTime: 10,
+            cupidFateOption: CUPID_FATES.SELFLESS, // Default cupid fate
+            ...settings,
+        },
+        dayLog: '',
+        nightActions: {
+            werewolfVotes: {},
+            doctorProtect: null,
+            vigilanteTarget: null,
+            sorcererCheck: null,
+            cupidLinks: [],
+            doppelgangerCopy: null,
+            masonsReady: {},
+        },
+        votes: {},
+        lockedVotes: [],
+        lovers: [],
+        winner: null,
+        winners: [],
+        doppelgangerTarget: null,
+        vigilanteAmmo: {},
+    };
 };
 
 describe('Game Integration Tests - Win Conditions', () => {
@@ -97,15 +98,15 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Villagers win when all werewolves are eliminated', async () => {
-        const p1 = createPlayer('p1', ROLES.VILLAGER.id);
-        const p2 = createPlayer('p2', ROLES.WEREWOLF.id);
-        const p3 = createPlayer('p3', ROLES.VILLAGER.id);
+        const p1 = createPlayer('p1', 'villager');
+        const p2 = createPlayer('p2', 'werewolf');
+        const p3 = createPlayer('p3', 'villager');
 
-        gameState = createInitialGameState([p1, p2, p3], {wolfCount: 1}, PHASES.DAY_REVEAL); // Start in a phase before night resolution
+        gameState = createInitialGameState([p1, p2, p3], { wolfCount: 1 }, PHASES.DAY_REVEAL); // Start in a phase before night resolution
 
         // Simulate killing the werewolf
         let updatedPlayers = Object.values(gameState.players).map(p =>
-            p.id === p2.id ? {...p, isAlive: false} : p
+            p.id === p2.id ? { ...p, isAlive: false } : p
         );
 
         // Call checkWinCondition directly after updating players.
@@ -121,12 +122,12 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Werewolves win when they outnumber or equal good players', async () => {
-        const p1 = createPlayer('p1', ROLES.WEREWOLF.id);
-        const p2 = createPlayer('p2', ROLES.WEREWOLF.id);
-        const p3 = createPlayer('p3', ROLES.VILLAGER.id); // Good player
+        const p1 = createPlayer('p1', 'werewolf');
+        const p2 = createPlayer('p2', 'werewolf');
+        const p3 = createPlayer('p3', 'villager'); // Good player
 
 
-        gameState = createInitialGameState([p1, p2, p3], {wolfCount: 2}, PHASES.DAY_VOTE);
+        gameState = createInitialGameState([p1, p2, p3], { wolfCount: 2 }, PHASES.DAY_VOTING);
 
         const result = checkWinCondition(Object.values(gameState.players), gameState.lovers, gameState.winners, gameState.settings);
 
@@ -138,22 +139,22 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Forbidden Love (Wolf + Villager) - Couple Win (2 players left)', async () => {
-        const wolfLover = createPlayer('p1', ROLES.WEREWOLF.id, true, TEAMS.LOVERS);
-        const villagerLover = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+        const wolfLover = createPlayer('p1', 'werewolf', true, TEAMS.LOVERS);
+        const villagerLover = createPlayer('p2', 'villager', true, TEAMS.LOVERS);
 
         // All other players are dead
         const deadPlayers = [
-            createPlayer('p3', ROLES.VILLAGER.id, false),
-            createPlayer('p4', ROLES.CUPID.id, false),
+            createPlayer('p3', 'villager', false),
+            createPlayer('p4', 'cupid', false),
         ];
 
-        gameState = createInitialGameState([wolfLover, villagerLover, ...deadPlayers], {wolfCount: 1}, PHASES.DAY_REVEAL);
+        gameState = createInitialGameState([wolfLover, villagerLover, ...deadPlayers], { wolfCount: 1 }, PHASES.DAY_REVEAL);
         gameState.lovers = [wolfLover.id, villagerLover.id];
 
         // Simulate their alignment being set to TEAMS.LOVERS
         const playersWithUpdatedAlignment = Object.values(gameState.players).map(p => {
             if (p.id === wolfLover.id || p.id === villagerLover.id) {
-                return {...p, alignment: TEAMS.LOVERS};
+                return { ...p, alignment: TEAMS.LOVERS };
             }
             return p;
         });
@@ -168,18 +169,18 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Forbidden Love - Throuple Win (3 players left, Third Wheel Cupid)', async () => {
-        const wolfLover = createPlayer('p1', ROLES.WEREWOLF.id, true, TEAMS.LOVERS);
-        const villagerLover = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
-        const cupid = createPlayer('p3', ROLES.CUPID.id, true); // Cupid is alive
+        const wolfLover = createPlayer('p1', 'werewolf', true, TEAMS.LOVERS);
+        const villagerLover = createPlayer('p2', 'villager', true, TEAMS.LOVERS);
+        const cupid = createPlayer('p3', 'cupid', true); // Cupid is alive
 
         // All other players are dead
         const deadPlayers = [
-            createPlayer('p4', ROLES.VILLAGER.id, false),
+            createPlayer('p4', 'villager', false),
         ];
 
         gameState = createInitialGameState(
             [wolfLover, villagerLover, cupid, ...deadPlayers],
-            {wolfCount: 1, cupidFateOption: CUPID_FATES.THIRD_WHEEL},
+            { wolfCount: 1, cupidFateOption: CUPID_FATES.THIRD_WHEEL },
             PHASES.DAY_REVEAL
         );
         gameState.lovers = [wolfLover.id, villagerLover.id];
@@ -187,7 +188,7 @@ describe('Game Integration Tests - Win Conditions', () => {
         // Simulate their alignment being set to TEAMS.LOVERS
         const playersWithUpdatedAlignment = Object.values(gameState.players).map(p => {
             if (p.id === wolfLover.id || p.id === villagerLover.id) {
-                return {...p, alignment: TEAMS.LOVERS};
+                return { ...p, alignment: TEAMS.LOVERS };
             }
             return p;
         });
@@ -202,16 +203,16 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Loyal Couple (Villager + Villager) - Village wins if no wolves', async () => {
-        const v1 = createPlayer('v1', ROLES.VILLAGER.id);
-        const v2 = createPlayer('v2', ROLES.VILLAGER.id);
-        const wolf = createPlayer('wolf1', ROLES.WEREWOLF.id);
+        const v1 = createPlayer('v1', 'villager');
+        const v2 = createPlayer('v2', 'villager');
+        const wolf = createPlayer('wolf1', 'werewolf');
 
-        gameState = createInitialGameState([v1, v2, wolf], {wolfCount: 1}, PHASES.DAY_REVEAL);
+        gameState = createInitialGameState([v1, v2, wolf], { wolfCount: 1 }, PHASES.DAY_REVEAL);
         gameState.lovers = [v1.id, v2.id]; // They are lovers
 
         // Simulate killing the werewolf
         let updatedPlayers = Object.values(gameState.players).map(p =>
-            p.id === wolf.id ? {...p, isAlive: false} : p
+            p.id === wolf.id ? { ...p, isAlive: false } : p
         );
 
         const result = checkWinCondition(updatedPlayers, gameState.lovers, gameState.winners, gameState.settings);
@@ -224,11 +225,11 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Toxic Couple (Wolf + Wolf) - Werewolves win', async () => {
-        const w1 = createPlayer('w1', ROLES.WEREWOLF.id);
-        const w2 = createPlayer('w2', ROLES.WEREWOLF.id);
-        const v1 = createPlayer('v1', ROLES.VILLAGER.id);
+        const w1 = createPlayer('w1', 'werewolf');
+        const w2 = createPlayer('w2', 'werewolf');
+        const v1 = createPlayer('v1', 'villager');
 
-        gameState = createInitialGameState([w1, w2, v1], {wolfCount: 2}, PHASES.DAY_VOTE);
+        gameState = createInitialGameState([w1, w2, v1], { wolfCount: 2 }, PHASES.DAY_VOTING);
         gameState.lovers = [w1.id, w2.id]; // They are lovers
 
         const result = checkWinCondition(Object.values(gameState.players), gameState.lovers, gameState.winners, gameState.settings);
@@ -241,14 +242,14 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Cupid links two other players (Selfless fate) - Lovers win as last two', async () => {
-        const cupid = createPlayer('p1', ROLES.CUPID.id, true);
-        const villagerLover1 = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
-        const villagerLover2 = createPlayer('p3', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+        const cupid = createPlayer('p1', 'cupid', true);
+        const villagerLover1 = createPlayer('p2', 'villager', true, TEAMS.LOVERS);
+        const villagerLover2 = createPlayer('p3', 'villager', true, TEAMS.LOVERS);
 
         // All other players are dead
         const deadPlayers = [
-            createPlayer('p4', ROLES.WEREWOLF.id, false),
-            createPlayer('p5', ROLES.VILLAGER.id, false),
+            createPlayer('p4', 'werewolf', false),
+            createPlayer('p5', 'villager', false),
         ];
 
         gameState = createInitialGameState(
@@ -264,7 +265,7 @@ describe('Game Integration Tests - Win Conditions', () => {
             }
             return p;
         });
-        
+
         // Kill Cupid to ensure only lovers remain
         const finalPlayers = playersWithUpdatedAlignment.map(p => p.id === cupid.id ? { ...p, isAlive: false } : p);
 
@@ -279,13 +280,13 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Cupid links self and another player (Selfless fate) - Lovers win as last two', async () => {
-        const cupid = createPlayer('p1', ROLES.CUPID.id, true, TEAMS.LOVERS); // Cupid is a lover
-        const villagerLover = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+        const cupid = createPlayer('p1', 'cupid', true, TEAMS.LOVERS); // Cupid is a lover
+        const villagerLover = createPlayer('p2', 'villager', true, TEAMS.LOVERS);
 
         // All other players are dead
         const deadPlayers = [
-            createPlayer('p3', ROLES.WEREWOLF.id, false),
-            createPlayer('p4', ROLES.VILLAGER.id, false),
+            createPlayer('p3', 'werewolf', false),
+            createPlayer('p4', 'villager', false),
         ];
 
         gameState = createInitialGameState(
@@ -312,13 +313,13 @@ describe('Game Integration Tests - Win Conditions', () => {
     });
 
     it('Scenario: Cupid links two other players (Third Wheel fate) - Throuple win with Cupid alive', async () => {
-        const cupid = createPlayer('p1', ROLES.CUPID.id, true); // Cupid is alive
-        const villagerLover1 = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
-        const villagerLover2 = createPlayer('p3', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+        const cupid = createPlayer('p1', 'cupid', true); // Cupid is alive
+        const villagerLover1 = createPlayer('p2', 'villager', true, TEAMS.LOVERS);
+        const villagerLover2 = createPlayer('p3', 'villager', true, TEAMS.LOVERS);
 
         // All other players are dead
         const deadPlayers = [
-            createPlayer('p4', ROLES.WEREWOLF.id, false),
+            createPlayer('p4', 'werewolf', false),
         ];
 
         gameState = createInitialGameState(
@@ -334,7 +335,7 @@ describe('Game Integration Tests - Win Conditions', () => {
             }
             return p;
         });
-        
+
         // Simulate a scenario where only Cupid and the two lovers are alive
         const finalPlayers = playersWithUpdatedAlignment.filter(p => p.id === cupid.id || p.id === villagerLover1.id || p.id === villagerLover2.id);
 

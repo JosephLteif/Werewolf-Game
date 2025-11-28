@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info, Check } from 'lucide-react';
 import { ref, update, serverTimestamp } from 'firebase/database';
-import { ROLES, PHASES } from './constants';
+import { roleRegistry } from './roles/RoleRegistry';
+import { PHASES } from './constants';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
 import { useAuth } from './hooks/useAuth';
 import { useGameState } from './hooks/useGameState';
@@ -18,6 +19,7 @@ import TeammateList from './components/TeammateList';
 import PlayerRoleDisplay from './components/PlayerRoleDisplay';
 import ActiveRolesPanel from './components/ActiveRolesPanel';
 import { rtdb } from "./services/firebase";
+import { ROLE_IDS } from './constants/roleIds';
 
 
 export default function App() {
@@ -87,7 +89,7 @@ export default function App() {
 
     const isWerewolfVote = gameState.phase === PHASES.NIGHT_WEREWOLF;
     const isNightPhase = gameState.phase.startsWith('NIGHT_');
-    const isDayVote = gameState.phase === PHASES.DAY_VOTE;
+    const isDayVote = gameState.phase === PHASES.DAY_VOTING;
 
     if (gameState.phaseEndTime && now > gameState.phaseEndTime) {
       if (isWerewolfVote) {
@@ -265,15 +267,15 @@ export default function App() {
 
   // --- NIGHT PHASE (GENERIC WAIT SCREEN) ---
   const isMyTurn = (
-    (gameState.phase === PHASES.NIGHT_CUPID && myPlayer.role === ROLES.CUPID.id) ||
-    (gameState.phase === PHASES.NIGHT_WEREWOLF && myPlayer.role === ROLES.WEREWOLF.id) ||
-    (gameState.phase === PHASES.NIGHT_MINION && myPlayer.role === ROLES.MINION.id) ||
-    (gameState.phase === PHASES.NIGHT_SORCERER && myPlayer.role === ROLES.SORCERER.id) ||
-    (gameState.phase === PHASES.NIGHT_DOCTOR && myPlayer.role === ROLES.DOCTOR.id) ||
-    (gameState.phase === PHASES.NIGHT_SEER && myPlayer.role === ROLES.SEER.id) ||
-    (gameState.phase === PHASES.NIGHT_MASON && myPlayer.role === ROLES.MASON.id) ||
-    (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer.role === ROLES.VIGILANTE.id) ||
-    (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer.role === ROLES.DOPPELGANGER.id)
+    (gameState.phase === PHASES.NIGHT_CUPID && myPlayer.role === ROLE_IDS.CUPID) ||
+    (gameState.phase === PHASES.NIGHT_WEREWOLF && myPlayer.role === ROLE_IDS.WEREWOLF) ||
+    (gameState.phase === PHASES.NIGHT_MINION && myPlayer.role === ROLE_IDS.MINION) ||
+    (gameState.phase === PHASES.NIGHT_SORCERER && myPlayer.role === ROLE_IDS.SORCERER) ||
+    (gameState.phase === PHASES.NIGHT_DOCTOR && myPlayer.role === ROLE_IDS.DOCTOR) ||
+    (gameState.phase === PHASES.NIGHT_SEER && myPlayer.role === ROLE_IDS.SEER) ||
+    (gameState.phase === PHASES.NIGHT_MASON && myPlayer.role === ROLE_IDS.MASON) ||
+    (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer.role === ROLE_IDS.VIGILANTE) ||
+    (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer.role === ROLE_IDS.DOPPELGANGER)
   );
 
   if ([PHASES.NIGHT_INTRO, PHASES.NIGHT_CUPID, PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_MINION, PHASES.NIGHT_SORCERER, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_MASON, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_DOPPELGANGER].includes(gameState.phase)) {
@@ -372,7 +374,7 @@ export default function App() {
               <p className="text-slate-400">The Werewolves are...</p>
             </div>
             <div className="space-y-3 mb-8">
-              {players.filter(p => p.role === ROLES.WEREWOLF.id).map(p => (
+              {players.filter(p => p.role === ROLE_IDS.WEREWOLF).map(p => (
                 <div key={p.id} className="bg-gradient-to-r from-red-900/30 to-rose-900/30 border-2 border-red-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-red-500/20">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
@@ -423,7 +425,7 @@ export default function App() {
                     <button
                       key={p.id}
                       onClick={() => {
-                        const isSeer = p.role === ROLES.SEER.id;
+                        const isSeer = p.role === ROLE_IDS.SEER;
                         setSeerMessage(`${p.name} is ${isSeer ? 'THE SEER' : 'NOT the Seer'}.`);
                         setSorcererTarget(p.id);
                       }}
@@ -491,7 +493,7 @@ export default function App() {
                     <button
                       key={p.id}
                       onClick={() => {
-                        const isEvil = p.role === ROLES.WEREWOLF.id || p.role === ROLES.LYCAN.id;
+                        const isEvil = p.role === ROLE_IDS.WEREWOLF || p.role === ROLE_IDS.LYCAN;
                         setSeerMessage(`${p.name} is ${isEvil ? 'EVIL' : 'GOOD'}.`);
                       }}
                       className="w-full p-4 bg-slate-900/50 rounded-2xl text-left font-bold border-2 border-slate-700 hover:border-purple-500 transition-all shadow-lg hover:shadow-xl flex items-center gap-4"
@@ -517,7 +519,7 @@ export default function App() {
     // MASON
     if (gameState.phase === PHASES.NIGHT_MASON) {
       const myMasonReady = gameState.nightActions?.masonsReady?.[user.uid];
-      const aliveMasons = players.filter(p => p.role === ROLES.MASON.id && p.isAlive);
+      const aliveMasons = players.filter(p => p.role === ROLE_IDS.MASON && p.isAlive);
       const masonsReadyCount = Object.keys(gameState.nightActions?.masonsReady || {}).length;
 
       return wrapGameContent(
@@ -588,7 +590,7 @@ export default function App() {
 
   // --- HUNTER ACTION ---
   if (gameState.phase === PHASES.HUNTER_ACTION) {
-    if (myPlayer.role === ROLES.HUNTER.id && !myPlayer.isAlive && !gameState.dayLog.includes("shot")) {
+    if (myPlayer.role === ROLE_IDS.HUNTER && !myPlayer.isAlive && !gameState.dayLog.includes("shot")) {
       return wrapGameContent(
         <div className="min-h-screen bg-red-950 text-white p-6 flex flex-col items-center justify-center">
           <Crosshair className="w-16 h-16 mb-4" />
@@ -619,7 +621,7 @@ export default function App() {
     );
   }
 
-  if (gameState.phase === PHASES.DAY_VOTE) {
+  if (gameState.phase === PHASES.DAY_VOTING) {
     return wrapGameContent(
       <DayVoteScreen
         gameState={gameState}

@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { Info } from 'lucide-react';
-import { ROLES } from '../constants';
+import {roleRegistry} from "../roles/RoleRegistry.js";
 
 export function RoleInfoModal({ showRoleInfo, onClose }) {
     if (!showRoleInfo) return null;
 
     const isRules = showRoleInfo === 'RULES';
     const isAllRoles = showRoleInfo === 'ALL_ROLES';
-    const role = (isRules || isAllRoles) ? null : Object.values(ROLES).find(r => r.id === showRoleInfo);
+    const role = (isRules || isAllRoles) ? null : roleRegistry.getAllRoles().find(r => r.id === showRoleInfo);
 
     return (
         <div
@@ -72,7 +72,7 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                             <Info className="w-6 h-6" /> All Available Roles
                         </h3>
                         <div className="space-y-4">
-                            {Object.values(ROLES).filter(r => r.selectable !== false).map(r => (
+                            {roleRegistry.getAllRoles().filter(r => r.selectable !== false).map(r => (
                                 <div key={r.id} className="bg-slate-900 p-3 rounded-xl flex items-center gap-3 border border-slate-700">
                                     {React.createElement(r.icon, { className: "w-8 h-8 text-indigo-400" })}
                                     <div className="flex-1">

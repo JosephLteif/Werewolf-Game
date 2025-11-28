@@ -1,4 +1,3 @@
-import { ROLES } from '../constants';
 import { PHASES } from '../constants';
 
 /**
@@ -9,70 +8,60 @@ export function assignRoles(players, settings) {
 
     // Add werewolves
     for (let i = 0; i < settings.wolfCount; i++) {
-        deck.push(ROLES.WEREWOLF.id);
+        deck.push('werewolf');
     }
 
     // Add selected special roles
-    if (settings.activeRoles[ROLES.DOCTOR.id]) deck.push(ROLES.DOCTOR.id);
-    if (settings.activeRoles[ROLES.SEER.id]) deck.push(ROLES.SEER.id);
-    if (settings.activeRoles[ROLES.HUNTER.id]) deck.push(ROLES.HUNTER.id);
-    if (settings.activeRoles[ROLES.VIGILANTE.id]) deck.push(ROLES.VIGILANTE.id);
-    if (settings.activeRoles[ROLES.SORCERER.id]) deck.push(ROLES.SORCERER.id);
-    if (settings.activeRoles[ROLES.MINION.id]) deck.push(ROLES.MINION.id);
-    if (settings.activeRoles[ROLES.LYCAN.id]) deck.push(ROLES.LYCAN.id);
-    if (settings.activeRoles[ROLES.CUPID.id]) deck.push(ROLES.CUPID.id);
-    if (settings.activeRoles[ROLES.DOPPELGANGER.id]) deck.push(ROLES.DOPPELGANGER.id);
-    if (settings.activeRoles[ROLES.MAYOR.id]) deck.push(ROLES.MAYOR.id);
-    if (settings.activeRoles[ROLES.MASON.id]) {
-        deck.push(ROLES.MASON.id);
-        deck.push(ROLES.MASON.id);
+    if (settings.activeRoles['doctor']) deck.push('doctor');
+    if (settings.activeRoles['seer']) deck.push('seer');
+    if (settings.activeRoles['hunter']) deck.push('hunter');
+    if (settings.activeRoles['vigilante']) deck.push('vigilante');
+    if (settings.activeRoles['sorcerer']) deck.push('sorcerer');
+    if (settings.activeRoles['minion']) deck.push('minion');
+    if (settings.activeRoles['lycan']) deck.push('lycan');
+    if (settings.activeRoles['cupid']) deck.push('cupid');
+    if (settings.activeRoles['doppelganger']) deck.push('doppelganger');
+    if (settings.activeRoles['mayor']) deck.push('mayor');
+    if (settings.activeRoles['mason']) {
+        deck.push('mason');
+        deck.push('mason');
     }
 
-    // Fill rest with Villagers
+    // Fill remaining slots with Villagers
     while (deck.length < players.length) {
-        deck.push(ROLES.VILLAGER.id);
+        deck.push('villager');
     }
 
     // Shuffle
     deck = deck.sort(() => Math.random() - 0.5);
 
-    // Assign to players
+    // Assign
     return players.map(p => ({
         ...p,
-        role: deck.pop() || ROLES.VILLAGER.id,
+        role: deck.pop() || 'villager',
         isAlive: true,
         ready: false
     }));
 }
 
-/**
- * Determines the first night phase based on active roles
- */
 export function determineFirstNightPhase(players, gameState) {
-    const hasDoppelganger = players.some(p => p.role === ROLES.DOPPELGANGER.id && p.isAlive);
-    const hasDoppelgangerTarget = gameState.doppelgangerTarget;
-    const hasCupid = players.some(p => p.role === ROLES.CUPID.id && p.isAlive);
-    const hasLovers = gameState.lovers && gameState.lovers.length > 0;
-
-    if (hasDoppelganger && !hasDoppelgangerTarget) {
+    if (players.some(p => p.role === 'doppelganger' && p.isAlive) && !gameState.doppelgangerTarget) {
         return PHASES.NIGHT_DOPPELGANGER;
-    } else if (hasCupid && !hasLovers) {
+    } else if (players.some(p => p.role === 'cupid' && p.isAlive) && (!gameState.lovers || gameState.lovers.length === 0)) {
         return PHASES.NIGHT_CUPID;
+    } else {
+        return PHASES.NIGHT_WEREWOLF;
     }
-
-    return PHASES.NIGHT_WEREWOLF;
 }
 
-/**
- * Handles Doppelgänger transformation when their target dies
- */
-export function handleDoppelgangerTransformation(players, doppelgangerTarget, victimId) {
-    if (doppelgangerTarget === victimId) {
-        const doppelganger = players.find(p => p.role === ROLES.DOPPELGANGER.id);
-        const victim = players.find(p => p.id === victimId);
+export function handleDoppelgangerTransformation(players, targetId, roleCopyFrom) {
+    if (!targetId || !roleCopyFrom) return;
 
-        if (doppelganger && doppelganger.isAlive && victim) {
-            doppelganger.role = victim.role;
+    const dopplegan = players.find(p => p.role === 'doppelganger' && p.isAlive);
+    if (dopplegan && targetId === roleCopyFrom) {
+        const targetPlayer = players.find(p => p.id === roleCopyFrom);
+        if (targetPlayer && !targetPlayer.isAlive) {
+            dopplegan.role = targetPlayer.role;
         }
     }
 }

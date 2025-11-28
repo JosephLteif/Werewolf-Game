@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ROLES } from '../constants';
+import { ROLE_IDS } from '../constants/roleIds';
 import { Users, ChevronDown } from 'lucide-react';
+import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function ActiveRolesPanel({ activeRoles, wolfCount, playerCount }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,23 +9,23 @@ export default function ActiveRolesPanel({ activeRoles, wolfCount, playerCount }
   if (!activeRoles) return null;
 
   // Start with special roles from settings
-  const rolesInSession = Object.values(ROLES).filter(r => activeRoles[r.id]);
+  const rolesInSession = roleRegistry.getAllRoles().filter(r => activeRoles[r.id]);
 
   // Add Werewolf if they are in the game
   if (wolfCount > 0 && !rolesInSession.find(r => r.id === 'werewolf')) {
-    rolesInSession.push(ROLES.WEREWOLF);
+    rolesInSession.push(roleRegistry.getRole(ROLE_IDS.WEREWOLF));
   }
 
   // Calculate if villagers are present
   const activeSpecialRolesCount = Object.entries(activeRoles)
-    .filter(([id, isActive]) => isActive && id !== ROLES.MASON.id).length;
-  const masonCount = activeRoles[ROLES.MASON.id] ? 2 : 0;
+    .filter(([id, isActive]) => isActive && id !== ROLE_IDS.MASON).length;
+  const masonCount = activeRoles[ROLE_IDS.MASON] ? 2 : 0;
   const totalRolesNeeded = wolfCount + activeSpecialRolesCount + masonCount;
   const villagersCount = Math.max(0, playerCount - totalRolesNeeded);
 
   // Add Villager if they are in the game
   if (villagersCount > 0 && !rolesInSession.find(r => r.id === 'villager')) {
-    rolesInSession.push(ROLES.VILLAGER);
+    rolesInSession.push(roleRegistry.getRole(ROLE_IDS.VILLAGER));
   }
 
   // Sort roles for consistent display (e.g., by alignment)

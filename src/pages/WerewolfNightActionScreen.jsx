@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
-import {Check, Skull} from 'lucide-react';
-import {ROLES} from '../constants';
+import React, { useEffect, useState } from 'react';
+import { Check, Skull } from 'lucide-react';
+import { ROLE_IDS } from '../constants/roleIds';
 import VoterAvatars from '../components/VoterAvatars.jsx';
 
 export default function WerewolfNightActionScreen({
@@ -21,7 +21,7 @@ export default function WerewolfNightActionScreen({
   const timeLeft = phaseEndTime ? Math.max(0, Math.ceil((phaseEndTime - now) / 1000)) : null;
 
   const alivePlayers = players.filter(p => p.isAlive);
-  const votingWerewolves = alivePlayers.filter(p => p.role === ROLES.WEREWOLF.id);
+  const votingWerewolves = alivePlayers.filter(p => p.role === ROLE_IDS.WEREWOLF);
   const totalVotingWerewolves = votingWerewolves.length;
   const confirmedVotesCount = Object.values(gameState.nightActions?.werewolfVotes || {}).length;
 
@@ -112,7 +112,7 @@ export default function WerewolfNightActionScreen({
 
         <div className="flex-1 overflow-y-auto space-y-3 mb-4">
           {alivePlayers.map(p => {
-              const displayedVoteCount = werewolfVoteCounts[p.id] || 0;
+            const displayedVoteCount = werewolfVoteCounts[p.id] || 0;
 
             const votePercentage = totalVotingWerewolves > 0 ? (displayedVoteCount / totalVotingWerewolves) * 100 : 0;
             const isSelectedByMe = selectedTargetId === p.id;
@@ -164,7 +164,7 @@ export default function WerewolfNightActionScreen({
                   </div>
 
                   {/* Teammate Indicator (Red Skull) */}
-                  {((p.role === ROLES.WEREWOLF.id && p.id !== user.uid)) && (
+                  {((p.role === ROLE_IDS.WEREWOLF && p.id !== user.uid)) && (
                     <div className="bg-red-950/50 p-1.5 rounded-full border border-red-900/50" title="Teammate">
                       <Skull className="w-5 h-5 text-red-500" />
                     </div>

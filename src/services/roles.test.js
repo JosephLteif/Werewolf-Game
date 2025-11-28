@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { assignRolesAndStartGame, markPlayerReady } from '../services/roles';
-import { ROLES, PHASES } from '../constants';
+import { ROLE_IDS, PHASES } from '../constants';
 
 describe('Role Assignment and Readiness', () => {
   let mockUpdateGame;
@@ -12,18 +12,18 @@ describe('Role Assignment and Readiness', () => {
     mockUpdateGame = vi.fn();
     mockUser = { uid: 'p1', displayName: 'Player 1' };
     mockPlayers = [
-      { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.SEER.id },
-      { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.DOCTOR.id },
-      { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLES.WEREWOLF.id },
-      { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
-      { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+      { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.SEER },
+      { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.DOCTOR },
+      { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLE_IDS.WEREWOLF },
+      { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+      { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
     mockGameState = {
       settings: {
         wolfCount: 1,
         activeRoles: {
-          [ROLES.SEER.id]: true,
-          [ROLES.DOCTOR.id]: true,
+          [ROLE_IDS.SEER]: true,
+          [ROLE_IDS.DOCTOR]: true,
         },
         actionWaitTime: 30,
       },
@@ -43,11 +43,11 @@ describe('Role Assignment and Readiness', () => {
       expect(updateCall.players).toHaveLength(5);
 
       const roles = updateCall.players.map(p => p.role);
-      expect(roles).toContain(ROLES.WEREWOLF.id);
-      expect(roles).toContain(ROLES.SEER.id);
-      expect(roles).toContain(ROLES.DOCTOR.id);
+      expect(roles).toContain(ROLE_IDS.WEREWOLF);
+      expect(roles).toContain(ROLE_IDS.SEER);
+      expect(roles).toContain(ROLE_IDS.DOCTOR);
 
-      const villagers = roles.filter(r => r === ROLES.VILLAGER.id);
+      const villagers = roles.filter(r => r === ROLE_IDS.VILLAGER);
       expect(villagers).toHaveLength(2);
     });
 
@@ -75,17 +75,17 @@ describe('Role Assignment and Readiness', () => {
         settings: {
           wolfCount: 2,
           activeRoles: {
-            [ROLES.DOCTOR.id]: true,
-            [ROLES.SEER.id]: true,
-            [ROLES.HUNTER.id]: true,
-            [ROLES.VIGILANTE.id]: true,
-            [ROLES.SORCERER.id]: true,
-            [ROLES.MINION.id]: true,
-            [ROLES.LYCAN.id]: true,
-            [ROLES.CUPID.id]: true,
-            [ROLES.DOPPELGANGER.id]: true,
-            [ROLES.MAYOR.id]: true,
-            [ROLES.MASON.id]: true, // Mason will add two roles
+            [ROLE_IDS.DOCTOR]: true,
+            [ROLE_IDS.SEER]: true,
+            [ROLE_IDS.HUNTER]: true,
+            [ROLE_IDS.VIGILANTE]: true,
+            [ROLE_IDS.SORCERER]: true,
+            [ROLE_IDS.MINION]: true,
+            [ROLE_IDS.LYCAN]: true,
+            [ROLE_IDS.CUPID]: true,
+            [ROLE_IDS.DOPPELGANGER]: true,
+            [ROLE_IDS.MAYOR]: true,
+            [ROLE_IDS.MASON]: true, // Mason will add two roles
           },
           actionWaitTime: 30,
         },
@@ -103,32 +103,33 @@ describe('Role Assignment and Readiness', () => {
       expect(updateCall.phase).toBe(PHASES.ROLE_REVEAL);
       expect(updateCall.players).toHaveLength(comprehensivePlayers.length);
 
-      const roles = updateCall.players.map(p => p.role);
-
       const expectedRoleCounts = {
-        [ROLES.WEREWOLF.id]: 2,
-        [ROLES.DOCTOR.id]: 1,
-        [ROLES.SEER.id]: 1,
-        [ROLES.HUNTER.id]: 1,
-        [ROLES.VIGILANTE.id]: 1,
-        [ROLES.SORCERER.id]: 1,
-        [ROLES.MINION.id]: 1,
-        [ROLES.LYCAN.id]: 1,
-        [ROLES.CUPID.id]: 1,
-        [ROLES.DOPPELGANGER.id]: 1,
-        [ROLES.MAYOR.id]: 1,
-        [ROLES.MASON.id]: 2,
+        [ROLE_IDS.WEREWOLF]: 2,
+        [ROLE_IDS.DOCTOR]: 1,
+        [ROLE_IDS.SEER]: 1,
+        [ROLE_IDS.HUNTER]: 1,
+        [ROLE_IDS.VIGILANTE]: 1,
+        [ROLE_IDS.SORCERER]: 1,
+        [ROLE_IDS.MINION]: 1,
+        [ROLE_IDS.LYCAN]: 1,
+        [ROLE_IDS.CUPID]: 1,
+        [ROLE_IDS.DOPPELGANGER]: 1,
+        [ROLE_IDS.MAYOR]: 1,
+        [ROLE_IDS.MASON]: 2,
       };
 
       const totalSpecialRoles = Object.values(expectedRoleCounts).reduce((sum, count) => sum + count, 0);
       const expectedVillagers = comprehensivePlayers.length - totalSpecialRoles;
       if (expectedVillagers > 0) {
-        expectedRoleCounts[ROLES.VILLAGER.id] = expectedVillagers;
+        expectedRoleCounts[ROLE_IDS.VILLAGER] = expectedVillagers;
       }
 
-      for (const roleId in expectedRoleCounts) {
-        expect(roles.filter(r => r === roleId)).toHaveLength(expectedRoleCounts[roleId]);
-      }
+      const roles = updateCall.players.map(p => p.role);
+      const roleCounts = roles.reduce((acc, role) => {
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      }, {});
+      expect(roleCounts).toEqual(expectedRoleCounts);
     });
 
     it('does nothing if not host', async () => {
@@ -140,8 +141,8 @@ describe('Role Assignment and Readiness', () => {
   describe('markPlayerReady', () => {
     it('marks a player as ready', async () => {
       const initialPlayers = [
-        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
-        { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       ];
       const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
 
@@ -160,8 +161,8 @@ describe('Role Assignment and Readiness', () => {
 
     it('transitions to NIGHT_INTRO when all alive players are ready', async () => {
       const initialPlayers = [
-        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
-        { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLES.VILLAGER.id },
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLE_IDS.VILLAGER },
       ];
       const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
 
@@ -180,8 +181,8 @@ describe('Role Assignment and Readiness', () => {
 
     it('dead players do not need to be ready to advance phase', async () => {
       const initialPlayers = [
-        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLES.VILLAGER.id },
-        { id: 'p2', name: 'Player 2', isAlive: false, ready: false, role: ROLES.VILLAGER.id },
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+        { id: 'p2', name: 'Player 2', isAlive: false, ready: false, role: ROLE_IDS.VILLAGER },
       ];
       const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
 

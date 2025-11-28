@@ -1,4 +1,4 @@
-import { ROLES, PHASES } from '../constants';
+import { PHASES } from '../constants';
 import { assignRoles } from '../utils/gameLogic';
 
 export const assignRolesAndStartGame = async (
@@ -16,7 +16,7 @@ export const assignRolesAndStartGame = async (
   // Init Vigilante Ammo
   const vigAmmo = {};
   newPlayers.forEach((p) => {
-    if (p.role === ROLES.VIGILANTE.id) vigAmmo[p.id] = 1;
+    if (p.role === 'vigilante') vigAmmo[p.id] = 1;
   });
 
   await updateGame({
