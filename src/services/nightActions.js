@@ -375,7 +375,7 @@ export const handleHunterShot = async (gameState, updateGame, players, targetId)
   const victim = findPlayerById(newPlayers, targetId);
 
   // Check if the victim was protected by the doctor
-  if (victim && gameState.nightActions.doctorProtect === victim.id) {
+  if (victim && gameState.nightActions?.doctorProtect === victim.id) {
     let log = gameState.dayLog + ` The Hunter tried to shoot ${victim.name}, but they were protected!`;
     await updateGame({
       players: newPlayers,
