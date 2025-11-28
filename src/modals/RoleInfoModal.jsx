@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Info } from 'lucide-react';
-import {roleRegistry} from "../roles/RoleRegistry.js";
+import { roleRegistry } from "../roles/RoleRegistry.js";
 
 export function RoleInfoModal({ showRoleInfo, onClose }) {
     if (!showRoleInfo) return null;
@@ -72,12 +72,12 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                             <Info className="w-6 h-6" /> All Available Roles
                         </h3>
                         <div className="space-y-4">
-                            {roleRegistry.getAllRoles().filter(r => r.selectable !== false).map(r => (
-                                <div key={r.id} className="bg-slate-900 p-3 rounded-xl flex items-center gap-3 border border-slate-700">
-                                    {React.createElement(r.icon, { className: "w-8 h-8 text-indigo-400" })}
+                            {roleRegistry.getAllRoles().filter(r => r.selectable !== false).map(role => (
+                                <div key={role.id} className="bg-slate-900 p-3 rounded-xl flex items-center gap-3 border border-slate-700">
+                                    {React.createElement(role.icon, { className: "w-8 h-8 text-indigo-400" })}
                                     <div className="flex-1">
-                                        <h4 className="text-lg font-bold">{r.name}</h4>
-                                        <p className="text-xs text-slate-400">{r.desc}</p>
+                                        <h4 className="text-lg font-bold">{role.name}</h4>
+                                        <p className="text-xs text-slate-400">{role.description}</p>
                                     </div>
                                 </div>
                             ))}
@@ -99,7 +99,7 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-slate-300 mb-6">{role.desc}</p>
+                        <p className="text-slate-300 mb-6">{role.description}</p>
                     </>
                 )}
                 <button

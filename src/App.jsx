@@ -30,6 +30,11 @@ export default function App() {
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
 
+  const leaveRoom = useCallback(() => {
+    setJoined(false);
+    setRoomCode("");
+  }, []);
+
   const { gameState, isHost } = useGameState(user, roomCode, joined);
 
   const players = useMemo(() => (
@@ -220,18 +225,7 @@ export default function App() {
               <div className="flex-grow border-t border-slate-700"></div>
             </div>
             <button onClick={createRoom} disabled={!user} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-lg font-bold">Create New Room</button>
-            <button onClick={() => setShowRoleInfo('RULES')} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-lg font-bold flex items-center justify-center gap-2">
-              <Info className="w-4 h-4" /> Rule Book
-            </button>
           </div>
-
-          {user && (
-            <div className="text-center pt-2">
-              <div className="text-xs text-slate-600 mb-1">ID: {user.uid.slice(0, 6)}...</div>
-              <button onClick={resetIdentity} className="text-xs text-red-400 hover:text-red-300 underline">Reset Identity</button>
-              <div className="text-[10px] text-slate-600 mt-2">Tip: Use Incognito windows to test multiple players.</div>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -249,6 +243,7 @@ export default function App() {
         showRoleInfo={showRoleInfo}
         setShowRoleInfo={setShowRoleInfo}
         user={user}
+        leaveRoom={leaveRoom}
       />
     );
   }

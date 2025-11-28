@@ -1,20 +1,23 @@
 import React from 'react';
-import { Info, Copy } from 'lucide-react';
+import { Info, Copy, ArrowLeft } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { Teams } from '../models/Team';
 import { CUPID_FATES } from '../constants';
 import { RoleInfoModal } from '../modals/RoleInfoModal';
 import { roleRegistry } from '../roles/RoleRegistry';
 
-export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user }) {
+export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user, leaveRoom }) {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
       <header className="flex justify-between items-center mb-6">
-        <div>
-          <div className="text-xs text-slate-500 uppercase">Room Code</div>
-          <div className="text-3xl font-mono font-black text-indigo-400 tracking-widest flex items-center gap-2">
-            {gameState.code}
-            <button onClick={() => { navigator.clipboard.writeText(gameState.code); alert('Copied!'); }}><Copy className="w-4 h-4 text-slate-600 hover:text-white" /></button>
+        <div className="flex items-center gap-4">
+          <button onClick={leaveRoom} className="text-slate-500 hover:text-white"><ArrowLeft className="w-6 h-6" /></button>
+          <div>
+            <div className="text-xs text-slate-500 uppercase">Room Code</div>
+            <div className="text-3xl font-mono font-black text-indigo-400 tracking-widest flex items-center gap-2">
+              {gameState.code}
+              <button onClick={() => { navigator.clipboard.writeText(gameState.code); }}><Copy className="w-4 h-4 text-slate-600 hover:text-white" /></button>
+            </div>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -42,7 +45,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
       </div>
 
       {/* Settings Panel - Visible to ALL, Editable by HOST */}
-      <div className="space-y-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <div className={`space-y-4 bg-slate-800 p-4 rounded-xl border border-slate-700 ${!isHost ? 'opacity-70 cursor-not-allowed' : ''}`}>
         <h3 className="text-slate-500 font-bold flex items-center gap-2">
           <Info className="w-4 h-4" /> Game Settings
           {!isHost && <span className="text-xs font-normal text-slate-600 ml-auto">(Host Only)</span>}
@@ -52,7 +55,13 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
           <span className="text-sm font-bold text-slate-400">Action Timer (s)</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
             {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, gameState.settings.actionWaitTime - 5) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
-            <span className="font-mono px-2 w-8 text-center">{gameState.settings.actionWaitTime}</span>
+            <input
+              type="number"
+              value={gameState.settings.actionWaitTime}
+              onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
+              className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
+              disabled={!isHost}
+            />
             {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, actionWaitTime: gameState.settings.actionWaitTime + 5 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
           </div>
         </div>
@@ -61,7 +70,13 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
           <span className="text-sm font-bold text-slate-400">Voting Timer (s)</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
             {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, gameState.settings.votingWaitTime - 10) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
-            <span className="font-mono px-2 w-8 text-center">{gameState.settings.votingWaitTime}</span>
+            <input
+              type="number"
+              value={gameState.settings.votingWaitTime}
+              onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
+              className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
+              disabled={!isHost}
+            />
             {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, votingWaitTime: gameState.settings.votingWaitTime + 10 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
           </div>
         </div>
@@ -70,7 +85,13 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
           <span className="text-sm font-bold text-red-400">Wolf Count</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
             {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, wolfCount: Math.max(1, gameState.settings.wolfCount - 1) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
-            <span className="font-mono px-2">{gameState.settings.wolfCount}</span>
+            <input
+              type="number"
+              value={gameState.settings.wolfCount}
+              onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, wolfCount: Math.max(1, parseInt(e.target.value) || 0) } })}
+              className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
+              disabled={!isHost}
+            />
             {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, wolfCount: gameState.settings.wolfCount + 1 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
           </div>
         </div>
