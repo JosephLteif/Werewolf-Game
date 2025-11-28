@@ -80,35 +80,17 @@ export const lockPlayerVote = async (gameState, updateGame, players, user) => {
   if (lockedVotes.includes(user.uid)) return;
 
   const newLockedVotes = [...lockedVotes, user.uid];
-  await updateGame({ lockedVotes: newLockedVotes });
-
-  const newGameState = { ...gameState, lockedVotes: newLockedVotes };
+  const updatedGameStateAfterLock = await updateGame({ lockedVotes: newLockedVotes });
 
   // Check if everyone has locked
   const alivePlayers = players.filter((p) => p.isAlive);
   if (newLockedVotes.length === alivePlayers.length) {
     // Trigger resolution
-    await resolveDayVoting(newGameState, updateGame, players);
+    await resolveDayVoting(updatedGameStateAfterLock, updateGame, players);
   }
 };
 
-const handleJesterTannerWin = async (victim, newPlayers, gameState, updateGame) => {
-  const winnerRole =
-    victim.role === ROLES.JESTER.id ? 'JESTER' : 'TANNER';
-  const currentWinners = gameState.winners || [];
 
-  // Add to winners but continue game
-  await updateGame({
-    players: newPlayers,
-    winners: [...currentWinners, winnerRole],
-    dayLog: `${victim.name} was voted out. They were the ${ROLES[victim.role.toUpperCase()].name
-      }!`,
-    phase: PHASES.NIGHT_INTRO, // Continue game
-    votes: {},
-    lockedVotes: [],
-  });
-  return true;
-};
 
 
 
@@ -135,6 +117,8 @@ const handleHunterVoteDeath = async (victim, newPlayers, gameState, updateGame) 
 
 export const resolveDayVoting = async (gameState, updateGame, players) => {
   const lockedVoterIds = gameState.lockedVotes || [];
+  console.log('resolveDayVoting - gameState.lockedVotes:', gameState.lockedVotes);
+  console.log('resolveDayVoting - lockedVoterIds:', lockedVoterIds);
   const votesToCount = Object.entries(gameState.votes || {}).reduce(
     (acc, [voterId, targetId]) => {
       if (lockedVoterIds.includes(voterId)) {
@@ -144,6 +128,8 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
     },
     {}
   );
+  console.log('resolveDayVoting - votesToCount:', votesToCount);
+
 
   const voteCounts = countVotes(votesToCount, players);
   const { type, victims } = determineVotingResult(voteCounts);
@@ -169,10 +155,7 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
     return;
   }
 
-  // Jester/Tanner Win
-  if (victim.role === ROLES.JESTER.id || victim.role === ROLES.TANNER.id) {
-    if (await handleJesterTannerWin(victim, newPlayers, gameState, updateGame)) return;
-  }
+
 
   // Doppelgänger Transformation (Voting Death)
   handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
@@ -185,7 +168,7 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
     if (await handleHunterVoteDeath(victim, newPlayers, gameState, updateGame)) return;
   }
 
-  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners, gameState.settings);
   if (winResult) {
     await updateGame({
       players: newPlayers,

@@ -7,14 +7,16 @@ import {
   serverTimestamp,
 } from "firebase/database";
 import { generateRoomCode } from "./utils"; // Import generateRoomCode from utils.js
+import { CUPID_FATES } from './constants';
 
 function defaultSettings() {
   return {
     actionWaitTime: 60,
     votingWaitTime: 240,
     wolfCount: 1,
+    cupidFateOption: CUPID_FATES.SELFLESS,
     activeRoles: {
-      cupid: false,
+      cupid: true,
       doctor: false,
       hunter: false,
       seer: false,

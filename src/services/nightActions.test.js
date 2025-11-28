@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as nightActions from './nightActions';
-import { ROLES, PHASES } from '../constants';
+import { ROLES, PHASES, TEAMS } from '../constants';
 import * as winConditions from '../utils/winConditions';
 
 
@@ -904,6 +904,39 @@ describe('Night Actions Service', () => {
       expect(updatedLover2.isAlive).toBe(false);  // Lover2 should be dead (direct kill)
       expect(updateCall.dayLog).toContain(`${lover1.name} died.`); // Only lover1's death should be logged
       expect(updateCall.dayLog).not.toContain(`${lover2.name} died.`);
+    });
+
+    it('sets lovers alignment to LOVERS_TEAM for Forbidden Love (Wolf + Villager)', async () => {
+      const wolfPlayer = { ...mockPlayers[0], id: 'wolf1', role: ROLES.WEREWOLF.id, isAlive: true };
+      const villagerPlayer = { ...mockPlayers[1], id: 'villager1', role: ROLES.VILLAGER.id, isAlive: true };
+      const cupidPlayer = { ...mockPlayers[2], id: 'cupid1', role: ROLES.CUPID.id, isAlive: true };
+
+      const players = [wolfPlayer, villagerPlayer, cupidPlayer];
+
+      const gameState = {
+        ...mockGameState,
+        phase: PHASES.NIGHT_CUPID,
+        lovers: [], // Lovers not yet set in gameState
+        nightActions: {
+          cupidLinks: [wolfPlayer.id, villagerPlayer.id],
+        },
+      };
+
+      // Mock checkWinCondition to avoid game over
+      vi.spyOn(winConditions, 'checkWinCondition').mockReturnValueOnce(null);
+
+      await nightActions.resolveNight(gameState, mockUpdateGame, players, gameState.nightActions);
+
+      const updateCall = mockUpdateGame.mock.calls[0][0];
+      const updatedPlayers = Object.values(updateCall.players);
+
+      const updatedWolfLover = updatedPlayers.find(p => p.id === wolfPlayer.id);
+      const updatedVillagerLover = updatedPlayers.find(p => p.id === villagerPlayer.id);
+      const updatedCupidPlayer = updatedPlayers.find(p => p.id === cupidPlayer.id);
+
+      expect(updatedWolfLover.alignment).toBe(TEAMS.LOVERS);
+      expect(updatedVillagerLover.alignment).toBe(TEAMS.LOVERS);
+      expect(updatedCupidPlayer.alignment).not.toBe(TEAMS.LOVERS); // Cupid should not be affected
     });
 
     it('handles Hunter dying during the night', async () => {

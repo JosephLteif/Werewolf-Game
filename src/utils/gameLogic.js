@@ -16,14 +16,12 @@ export function assignRoles(players, settings) {
     if (settings.activeRoles[ROLES.DOCTOR.id]) deck.push(ROLES.DOCTOR.id);
     if (settings.activeRoles[ROLES.SEER.id]) deck.push(ROLES.SEER.id);
     if (settings.activeRoles[ROLES.HUNTER.id]) deck.push(ROLES.HUNTER.id);
-    if (settings.activeRoles[ROLES.JESTER.id]) deck.push(ROLES.JESTER.id);
     if (settings.activeRoles[ROLES.VIGILANTE.id]) deck.push(ROLES.VIGILANTE.id);
     if (settings.activeRoles[ROLES.SORCERER.id]) deck.push(ROLES.SORCERER.id);
     if (settings.activeRoles[ROLES.MINION.id]) deck.push(ROLES.MINION.id);
     if (settings.activeRoles[ROLES.LYCAN.id]) deck.push(ROLES.LYCAN.id);
     if (settings.activeRoles[ROLES.CUPID.id]) deck.push(ROLES.CUPID.id);
     if (settings.activeRoles[ROLES.DOPPELGANGER.id]) deck.push(ROLES.DOPPELGANGER.id);
-    if (settings.activeRoles[ROLES.TANNER.id]) deck.push(ROLES.TANNER.id);
     if (settings.activeRoles[ROLES.MAYOR.id]) deck.push(ROLES.MAYOR.id);
     if (settings.activeRoles[ROLES.MASON.id]) {
         deck.push(ROLES.MASON.id);

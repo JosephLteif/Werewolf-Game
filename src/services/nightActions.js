@@ -1,4 +1,4 @@
-import { ROLES, PHASES } from '../constants';
+import { ROLES, PHASES, TEAMS } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { getPlayersByRole, findPlayerById } from '../utils/playersUtils';
 import { handleDoppelgangerTransformation, determineFirstNightPhase } from '../utils/gameLogic';
@@ -308,6 +308,32 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   }
 };
 
+const applyLoverTeamChanges = (players, loversIds) => {
+  if (!loversIds || loversIds.length !== 2) return;
+
+  const [lover1Id, lover2Id] = loversIds;
+  const lover1 = players.find(p => p.id === lover1Id);
+  const lover2 = players.find(p => p.id === lover2Id);
+
+  if (lover1 && lover2) {
+    const isWolfLover1 = lover1.role === ROLES.WEREWOLF.id;
+    const isWolfLover2 = lover2.role === ROLES.WEREWOLF.id;
+    const isVillagerLover1 = lover1.role !== ROLES.WEREWOLF.id; // Simplified, assuming non-werewolf is villager for this context
+    const isVillagerLover2 = lover2.role !== ROLES.WEREWOLF.id;
+
+    // Check for "Forbidden Love" (Wolf + Villager)
+    if ((isWolfLover1 && isVillagerLover2) || (isVillagerLover1 && isWolfLover2)) {
+      // Change their alignment to the LOVERS team
+      if (lover1.isAlive) {
+        lover1.alignment = TEAMS.LOVERS;
+      }
+      if (lover2.isAlive) {
+        lover2.alignment = TEAMS.LOVERS;
+      }
+    }
+  }
+};
+
 export const resolveNight = async (gameState, updateGame, players, finalActions) => {
   let newPlayers = [...players];
   let deaths = [];
@@ -326,6 +352,14 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
   // Handle Cupid Links (Lovers Pact)
   handleLoverDeaths(newPlayers, gameState, finalActions.doctorProtect, deaths);
 
+  // Update lovers state for this resolution
+  const currentLovers = finalActions.cupidLinks && finalActions.cupidLinks.length === 2
+    ? finalActions.cupidLinks
+    : gameState.lovers;
+
+  // Apply team changes for Forbidden Love after lovers are established and initial deaths are processed
+  applyLoverTeamChanges(newPlayers, currentLovers);
+
   // Doppelgänger Transformation (Night Death)
   deaths.forEach(victim => {
     handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
@@ -342,7 +376,7 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
     log += ' The Hunter died and seeks revenge!';
     nextPhase = PHASES.HUNTER_ACTION;
   } else {
-    const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+    const winResult = checkWinCondition(newPlayers, currentLovers, gameState.winners, gameState.settings);
     if (winResult) {
       await updateGame({
         players: newPlayers,
@@ -413,7 +447,7 @@ export const handleHunterShot = async (gameState, updateGame, players, targetId)
 
   let log = gameState.dayLog + ` The Hunter shot ${victim.name}!`;
 
-  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners);
+  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners, gameState.settings);
   if (winResult) {
     await updateGame({
       players: newPlayers,

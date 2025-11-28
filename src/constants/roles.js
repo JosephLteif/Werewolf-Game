@@ -1,5 +1,16 @@
 import { Users, Shield, Eye, Skull, Fingerprint, Crosshair, Smile, Zap, Heart, Sparkles, Ghost, Hammer, Crown } from 'lucide-react';
 
+export const TEAMS = {
+    VILLAGE: 'village',
+    WEREWOLF: 'werewolf',
+    LOVERS: 'lovers',
+};
+
+export const CUPID_FATES = {
+    SELFLESS: 'selfless', // Cupid remains a Villager, loses if lovers win
+    THIRD_WHEEL: 'third_wheel', // Cupid joins the lovers team, wins with them
+};
+
 export const ROLES = {
     // Good
     VILLAGER: { id: 'villager', name: 'Villager', icon: Users, desc: 'Find the wolves. Don\'t die.', alignment: 'good', weight: 1 },
@@ -17,8 +28,6 @@ export const ROLES = {
     MINION: { id: 'minion', name: 'Minion', icon: Ghost, desc: 'You know the wolves. They don\'t know you.', alignment: 'evil', weight: -3 },
 
     // Neutral
-    JESTER: { id: 'jester', name: 'Jester', icon: Smile, desc: 'Get voted out during the day to win.', alignment: 'neutral', weight: -1 },
-    TANNER: { id: 'tanner', name: 'Tanner', icon: Skull, desc: 'You hate your job. Get voted out to win.', alignment: 'neutral', weight: -1 },
     CUPID: { id: 'cupid', name: 'Cupid', icon: Heart, desc: 'Link two players. If one dies, both die.', alignment: 'neutral', weight: -2 },
     DOPPELGANGER: { id: 'doppelganger', name: 'Doppelgänger', icon: Users, desc: 'Choose a player night 1. If they die, you become their role.', alignment: 'neutral', weight: 0 },
 };

@@ -6,9 +6,8 @@ export default function DeadScreen({ winner, winners = [], isGameOver, onReset, 
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
     WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },
-    JESTER: { bg: 'from-purple-600 to-pink-600', text: 'text-purple-400', alignment: 'neutral' },
-    TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' },
-    LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' }
+    LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
+    CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' }
   };
 
   const colors = isGameOver && winners.length > 0 ? winnerColors[winners[0]] : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
@@ -16,16 +15,23 @@ export default function DeadScreen({ winner, winners = [], isGameOver, onReset, 
   // Filter winners
   const winningPlayers = players ? players.filter(p => {
     if (!winners.length) return false;
-    if (winners.includes('LOVERS')) return lovers && lovers.includes(p.id);
-    if (winners.includes('VILLAGERS')) return ROLES[p.role.toUpperCase()].alignment === 'good';
+    let isWinner = false;
+    if (winners.includes('LOVERS')) {
+      isWinner = isWinner || (lovers && lovers.includes(p.id));
+    }
+    if (winners.includes('VILLAGERS')) {
+      isWinner = isWinner || (ROLES[p.role.toUpperCase()].alignment === 'good');
+    }
     if (winners.includes('WEREWOLVES')) {
       const role = ROLES[p.role.toUpperCase()];
-      if (role.id === ROLES.SORCERER.id) return !!p.foundSeer;
-      return role.alignment === 'evil';
+      if (role.id === ROLES.SORCERER.id) isWinner = isWinner || !!p.foundSeer;
+      else isWinner = isWinner || (role.alignment === 'evil');
     }
-    if (winners.includes('JESTER')) return p.role === ROLES.JESTER.id;
-    if (winners.includes('TANNER')) return p.role === ROLES.TANNER.id;
-    return false;
+
+    if (winners.includes('CUPID')) {
+      isWinner = isWinner || (p.role === ROLES.CUPID.id);
+    }
+    return isWinner;
   }) : [];
   const [deadParticles, setDeadParticles] = useState(null);
   useEffect(() => {
