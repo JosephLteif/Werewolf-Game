@@ -1,26 +1,16 @@
-import { rtdb } from "./firebase";
-import {
-  ref,
-  get,
-  set,
-  onValue,
-  serverTimestamp,
-} from "firebase/database";
-
-function generateRoomCode(length = 4) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let code = "";
-  for (let i = 0; i < length; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-  return code;
-}
+import {rtdb} from "./firebase.js";
+import {get, onValue, ref, serverTimestamp, set,} from "firebase/database";
+import {generateRoomCode} from "../utils/index";
 
 function defaultSettings() {
   return {
-    actionWaitTime: 30,
-    votingWaitTime: 60,
+    actionWaitTime: 60,
+    votingWaitTime: 240,
     wolfCount: 1,
+    cupidCanChooseSelf: false,
+    cupidFateOption: "third_wheel",
     activeRoles: {
-      cupid: false,
+      cupid: true,
       doctor: false,
       hunter: false,
       seer: false,
@@ -54,7 +44,7 @@ function initialRoomState(hostUser, code) {
       doctorProtect: null,
       sorcererCheck: null,
       vigilanteTarget: null,
-      wolfTarget: null,
+      werewolfVotes: {},
       cupidLinks: [],
     },
     vigilanteAmmo: {},
@@ -71,7 +61,7 @@ function initialRoomState(hostUser, code) {
  */
 export async function createRoom(hostUser, maxAttempts = 10) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const code = generateRoomCode(4);
+    const code = generateRoomCode();
     const roomRef = ref(rtdb, `rooms/${code}`);
 
     // Check existence
@@ -126,11 +116,9 @@ export function subscribeToRoom(roomCode, callback) {
   if (typeof callback !== "function") throw new Error("callback must be a function");
 
   const roomRef = ref(rtdb, `rooms/${roomCode}`);
-  const unsub = onValue(roomRef, (snapshot) => {
-    callback(snapshot.val());
+    return onValue(roomRef, (snapshot) => {
+      callback(snapshot.val());
   });
-
-  return unsub;
 }
 
 export default {
