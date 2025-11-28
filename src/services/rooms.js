@@ -1,13 +1,7 @@
-import { rtdb } from "./services/firebase";
-import {
-  ref,
-  get,
-  set,
-  onValue,
-  serverTimestamp,
-} from "firebase/database";
-import { generateRoomCode } from "./utils/index";
-import { CUPID_FATES } from './constants';
+import {rtdb} from "./firebase.js";
+import {get, onValue, ref, serverTimestamp, set,} from "firebase/database";
+import {generateRoomCode} from "../utils/index";
+import {CUPID_FATES} from '../constants';
 
 function defaultSettings() {
   return {
@@ -122,11 +116,9 @@ export function subscribeToRoom(roomCode, callback) {
   if (typeof callback !== "function") throw new Error("callback must be a function");
 
   const roomRef = ref(rtdb, `rooms/${roomCode}`);
-  const unsub = onValue(roomRef, (snapshot) => {
-    callback(snapshot.val());
+    return onValue(roomRef, (snapshot) => {
+      callback(snapshot.val());
   });
-
-  return unsub;
 }
 
 export default {

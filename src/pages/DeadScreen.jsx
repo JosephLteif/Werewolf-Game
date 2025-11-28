@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Skull, RotateCcw } from 'lucide-react';
-import { ROLES } from '../../constants';
+import { ROLES } from '../constants';
 
 export default function DeadScreen({ winner, winners = [], isGameOver, onReset, isHost, dayLog, players, lovers }) {
   const winnerColors = {

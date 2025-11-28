@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Info } from 'lucide-react';
-import { ROLES } from '../../constants';
+import { ROLES } from '../constants';
 
 export function RoleInfoModal({ showRoleInfo, onClose }) {
     if (!showRoleInfo) return null;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { subscribeToRoom } from '../rooms';
+import { subscribeToRoom } from '../services/rooms';
 
 export function useGameState(user, roomCode, joined) {
   const [gameState, setGameState] = useState(null);

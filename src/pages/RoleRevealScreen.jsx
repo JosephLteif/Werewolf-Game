@@ -1,6 +1,6 @@
 
 import { Check } from 'lucide-react';
-import { ROLES } from '../../constants';
+import { ROLES } from '../constants';
 
 export default function RoleRevealScreen({ myPlayer, markReady, players, roleRevealParticles }) {
   if (!myPlayer) return <div>Loading...</div>;

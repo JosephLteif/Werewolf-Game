@@ -1,6 +1,6 @@
 
 import { Check } from 'lucide-react';
-import VoterAvatars from '../VoterAvatars';
+import VoterAvatars from '../components/VoterAvatars.jsx';
 
 export default function DayVoteScreen({ gameState, players, amAlive, castVote, lockVote, now, user }) {
   // Calculate vote counts

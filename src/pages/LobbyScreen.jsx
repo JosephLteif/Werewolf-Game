@@ -1,7 +1,7 @@
 import React from 'react';
 import { Info, Copy } from 'lucide-react';
-import { ROLES } from '../../constants';
-import { RoleInfoModal } from './modals/RoleInfoModal';
+import { ROLES } from '../constants';
+import { RoleInfoModal } from '../modals/RoleInfoModal';
 
 export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user }) {
   return (

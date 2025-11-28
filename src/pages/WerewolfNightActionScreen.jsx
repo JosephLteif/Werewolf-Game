@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Check, X, Skull } from 'lucide-react';
-import { ROLES } from '../../constants';
-import VoterAvatars from '../VoterAvatars';
+import React, {useEffect, useState} from 'react';
+import {Check, Skull} from 'lucide-react';
+import {ROLES} from '../constants';
+import VoterAvatars from '../components/VoterAvatars.jsx';
 
 export default function WerewolfNightActionScreen({
   gameState,
@@ -112,8 +112,7 @@ export default function WerewolfNightActionScreen({
 
         <div className="flex-1 overflow-y-auto space-y-3 mb-4">
           {alivePlayers.map(p => {
-            const currentVoteCount = werewolfVoteCounts[p.id] || 0;
-            const displayedVoteCount = currentVoteCount;
+              const displayedVoteCount = werewolfVoteCounts[p.id] || 0;
 
             const votePercentage = totalVotingWerewolves > 0 ? (displayedVoteCount / totalVotingWerewolves) * 100 : 0;
             const isSelectedByMe = selectedTargetId === p.id;

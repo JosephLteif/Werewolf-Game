@@ -1,6 +1,6 @@
 
 import { Sun } from 'lucide-react';
-import { PHASES } from '../../constants';
+import { PHASES } from '../constants';
 
 export default function DayRevealScreen({ gameState, isHost, updateGame, now }) {
   return (
