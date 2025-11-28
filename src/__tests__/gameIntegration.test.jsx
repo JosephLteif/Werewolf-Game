@@ -239,4 +239,112 @@ describe('Game Integration Tests - Win Conditions', () => {
             isGameOver: true
         });
     });
+
+    it('Scenario: Cupid links two other players (Selfless fate) - Lovers win as last two', async () => {
+        const cupid = createPlayer('p1', ROLES.CUPID.id, true);
+        const villagerLover1 = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+        const villagerLover2 = createPlayer('p3', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+
+        // All other players are dead
+        const deadPlayers = [
+            createPlayer('p4', ROLES.WEREWOLF.id, false),
+            createPlayer('p5', ROLES.VILLAGER.id, false),
+        ];
+
+        gameState = createInitialGameState(
+            [cupid, villagerLover1, villagerLover2, ...deadPlayers],
+            { wolfCount: 1, cupidFateOption: CUPID_FATES.SELFLESS },
+            PHASES.DAY_REVEAL
+        );
+        gameState.lovers = [villagerLover1.id, villagerLover2.id];
+
+        const playersWithUpdatedAlignment = Object.values(gameState.players).map(p => {
+            if (p.id === villagerLover1.id || p.id === villagerLover2.id) {
+                return { ...p, alignment: TEAMS.LOVERS };
+            }
+            return p;
+        });
+        
+        // Kill Cupid to ensure only lovers remain
+        const finalPlayers = playersWithUpdatedAlignment.map(p => p.id === cupid.id ? { ...p, isAlive: false } : p);
+
+
+        const result = checkWinCondition(finalPlayers, gameState.lovers, gameState.winners, gameState.settings);
+
+        expect(result).toEqual({
+            winner: 'LOVERS',
+            winners: ['LOVERS'],
+            isGameOver: true
+        });
+    });
+
+    it('Scenario: Cupid links self and another player (Selfless fate) - Lovers win as last two', async () => {
+        const cupid = createPlayer('p1', ROLES.CUPID.id, true, TEAMS.LOVERS); // Cupid is a lover
+        const villagerLover = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+
+        // All other players are dead
+        const deadPlayers = [
+            createPlayer('p3', ROLES.WEREWOLF.id, false),
+            createPlayer('p4', ROLES.VILLAGER.id, false),
+        ];
+
+        gameState = createInitialGameState(
+            [cupid, villagerLover, ...deadPlayers],
+            { wolfCount: 1, cupidCanChooseSelf: true, cupidFateOption: CUPID_FATES.SELFLESS },
+            PHASES.DAY_REVEAL
+        );
+        gameState.lovers = [cupid.id, villagerLover.id];
+
+        const playersWithUpdatedAlignment = Object.values(gameState.players).map(p => {
+            if (p.id === cupid.id || p.id === villagerLover.id) {
+                return { ...p, alignment: TEAMS.LOVERS };
+            }
+            return p;
+        });
+
+        const result = checkWinCondition(playersWithUpdatedAlignment, gameState.lovers, gameState.winners, gameState.settings);
+
+        expect(result).toEqual({
+            winner: 'LOVERS',
+            winners: ['LOVERS'],
+            isGameOver: true
+        });
+    });
+
+    it('Scenario: Cupid links two other players (Third Wheel fate) - Throuple win with Cupid alive', async () => {
+        const cupid = createPlayer('p1', ROLES.CUPID.id, true); // Cupid is alive
+        const villagerLover1 = createPlayer('p2', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+        const villagerLover2 = createPlayer('p3', ROLES.VILLAGER.id, true, TEAMS.LOVERS);
+
+        // All other players are dead
+        const deadPlayers = [
+            createPlayer('p4', ROLES.WEREWOLF.id, false),
+        ];
+
+        gameState = createInitialGameState(
+            [cupid, villagerLover1, villagerLover2, ...deadPlayers],
+            { wolfCount: 1, cupidFateOption: CUPID_FATES.THIRD_WHEEL },
+            PHASES.DAY_REVEAL
+        );
+        gameState.lovers = [villagerLover1.id, villagerLover2.id];
+
+        const playersWithUpdatedAlignment = Object.values(gameState.players).map(p => {
+            if (p.id === villagerLover1.id || p.id === villagerLover2.id) {
+                return { ...p, alignment: TEAMS.LOVERS };
+            }
+            return p;
+        });
+        
+        // Simulate a scenario where only Cupid and the two lovers are alive
+        const finalPlayers = playersWithUpdatedAlignment.filter(p => p.id === cupid.id || p.id === villagerLover1.id || p.id === villagerLover2.id);
+
+
+        const result = checkWinCondition(finalPlayers, gameState.lovers, gameState.winners, gameState.settings);
+
+        expect(result).toEqual({
+            winner: 'LOVERS',
+            winners: ['LOVERS', 'CUPID'],
+            isGameOver: true
+        });
+    });
 });

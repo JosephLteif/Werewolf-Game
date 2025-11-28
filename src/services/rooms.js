@@ -1,14 +1,14 @@
 import {rtdb} from "./firebase.js";
 import {get, onValue, ref, serverTimestamp, set,} from "firebase/database";
 import {generateRoomCode} from "../utils/index";
-import {CUPID_FATES} from '../constants';
 
 function defaultSettings() {
   return {
     actionWaitTime: 60,
     votingWaitTime: 240,
     wolfCount: 1,
-    cupidFateOption: CUPID_FATES.SELFLESS,
+    cupidCanChooseSelf: false,
+    cupidFateOption: "third_wheel",
     activeRoles: {
       cupid: true,
       doctor: false,

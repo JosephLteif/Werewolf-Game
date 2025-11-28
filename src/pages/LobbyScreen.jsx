@@ -1,6 +1,6 @@
 import React from 'react';
 import { Info, Copy } from 'lucide-react';
-import { ROLES } from '../constants';
+import { ROLES, CUPID_FATES } from '../constants';
 import { RoleInfoModal } from '../modals/RoleInfoModal';
 
 export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user }) {
@@ -84,6 +84,33 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
           </label>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-400">Cupid Can Choose Self</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={gameState.settings.cupidCanChooseSelf || false}
+              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, cupidCanChooseSelf: ! (gameState.settings.cupidCanChooseSelf || false) } })}
+              disabled={!isHost}
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-400">Cupid Strategy</span>
+          <select
+            className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+            value={gameState.settings.cupidFateOption || CUPID_FATES.SELFLESS} // Default to SELFLESS if not set
+            onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, cupidFateOption: e.target.value } })}
+            disabled={!isHost}
+          >
+            <option value={CUPID_FATES.SELFLESS}>Selfless (Couple Win)</option>
+            <option value={CUPID_FATES.THIRD_WHEEL}>Third Wheel (Throuple Win)</option>
+          </select>
         </div>
 
         <div className="space-y-4">

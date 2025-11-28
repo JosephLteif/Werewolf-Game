@@ -45,8 +45,22 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                                 <ul className="list-disc pl-4 space-y-1">
                                     <li><strong className="text-blue-400">Villagers:</strong> Kill all Wolves.</li>
                                     <li><strong className="text-red-400">Werewolves:</strong> Equal/outnumber Villagers.</li>
-                                    <li><strong className="text-purple-400">Jester/Tanner:</strong> Get voted out.</li>
-                                    <li><strong className="text-pink-400">Lovers:</strong> Be the last two alive.</li>
+                                    <li>
+                                        <strong className="text-pink-400">Lovers:</strong> Win if they are the last two players alive.
+                                        Depending on the game settings, Cupid may also win if they are alive and involved in a "Third Wheel" scenario.
+                                    </li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h4 className="font-bold text-white mb-1">Cupid's Role & Settings</h4>
+                                <ul className="list-disc pl-4 space-y-1">
+                                    <li><strong className="text-pink-400">Cupid Can Choose Self:</strong> A game setting that determines if Cupid is allowed to choose themselves as one of the lovers.</li>
+                                    <li><strong className="text-pink-400">Cupid Strategy:</strong>
+                                        <ul className="list-circle pl-4 space-y-1">
+                                            <li><strong className="text-pink-400">Selfless:</strong> Lovers win only if they are the last two players alive. Cupid does not win unless they are one of the lovers.</li>
+                                            <li><strong className="text-pink-400">Third Wheel:</strong> Lovers win if they are the last two players alive. Additionally, if Cupid is alive and not a lover, they win with the lovers if only three players (the two lovers and Cupid) are left.</li>
+                                        </ul>
+                                    </li>
                                 </ul>
                             </section>
                         </div>

@@ -6,11 +6,14 @@ import { ROLES, TEAMS, CUPID_FATES } from '../constants';
  */
 export function checkWinCondition(players, lovers, currentWinners = [], gameSettings) {
     const alivePlayers = players.filter(p => p.isAlive);
-    const nonLoverAlivePlayers = alivePlayers.filter(p => p.alignment !== TEAMS.LOVERS);
 
-    // Filter players who are not part of a forbidden love couple for main win conditions
-    const activeWolves = nonLoverAlivePlayers.filter(p => p.role === ROLES.WEREWOLF.id).length;
-    const good = nonLoverAlivePlayers.filter(p => ROLES[p.role.toUpperCase()].alignment === 'good').length;
+
+    // Calculate active wolves and good players based on their roles
+    // These counts now include players who are part of Forbidden Love, as they still
+    // contribute to their original team's win condition if the Lovers don't win.
+    const activeWolves = alivePlayers.filter(p => p.role === ROLES.WEREWOLF.id).length;
+    const good = alivePlayers.filter(p => ROLES[p.role.toUpperCase()] && ROLES[p.role.toUpperCase()].alignment === 'good').length;
+
 
 
     // Cupid/Lovers Win condition

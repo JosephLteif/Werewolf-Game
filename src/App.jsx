@@ -324,8 +324,7 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_CUPID) {
       return wrapGameContent(
         <NightActionScreen
-          title="Cupid" subtitle="Choose TWO lovers." color="purple"
-          players={players.filter(p => p.isAlive && p.id !== user.uid)}
+          players={players.filter(p => p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid))}
           onAction={(ids) => advanceNightPhase('cupidLinks', ids)}
           myPlayer={myPlayer}
           multiSelect={true}

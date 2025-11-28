@@ -117,8 +117,6 @@ const handleHunterVoteDeath = async (victim, newPlayers, gameState, updateGame) 
 
 export const resolveDayVoting = async (gameState, updateGame, players) => {
   const lockedVoterIds = gameState.lockedVotes || [];
-  console.log('resolveDayVoting - gameState.lockedVotes:', gameState.lockedVotes);
-  console.log('resolveDayVoting - lockedVoterIds:', lockedVoterIds);
   const votesToCount = Object.entries(gameState.votes || {}).reduce(
     (acc, [voterId, targetId]) => {
       if (lockedVoterIds.includes(voterId)) {
@@ -128,7 +126,6 @@ export const resolveDayVoting = async (gameState, updateGame, players) => {
     },
     {}
   );
-  console.log('resolveDayVoting - votesToCount:', votesToCount);
 
 
   const voteCounts = countVotes(votesToCount, players);
