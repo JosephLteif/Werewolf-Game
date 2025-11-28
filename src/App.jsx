@@ -2,22 +2,22 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info, Check } from 'lucide-react';
 import { ref, update, serverTimestamp } from 'firebase/database';
 import { ROLES, PHASES } from './constants';
-import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './rooms';
+import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
 import { useAuth } from './hooks/useAuth';
 import { useGameState } from './hooks/useGameState';
 import { coreGameActions } from './services/coreGameActions';
-import NightActionScreen from './components/screens/NightActionScreen';
-import DeadScreen from './components/screens/DeadScreen';
-import LobbyScreen from './components/screens/LobbyScreen';
-import RoleRevealScreen from './components/screens/RoleRevealScreen';
-import NightIntroScreen from './components/screens/NightIntroScreen';
-import DayRevealScreen from './components/screens/DayRevealScreen';
-import DayVoteScreen from './components/screens/DayVoteScreen';
-import WerewolfNightActionScreen from './components/screens/WerewolfNightActionScreen';
+import NightActionScreen from './pages/NightActionScreen';
+import DeadScreen from './pages/DeadScreen';
+import LobbyScreen from './pages/LobbyScreen';
+import RoleRevealScreen from './pages/RoleRevealScreen';
+import NightIntroScreen from './pages/NightIntroScreen';
+import DayRevealScreen from './pages/DayRevealScreen';
+import DayVoteScreen from './pages/DayVoteScreen';
+import WerewolfNightActionScreen from './pages/WerewolfNightActionScreen';
 import TeammateList from './components/TeammateList';
 import PlayerRoleDisplay from './components/PlayerRoleDisplay';
 import ActiveRolesPanel from './components/ActiveRolesPanel';
-import { rtdb } from "./firebase";
+import { rtdb } from "./services/firebase";
 
 
 export default function App() {

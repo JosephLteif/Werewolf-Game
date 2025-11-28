@@ -1,5 +1,3 @@
-export const generateRoomCode = () => Math.random().toString(36).substring(2, 6).toUpperCase();
-
 export const calculateGameBalance = (gameState, ROLES) => {
     const { settings, players } = gameState;
 

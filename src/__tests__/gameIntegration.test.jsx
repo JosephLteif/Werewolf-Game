@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ROLES, TEAMS, CUPID_FATES, PHASES } from './constants';
-import { checkWinCondition } from './utils/winConditions';
-import { resolveNight, startNight, advanceNight } from './services/nightActions';
-import { resolveDayVoting, castPlayerVote, lockPlayerVote } from './services/voting';
+import { ROLES, TEAMS, CUPID_FATES, PHASES } from '../constants';
+import { checkWinCondition } from '../utils/winConditions';
+// The following imports are not used in this test file:
+// import { resolveNight, startNight, advanceNight } from '../services/nightActions';
+// import { resolveDayVoting, castPlayerVote, lockPlayerVote } from '../services/voting';
 
 // Helper function to create a player
 const createPlayer = (id, roleId, isAlive = true, alignment = null, extraProps = {}) => ({
@@ -50,14 +51,14 @@ const createInitialGameState = (playersArray, settings = {}, initialPhase = PHAS
 
 describe('Game Integration Tests - Win Conditions', () => {
     let gameState;
-    let mockUpdateGame;
-    let currentPlayers; // Will hold the array of player objects
+    let MockUpdateGame;
+    let CurrentPlayers; // Will hold the array of player objects
 
     beforeEach(() => {
         vi.restoreAllMocks(); // Restore all mocks before each test
 
         // Mock implementation for updateGame
-        const realUpdateGame = async (updates) => {
+        MockUpdateGame = vi.fn(async (updates) => {
             console.log("mockUpdateGame: received updates", updates);
             if (updates.phase) {
                 gameState.phase = updates.phase;
@@ -85,15 +86,14 @@ describe('Game Integration Tests - Win Conditions', () => {
             if (updates.lockedVotes !== undefined) {
                 gameState.lockedVotes = updates.lockedVotes;
             }
-            // Ensure currentPlayers is always up-to-date for convenience in the test
-            currentPlayers = Object.values(gameState.players);
+            // Ensure CurrentPlayers is always up-to-date for convenience in the test
+            CurrentPlayers = Object.values(gameState.players);
             return gameState;
-        };
-        mockUpdateGame = vi.fn(realUpdateGame);
+        });
 
-        // Initial setup for currentPlayers, assuming a default set of players will be defined
+        // Initial setup for CurrentPlayers, assuming a default set of players will be defined
         // by individual tests before calling createInitialGameState for gameState.
-        currentPlayers = [];
+        CurrentPlayers = [];
     });
 
     it('Scenario: Villagers win when all werewolves are eliminated', async () => {
@@ -200,10 +200,6 @@ describe('Game Integration Tests - Win Conditions', () => {
             isGameOver: true
         });
     });
-
-
-
-
 
     it('Scenario: Loyal Couple (Villager + Villager) - Village wins if no wolves', async () => {
         const v1 = createPlayer('v1', ROLES.VILLAGER.id);

@@ -1,4 +1,4 @@
-import { rtdb } from "./firebase";
+import { rtdb } from "./services/firebase";
 import {
   ref,
   get,
@@ -6,7 +6,7 @@ import {
   onValue,
   serverTimestamp,
 } from "firebase/database";
-import { generateRoomCode } from "./utils"; // Import generateRoomCode from utils.js
+import { generateRoomCode } from "./utils/index";
 import { CUPID_FATES } from './constants';
 
 function defaultSettings() {
