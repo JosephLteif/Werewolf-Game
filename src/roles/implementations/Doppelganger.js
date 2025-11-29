@@ -24,10 +24,11 @@ export class Doppelganger extends Role {
         return PHASES.NIGHT_DOPPELGANGER;
     }
 
-    processNightAction(_gameState, _player, action) {
+    processNightAction(_gameState, player, action) {
         if (action.type === 'doppelgangerCopy') {
             return {
-                doppelgangerCopy: action.targetId
+                doppelgangerCopy: action.targetId,
+                doppelgangerPlayerId: player.id
             };
         }
         return {};

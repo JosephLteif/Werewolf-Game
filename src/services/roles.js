@@ -3,7 +3,6 @@ import { assignRoles } from '../utils/gameLogic';
 
 export const assignRolesAndStartGame = async (
   gameState,
-  updateGame,
   players,
   isHost
 ) => {
@@ -19,7 +18,7 @@ export const assignRolesAndStartGame = async (
     if (p.role === 'vigilante') vigAmmo[p.id] = 1;
   });
 
-  await updateGame({
+  await gameState.update({
     players: newPlayers,
     vigilanteAmmo: vigAmmo,
     lovers: [],
@@ -28,14 +27,14 @@ export const assignRolesAndStartGame = async (
   });
 };
 
-export const markPlayerReady = async (players, user, gameState, updateGame) => {
+export const markPlayerReady = async (players, user, gameState) => {
   const newPlayers = players.map((p) =>
     p.id === user.uid ? { ...p, ready: true } : p
   );
 
   const allReady = newPlayers.every((p) => p.ready || !p.isAlive);
 
-  await updateGame({
+  await gameState.update({
     players: newPlayers,
     phase: allReady ? PHASES.NIGHT_INTRO : gameState.phase,
   });

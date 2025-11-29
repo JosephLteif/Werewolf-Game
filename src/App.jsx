@@ -38,7 +38,7 @@ export default function App() {
   const { gameState, isHost } = useGameState(user, roomCode, joined);
 
   const players = useMemo(() => (
-    gameState ? Object.entries(gameState.players || {}).map(([id, p]) => ({ id, ...p })) : []
+    gameState ? gameState.players : []
   ), [gameState]);
 
   // Local UI State
@@ -47,30 +47,6 @@ export default function App() {
   const [sorcererTarget, setSorcererTarget] = useState(null);
 
   const [now, setNow] = useState(() => Date.now());
-
-  const updateGame = useCallback(async (updates) => {
-    if (!user || !roomCode) return;
-
-    const payload = { ...updates };
-
-    // If callers pass players as an array, convert to object map keyed by id
-    if (payload.players && Array.isArray(payload.players)) {
-      const playersMap = {};
-      payload.players.forEach(p => {
-        playersMap[p.id] = p;
-      });
-      payload.players = playersMap;
-    }
-
-    payload.updatedAt = serverTimestamp();
-
-    // Remove any undefined values — Realtime DB update() rejects undefined
-    Object.keys(payload).forEach(k => {
-      if (payload[k] === undefined) delete payload[k];
-    });
-
-    await update(ref(rtdb, `rooms/${roomCode}`), payload);
-  }, [user, roomCode]);
 
   const {
     startGame,
@@ -81,7 +57,7 @@ export default function App() {
     castVote,
     lockVote,
     resolveVoting,
-  } = useMemo(() => coreGameActions(gameState, updateGame, players, user, isHost, now), [gameState, updateGame, players, user, isHost, now]);
+  } = useMemo(() => coreGameActions(gameState, players, user, isHost, now), [gameState, players, user, isHost, now]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -238,7 +214,6 @@ export default function App() {
         gameState={gameState}
         isHost={isHost}
         players={players}
-        updateGame={updateGame}
         startGame={startGame}
         showRoleInfo={showRoleInfo}
         setShowRoleInfo={setShowRoleInfo}
@@ -569,7 +544,8 @@ export default function App() {
           players={players.filter(p => p.isAlive)}
           onAction={(id) => {
             if (ammo > 0 && id) {
-              updateGame({ vigilanteAmmo: { ...gameState.vigilanteAmmo, [user.uid]: 0 } });
+              // Use gameState.update for vigilanteAmmo
+              gameState.update({ vigilanteAmmo: { ...gameState.vigilanteAmmo, [user.uid]: 0 } });
               advanceNightPhase('vigilanteTarget', id);
             } else {
               advanceNightPhase('vigilanteTarget', null);
@@ -610,7 +586,6 @@ export default function App() {
       <DayRevealScreen
         gameState={gameState}
         isHost={isHost}
-        updateGame={updateGame}
         now={now}
       />
     );
@@ -637,7 +612,7 @@ export default function App() {
         winner={gameState.winner}
         winners={gameState.winners}
         isGameOver={gameState.phase === PHASES.GAME_OVER}
-        onReset={() => updateGame({ phase: PHASES.LOBBY, players: gameState.players, dayLog: "", nightActions: {}, votes: {}, lockedVotes: [], winners: [] })}
+        onReset={() => gameState.update({ phase: PHASES.LOBBY, players: gameState.players, dayLog: "", nightActions: {}, votes: {}, lockedVotes: [], winners: [] })}
         isHost={isHost}
         dayLog={gameState.dayLog}
         players={players}

@@ -102,7 +102,7 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, nightAction
     if (activeRoleInPhase) {
       // Special checks for one-time roles or specific conditions
       if (p === PHASES.NIGHT_DOPPELGANGER) {
-        if (!gameState.doppelgangerTarget && !nightActions.doppelgangerCopy) {
+        if (!gameState.doppelgangerPlayerId && !nightActions.doppelgangerCopy) {
           return p;
         }
       } else if (p === PHASES.NIGHT_CUPID) {
@@ -117,10 +117,10 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, nightAction
   return nextPhase;
 };
 
-export const startNight = async (gameState, updateGame, players, now) => {
+export const startNight = async (gameState, players, now) => {
   let firstPhase = determineFirstNightPhase(players, gameState);
 
-  await updateGame({
+  await gameState.update({
     phase: firstPhase,
     phaseEndTime: now + gameState.settings.actionWaitTime * 1000,
     nightActions: {
@@ -130,12 +130,13 @@ export const startNight = async (gameState, updateGame, players, now) => {
       sorcererCheck: null,
       cupidLinks: [],
       doppelgangerCopy: null,
+      doppelgangerPlayerId: null,
       masonsReady: {},
     },
   });
 };
 
-export const advanceNight = async (gameState, updateGame, players, now, actionType, actionValue) => {
+export const advanceNight = async (gameState, players, now, actionType, actionValue) => {
   let newActions = { ...gameState.nightActions };
 
   switch (actionType) {
@@ -164,9 +165,12 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
       };
       break;
     case ACTION_TYPES.DOPPELGANGER_COPY: {
-      const dpRole = roleRegistry.getRole(ROLE_IDS.DOPPELGANGER);
-      const dpUpdates = dpRole.processNightAction(gameState, null, { type: actionType, targetId: actionValue });
-      newActions = { ...newActions, ...dpUpdates };
+      const doppelgangerPlayer = getPlayersByRole(players, ROLE_IDS.DOPPELGANGER).find(p => p.isAlive);
+      if (doppelgangerPlayer) {
+        const dpRole = roleRegistry.getRole(ROLE_IDS.DOPPELGANGER);
+        const dpUpdates = dpRole.processNightAction(gameState, doppelgangerPlayer, { type: actionType, targetId: actionValue });
+        newActions = { ...newActions, ...dpUpdates };
+      }
       break;
     }
     case ACTION_TYPES.DOCTOR_PROTECT: {
@@ -208,16 +212,14 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
     const werewolvesVoted = Object.keys(newActions.werewolfVotes || {}).length;
 
     if (aliveWerewolves.length > 0 && werewolvesVoted < aliveWerewolves.length) {
-      await updateGame({ nightActions: newActions });
+      await gameState.update({ nightActions: newActions });
       return;
     }
   }
 
   // Special check for Mason acknowledgment
   if (gameState.phase === PHASES.NIGHT_MASON && actionType !== null) {
-    const playersToUse = (gameState.players && Object.keys(gameState.players).length > 0)
-      ? Object.values(gameState.players)
-      : players;
+    const playersToUse = players; // Use current players directly
 
     const aliveMasons = playersToUse.filter(
       (pl) => pl.role === ROLE_IDS.MASON && pl.isAlive
@@ -226,7 +228,7 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
     if (aliveMasons.length > 1) {
       const masonsReadyCount = Object.keys(newActions.masonsReady || {}).length;
       if (masonsReadyCount < aliveMasons.length) {
-        await updateGame({ nightActions: newActions });
+        await gameState.update({ nightActions: newActions });
         return; // Wait for all masons
       }
     }
@@ -235,7 +237,7 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
   const nextPhase = getNextNightPhaseInternal(gameState.phase, players, gameState, newActions);
 
   if (nextPhase === 'RESOLVE') {
-    await resolveNight(gameState, updateGame, players, newActions);
+    await resolveNight(gameState, players, newActions);
   } else {
     let updates = { nightActions: newActions, phase: nextPhase };
 
@@ -270,8 +272,11 @@ export const advanceNight = async (gameState, updateGame, players, now, actionTy
       newActions.doppelgangerCopy
     ) {
       updates.doppelgangerTarget = newActions.doppelgangerCopy;
+      if (newActions.doppelgangerPlayerId) {
+        updates.doppelgangerPlayerId = newActions.doppelgangerPlayerId;
+      }
     }
-    await updateGame(updates);
+    await gameState.update(updates);
   }
 };
 
@@ -299,7 +304,7 @@ const applyLoverTeamChanges = (players, loversIds) => {
   }
 };
 
-export const resolveNight = async (gameState, updateGame, players, finalActions) => {
+export const resolveNight = async (gameState, players, finalActions) => {
   let newPlayers = [...players];
   let deaths = [];
 
@@ -327,7 +332,8 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
 
   // Doppelgänger Transformation (Night Death)
   deaths.forEach(victim => {
-    handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerTarget, victim.id);
+    // Capture the new players array returned by handleDoppelgangerTransformation
+    newPlayers = handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerPlayerId, gameState.doppelgangerTarget, victim.id);
   });
   // Check Hunter
   const hunterDied = deaths.find((p) => p.role === ROLE_IDS.HUNTER);
@@ -343,7 +349,7 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
   } else {
     const winResult = checkWinCondition(newPlayers, currentLovers, gameState.winners, gameState.settings);
     if (winResult) {
-      await updateGame({
+      await gameState.update({
         players: newPlayers,
         ...winResult,
         phase: PHASES.GAME_OVER,
@@ -352,7 +358,7 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
     }
   }
 
-  await updateGame({
+  await gameState.update({
     players: newPlayers,
     dayLog: log,
     phase: nextPhase,
@@ -367,17 +373,19 @@ export const resolveNight = async (gameState, updateGame, players, finalActions)
         : gameState.lovers,
     doppelgangerTarget:
       finalActions.doppelgangerCopy || gameState.doppelgangerTarget,
+    doppelgangerPlayerId:
+      finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId,
   });
 };
 
-export const handleHunterShot = async (gameState, updateGame, players, targetId) => {
+export const handleHunterShot = async (gameState, players, targetId) => {
   let newPlayers = [...players];
   const victim = findPlayerById(newPlayers, targetId);
 
   // Check if the victim was protected by the doctor
   if (victim && gameState.nightActions?.doctorProtect === victim.id) {
     let log = gameState.dayLog + ` The Hunter tried to shoot ${victim.name}, but they were protected!`;
-    await updateGame({
+    await gameState.update({
       players: newPlayers,
       dayLog: log,
       phase: PHASES.NIGHT_INTRO,
@@ -403,18 +411,14 @@ export const handleHunterShot = async (gameState, updateGame, players, targetId)
   }
 
   // Doppelgänger Transformation (Hunter Shot)
-  if (gameState.doppelgangerTarget === victim.id) {
-    const doppelganger = getPlayersByRole(newPlayers, ROLE_IDS.DOPPELGANGER)[0];
-    if (doppelganger && doppelganger.isAlive) {
-      doppelganger.role = victim.role;
-    }
-  }
+  // Instead of modifying newPlayers in place, handleDoppelgangerTransformation returns a new array
+  newPlayers = handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerPlayerId, gameState.doppelgangerTarget, victim.id);
 
   let log = gameState.dayLog + ` The Hunter shot ${victim.name}!`;
 
   const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners, gameState.settings);
   if (winResult) {
-    await updateGame({
+    await gameState.update({
       players: newPlayers,
       ...winResult,
       phase: PHASES.GAME_OVER,
@@ -424,7 +428,7 @@ export const handleHunterShot = async (gameState, updateGame, players, targetId)
 
   const wasNightDeath = gameState.dayLog.includes('died');
 
-  await updateGame({
+  await gameState.update({
     players: newPlayers,
     dayLog: log,
     phase: wasNightDeath ? PHASES.DAY_REVEAL : PHASES.NIGHT_INTRO,

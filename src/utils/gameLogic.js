@@ -45,7 +45,7 @@ export function assignRoles(players, settings) {
 }
 
 export function determineFirstNightPhase(players, gameState) {
-    if (players.some(p => p.role === 'doppelganger' && p.isAlive) && !gameState.doppelgangerTarget) {
+    if (players.some(p => p.role === 'doppelganger' && p.isAlive) && !gameState.doppelgangerPlayerId) {
         return PHASES.NIGHT_DOPPELGANGER;
     } else if (players.some(p => p.role === 'cupid' && p.isAlive) && (!gameState.lovers || gameState.lovers.length === 0)) {
         return PHASES.NIGHT_CUPID;
@@ -54,14 +54,23 @@ export function determineFirstNightPhase(players, gameState) {
     }
 }
 
-export function handleDoppelgangerTransformation(players, targetId, roleCopyFrom) {
-    if (!targetId || !roleCopyFrom) return;
-
-    const dopplegan = players.find(p => p.role === 'doppelganger' && p.isAlive);
-    if (dopplegan && targetId === roleCopyFrom) {
-        const targetPlayer = players.find(p => p.id === roleCopyFrom);
-        if (targetPlayer && !targetPlayer.isAlive) {
-            dopplegan.role = targetPlayer.role;
-        }
+export function handleDoppelgangerTransformation(players, doppelgangerPlayerId, doppelgangerTargetId, victimId) {
+    // If the chosen target is not the victim, or no target/victim, or doppelganger has no target, no transformation
+    if (!doppelgangerPlayerId || !doppelgangerTargetId || !victimId || doppelgangerTargetId !== victimId) {
+        return players;
     }
+
+    const doppelganger = players.find(p => p.id === doppelgangerPlayerId && p.isAlive);
+    const chosenTarget = players.find(p => p.id === doppelgangerTargetId);
+
+    if (doppelganger && chosenTarget) {
+        // Return a new players array with the doppelganger's role updated
+        return players.map(p => {
+            if (p.id === doppelganger.id) {
+                return { ...p, role: chosenTarget.role };
+            }
+            return p;
+        });
+    }
+    return players; // No transformation or player not found, return original players
 }

@@ -2,23 +2,78 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { assignRolesAndStartGame, markPlayerReady } from '../services/roles';
 import { ROLE_IDS, PHASES } from '../constants';
 
+// MockGameState class (re-used from nightActions.test.js)
+class MockGameState {
+  constructor(initialState) {
+    this._state = { ...initialState }; // Deep copy initial state
+    // Ensure players in _state is always a map, even if initialState provides an array
+    if (Array.isArray(this._state.players)) {
+      const playersMap = {};
+      this._state.players.forEach(p => { playersMap[p.id] = p; });
+      this._state.players = playersMap;
+    }
+
+    this.update = vi.fn(async (updates) => {
+      // Handle updates to players specially: convert array to map for internal storage
+      if (updates.players && Array.isArray(updates.players)) {
+        const playersMap = {};
+        updates.players.forEach(p => { playersMap[p.id] = p; });
+        this._state.players = playersMap;
+        const { players, ...restUpdates } = updates; // Extract players to avoid double assignment
+        Object.assign(this._state, restUpdates); // Apply other updates
+      } else {
+        Object.assign(this._state, updates); // Apply all updates directly
+      }
+    });
+  }
+
+  get code() { return this._state.code; }
+  get hostId() { return this._state.hostId; }
+  get phase() { return this._state.phase; }
+  get dayLog() { return this._state.dayLog; }
+  get updatedAt() { return this._state.updatedAt; }
+  get settings() { return this._state.settings; }
+  get players() {
+    // Always return players as an array, converting from internal map
+    return Object.values(this._state.players || {});
+  }
+  get rawPlayers() {
+    // Always return the internal map
+    return this._state.players;
+  }
+  get nightActions() { return this._state.nightActions; }
+  get vigilanteAmmo() { return this._state.vigilanteAmmo; }
+  get lockedVotes() { return this._state.lockedVotes; }
+  get lovers() { return this._state.lovers; }
+  get votes() { return this._state.votes; }
+  get winner() { return this._state.winner; }
+  get winners() { return this._state.winners; }
+  get phaseEndTime() { return this._state.phaseEndTime; }
+
+  isHost(playerUid) {
+    return this.hostId === playerUid;
+  }
+}
+
 describe('Role Assignment and Readiness', () => {
-  let mockUpdateGame;
-  let mockPlayers;
+  let mockPlayersArray;
   let mockUser;
-  let mockGameState;
+  let mockGameStateInstance;
 
   beforeEach(() => {
-    mockUpdateGame = vi.fn();
+    vi.restoreAllMocks();
     mockUser = { uid: 'p1', displayName: 'Player 1' };
-    mockPlayers = [
+    mockPlayersArray = [
       { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.SEER },
       { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.DOCTOR },
       { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLE_IDS.WEREWOLF },
       { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
-    mockGameState = {
+    const initialPlayersMap = {};
+    mockPlayersArray.forEach(p => { initialPlayersMap[p.id] = p; });
+
+    mockGameStateInstance = new MockGameState({
       settings: {
         wolfCount: 1,
         activeRoles: {
@@ -28,16 +83,17 @@ describe('Role Assignment and Readiness', () => {
         actionWaitTime: 30,
       },
       phase: PHASES.LOBBY,
-      players: {},
-    };
+      players: initialPlayersMap,
+      nightActions: {},
+    });
   });
 
   describe('assignRolesAndStartGame', () => {
     it('assigns roles correctly based on settings', async () => {
-      await assignRolesAndStartGame(mockGameState, mockUpdateGame, mockPlayers, true);
+      await assignRolesAndStartGame(mockGameStateInstance, mockPlayersArray, true);
 
-      expect(mockUpdateGame).toHaveBeenCalled();
-      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(mockGameStateInstance.update).toHaveBeenCalled();
+      const updateCall = mockGameStateInstance.update.mock.calls[0][0];
 
       expect(updateCall.phase).toBe(PHASES.ROLE_REVEAL);
       expect(updateCall.players).toHaveLength(5);
@@ -71,7 +127,7 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p16', name: 'Player 16', isAlive: true, ready: false },
       ];
 
-      const comprehensiveGameState = {
+      const comprehensiveGameState = new MockGameState({
         settings: {
           wolfCount: 2,
           activeRoles: {
@@ -90,15 +146,15 @@ describe('Role Assignment and Readiness', () => {
           actionWaitTime: 30,
         },
         phase: PHASES.LOBBY,
-        players: {},
-      };
+        players: {}, // This will be replaced by assignRoles
+      });
 
       const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.9);
-      await assignRolesAndStartGame(comprehensiveGameState, mockUpdateGame, comprehensivePlayers, true);
+      await assignRolesAndStartGame(comprehensiveGameState, comprehensivePlayers, true);
       mockRandom.mockRestore();
 
-      expect(mockUpdateGame).toHaveBeenCalled();
-      const updateCall = mockUpdateGame.mock.calls[0][0];
+      expect(comprehensiveGameState.update).toHaveBeenCalled();
+      const updateCall = comprehensiveGameState.update.mock.calls[0][0];
 
       expect(updateCall.phase).toBe(PHASES.ROLE_REVEAL);
       expect(updateCall.players).toHaveLength(comprehensivePlayers.length);
@@ -133,8 +189,12 @@ describe('Role Assignment and Readiness', () => {
     });
 
     it('does nothing if not host', async () => {
-      await assignRolesAndStartGame(mockGameState, mockUpdateGame, mockPlayers, false);
-      expect(mockUpdateGame).not.toHaveBeenCalled();
+      // The assignRolesAndStartGame function itself has a host check,
+      // but in the new structure, the call to assignRolesAndStartGame is already guarded by isHost in coreGameActions.
+      // So, this test will now call assignRolesAndStartGame directly with isHost=false,
+      // and it should still do nothing.
+      await assignRolesAndStartGame(mockGameStateInstance, mockPlayersArray, false);
+      expect(mockGameStateInstance.update).not.toHaveBeenCalled();
     });
   });
 
@@ -144,11 +204,14 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
         { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       ];
-      const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
+      const testGameState = new MockGameState({ ...mockGameStateInstance._state, players: {
+        'p1': initialPlayers[0],
+        'p2': initialPlayers[1],
+      }, phase: PHASES.DAY_VOTING });
 
-      await markPlayerReady(initialPlayers, mockUser, gameState, mockUpdateGame);
+      await markPlayerReady(initialPlayers, mockUser, testGameState);
 
-      expect(mockUpdateGame).toHaveBeenCalledWith(
+      expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           players: expect.arrayContaining([
             expect.objectContaining({ id: 'p1', ready: true }),
@@ -164,11 +227,14 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
         { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLE_IDS.VILLAGER },
       ];
-      const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
+      const testGameState = new MockGameState({ ...mockGameStateInstance._state, players: {
+        'p1': initialPlayers[0],
+        'p2': initialPlayers[1],
+      }, phase: PHASES.DAY_VOTING });
 
-      await markPlayerReady(initialPlayers, mockUser, gameState, mockUpdateGame);
+      await markPlayerReady(initialPlayers, mockUser, testGameState);
 
-      expect(mockUpdateGame).toHaveBeenCalledWith(
+      expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           players: expect.arrayContaining([
             expect.objectContaining({ id: 'p1', ready: true }),
@@ -184,11 +250,14 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
         { id: 'p2', name: 'Player 2', isAlive: false, ready: false, role: ROLE_IDS.VILLAGER },
       ];
-      const gameState = { ...mockGameState, phase: PHASES.DAY_VOTING };
+      const testGameState = new MockGameState({ ...mockGameStateInstance._state, players: {
+        'p1': initialPlayers[0],
+        'p2': initialPlayers[1],
+      }, phase: PHASES.DAY_VOTING });
 
-      await markPlayerReady(initialPlayers, mockUser, gameState, mockUpdateGame);
+      await markPlayerReady(initialPlayers, mockUser, testGameState);
 
-      expect(mockUpdateGame).toHaveBeenCalledWith(
+      expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           players: expect.arrayContaining([
             expect.objectContaining({ id: 'p1', ready: true }),
