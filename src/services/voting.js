@@ -112,8 +112,6 @@ export const lockPlayerVote = async (gameState, players, user) => {
 
     // Trigger resolution
 
-    const updatedGameState = { ...gameState, lockedVotes: newLockedVotes }; // This should actually be gameState itself
-
     await resolveDayVoting(gameState, players);
 
   }

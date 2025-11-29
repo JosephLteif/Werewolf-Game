@@ -19,7 +19,7 @@ class MockGameState {
         const playersMap = {};
         updates.players.forEach(p => { playersMap[p.id] = p; });
         this._state.players = playersMap;
-        const { players, ...restUpdates } = updates; // Extract players to avoid double assignment
+        const { _players, ...restUpdates } = updates; // Extract players to avoid double assignment
         Object.assign(this._state, restUpdates); // Apply other updates
       } else {
         Object.assign(this._state, updates); // Apply all updates directly

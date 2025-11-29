@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Moon, Eye, Crosshair, Sparkles, Ghost, Hammer, Info, Check } from 'lucide-react';
-import { ref, update, serverTimestamp } from 'firebase/database';
-import { roleRegistry } from './roles/RoleRegistry';
 import { PHASES } from './constants';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
-import { useAuth } from './hooks/useAuth';
 import { useGameState } from './hooks/useGameState';
+import { useAuth } from './hooks/useAuth'; // Import useAuth
 import { coreGameActions } from './services/coreGameActions';
 import NightActionScreen from './pages/NightActionScreen';
 import DeadScreen from './pages/DeadScreen';
@@ -24,19 +21,20 @@ import HunterActionScreen from './pages/HunterActionScreen';
 import WaitingForHunterScreen from './pages/WaitingForHunterScreen';
 import PlayerRoleDisplay from './components/PlayerRoleDisplay';
 import ActiveRolesPanel from './components/ActiveRolesPanel';
-import { rtdb } from "./services/firebase";
 import { ROLE_IDS } from './constants/roleIds';
+import TeammateList from './components/TeammateList';
 
 
 import AuthScreen from './pages/AuthScreen';
 
 export default function App() {
-  const { user, resetIdentity } = useAuth();
   // Local User State
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
+
+  const { user, resetIdentity } = useAuth();
 
   const leaveRoom = useCallback(() => {
     setJoined(false);
@@ -180,6 +178,7 @@ export default function App() {
         createRoom={createRoom}
         user={user}
         errorMsg={errorMsg}
+        resetIdentity={resetIdentity}
       />
     );
   }

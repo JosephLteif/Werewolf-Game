@@ -370,11 +370,11 @@ export const resolveNight = async (gameState, players, finalActions) => {
     lovers:
       finalActions.cupidLinks && finalActions.cupidLinks.length === 2
         ? finalActions.cupidLinks
-        : gameState.lovers,
+        : gameState.lovers || [],
     doppelgangerTarget:
-      finalActions.doppelgangerCopy || gameState.doppelgangerTarget,
+      finalActions.doppelgangerCopy || gameState.doppelgangerTarget || null,
     doppelgangerPlayerId:
-      finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId,
+      finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId || null,
   });
 };
 

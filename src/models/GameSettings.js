@@ -1,4 +1,5 @@
 import { CUPID_FATES } from '../constants/teams.js';
+import { roleRegistry } from '../roles/RoleRegistry.js';
 
 export class GameSettings {
     constructor(settings = {}) {

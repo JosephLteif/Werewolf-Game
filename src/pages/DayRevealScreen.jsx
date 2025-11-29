@@ -2,7 +2,7 @@
 import { Sun } from 'lucide-react';
 import { PHASES } from '../constants';
 
-export default function DayRevealScreen({ gameState, isHost, updateGame, now }) {
+export default function DayRevealScreen({ gameState, isHost, now }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
       {/* Animated sun rays */}
@@ -30,7 +30,7 @@ export default function DayRevealScreen({ gameState, isHost, updateGame, now }) 
         </div>
         {isHost ? (
           <button
-            onClick={() => updateGame({ phase: PHASES.DAY_VOTING, votes: {}, lockedVotes: [], phaseEndTime: now + (gameState.settings.votingWaitTime * 1000) })}
+            onClick={() => gameState.update({ phase: PHASES.DAY_VOTING, votes: {}, lockedVotes: [], phaseEndTime: now + (gameState.settings.votingWaitTime * 1000) })}
             className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-lg shadow-orange-900/30 transition-all hover:scale-105"
           >
             Start Voting

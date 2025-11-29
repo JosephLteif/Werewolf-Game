@@ -21,7 +21,7 @@ class MockGameState {
         const playersMap = {};
         updates.players.forEach(p => { playersMap[p.id] = p; });
         this._state.players = playersMap;
-        const { players, ...restUpdates } = updates; // Extract players to avoid double assignment
+        const { _players, ...restUpdates } = updates; // Extract players to avoid double assignment
         Object.assign(this._state, restUpdates); // Apply other updates
       } else {
         Object.assign(this._state, updates); // Apply all updates directly
@@ -63,22 +63,22 @@ class MockGameState {
 
 
 describe('Night Actions Service', () => {
-  let mockPlayersArray; // Renamed to avoid confusion with mockGameState.players
+  let _mockPlayersArray; // Renamed to avoid confusion with mockGameState.players
   let mockGameStateInstance; // Renamed to clearly indicate it's an instance
   let now;
 
   beforeEach(() => {
     vi.restoreAllMocks();
-    mockPlayersArray = [
+    _mockPlayersArray = [
       { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.SEER },
       { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.DOCTOR },
       { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLE_IDS.WEREWOLF },
       { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
-    // Convert mockPlayersArray to a map for initial state
+    // Convert _mockPlayersArray to a map for initial state
     const initialPlayersMap = {};
-    mockPlayersArray.forEach(p => { initialPlayersMap[p.id] = p; });
+    _mockPlayersArray.forEach(p => { initialPlayersMap[p.id] = p; });
 
     mockGameStateInstance = new MockGameState({
       settings: {
@@ -98,8 +98,8 @@ describe('Night Actions Service', () => {
   });
   describe('startNight', () => {
     it('starts with Cupid if Cupid is present and no lovers', async () => {
-      const cupidPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.CUPID };
-      const playersWithCupid = [cupidPlayer, ...mockPlayersArray.slice(1)];
+      const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID };
+      const playersWithCupid = [cupidPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({ ...mockGameStateInstance._state, lovers: [] });
       await nightActions.startNight(testGameState, playersWithCupid, now);
@@ -110,8 +110,8 @@ describe('Night Actions Service', () => {
     });
 
     it('starts with Werewolf if no Cupid and no Doppelganger', async () => {
-      const wolfPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.WEREWOLF };
-      const playersWithWolf = [wolfPlayer, ...mockPlayersArray.slice(1)];
+      const wolfPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.WEREWOLF };
+      const playersWithWolf = [wolfPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({ ...mockGameStateInstance._state, lovers: [] });
       await nightActions.startNight(testGameState, playersWithWolf, now);
@@ -122,8 +122,8 @@ describe('Night Actions Service', () => {
     });
 
     it('starts with Doppelganger if Doppelganger is present and no target yet', async () => {
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER };
-      const playersWithDoppelganger = [doppelgangerPlayer, ...mockPlayersArray.slice(1)];
+      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER };
+      const playersWithDoppelganger = [doppelgangerPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({ ...mockGameStateInstance._state, doppelgangerTarget: null });
       await nightActions.startNight(testGameState, playersWithDoppelganger, now);
@@ -134,8 +134,8 @@ describe('Night Actions Service', () => {
     });
 
     it('skips Cupid if Cupid is present but lovers are already set', async () => {
-      const cupidPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.CUPID };
-      const playersWithCupid = [cupidPlayer, ...mockPlayersArray.slice(1)];
+      const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID };
+      const playersWithCupid = [cupidPlayer, ..._mockPlayersArray.slice(1)];
       const existingLovers = ['p1', 'p2'];
 
       const testGameState = new MockGameState({ ...mockGameStateInstance._state, lovers: existingLovers });
@@ -150,9 +150,9 @@ describe('Night Actions Service', () => {
 
   describe('advanceNight', () => {
     it('advances from Cupid to Werewolf', async () => {
-      const cupidPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.CUPID };
-      const wolfPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.WEREWOLF };
-      const players = [cupidPlayer, wolfPlayer, ...mockPlayersArray.slice(2)];
+      const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID };
+      const wolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF };
+      const players = [cupidPlayer, wolfPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -170,8 +170,8 @@ describe('Night Actions Service', () => {
     });
 
     it('removes a cupid link if already selected', async () => {
-      const cupidPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.CUPID };
-      const players = [cupidPlayer, ...mockPlayersArray.slice(1)];
+      const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID };
+      const players = [cupidPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -190,8 +190,8 @@ describe('Night Actions Service', () => {
     });
 
     it('sets nightActions.cupidLinks to the provided value, but only sets lovers if count is 2', async () => {
-      const cupidPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.CUPID };
-      const players = [cupidPlayer, ...mockPlayersArray.slice(1)];
+      const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID };
+      const players = [cupidPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState1 = new MockGameState({
         ...mockGameStateInstance._state,
@@ -231,8 +231,8 @@ describe('Night Actions Service', () => {
     });
 
     it('advances to the next logical phase when no actionType is provided', async () => {
-      const doctorPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.DOCTOR };
-      const players = [doctorPlayer, ...mockPlayersArray.slice(1)]; // Ensure Doctor is present
+      const doctorPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.DOCTOR };
+      const players = [doctorPlayer, ..._mockPlayersArray.slice(1)]; // Ensure Doctor is present
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -251,14 +251,14 @@ describe('Night Actions Service', () => {
     });
 
     it('advances phase on timeout even if werewolves have not voted', async () => {
-      const wolfPlayer1 = { ...mockPlayersArray[2], id: 'p3', role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const wolfPlayer2 = { ...mockPlayersArray[0], id: 'p1', role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const wolfPlayer1 = { ..._mockPlayersArray[2], id: 'p3', role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const wolfPlayer2 = { ..._mockPlayersArray[0], id: 'p1', role: ROLE_IDS.WEREWOLF, isAlive: true };
       const playersWithTwoWolves = [
         wolfPlayer1,
         wolfPlayer2,
-        { ...mockPlayersArray[1], id: 'p2', role: ROLE_IDS.DOCTOR, isAlive: true },
-        { ...mockPlayersArray[3], id: 'p4', role: ROLE_IDS.VILLAGER, isAlive: true },
-        { ...mockPlayersArray[4], id: 'p5', role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[1], id: 'p2', role: ROLE_IDS.DOCTOR, isAlive: true },
+        { ..._mockPlayersArray[3], id: 'p4', role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[4], id: 'p5', role: ROLE_IDS.VILLAGER, isAlive: true },
       ];
 
       const testGameState = new MockGameState({
@@ -276,9 +276,9 @@ describe('Night Actions Service', () => {
     });
 
     it('advances from Werewolf to Minion if Minion exists', async () => {
-      const wolfPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.WEREWOLF };
-      const minionPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.MINION };
-      const players = [wolfPlayer, minionPlayer, ...mockPlayersArray.slice(2)];
+      const wolfPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.WEREWOLF };
+      const minionPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.MINION };
+      const players = [wolfPlayer, minionPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -296,15 +296,15 @@ describe('Night Actions Service', () => {
     });
 
     it('does not advance phase if not all werewolves have voted', async () => {
-      // Two werewolves exist in mockPlayers, only one votes
-      const wolfPlayer1 = { ...mockPlayersArray[2], id: 'p3', role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const wolfPlayer2 = { ...mockPlayersArray[0], id: 'p1', role: ROLE_IDS.WEREWOLF, isAlive: true }; // p1 was Seer, now a Werewolf
+      // Two werewolves exist in _mockPlayersArray, only one votes
+      const wolfPlayer1 = { ..._mockPlayersArray[2], id: 'p3', role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const wolfPlayer2 = { ..._mockPlayersArray[0], id: 'p1', role: ROLE_IDS.WEREWOLF, isAlive: true }; // p1 was Seer, now a Werewolf
       const playersWithTwoWolves = [
         wolfPlayer1,
         wolfPlayer2,
-        { ...mockPlayersArray[1], id: 'p2', role: ROLE_IDS.VILLAGER, isAlive: true },
-        { ...mockPlayersArray[3], id: 'p4', role: ROLE_IDS.VILLAGER, isAlive: true },
-        { ...mockPlayersArray[4], id: 'p5', role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[1], id: 'p2', role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[3], id: 'p4', role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[4], id: 'p5', role: ROLE_IDS.VILLAGER, isAlive: true },
       ];
 
       const testGameState = new MockGameState({
@@ -325,8 +325,8 @@ describe('Night Actions Service', () => {
     });
 
     it('allows werewolf to cast provisional vote', async () => {
-      const wolfPlayer = mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
-      const targetPlayer = mockPlayersArray.find(p => p.id === 'p1'); // Seer
+      const wolfPlayer = _mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
+      const targetPlayer = _mockPlayersArray.find(p => p.id === 'p1'); // Seer
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -334,7 +334,7 @@ describe('Night Actions Service', () => {
         nightActions: {},
       });
 
-      await nightActions.advanceNight(testGameState, mockPlayersArray, now, 'werewolfProvisionalVote', { voterId: wolfPlayer.id, targetId: targetPlayer.id });
+      await nightActions.advanceNight(testGameState, _mockPlayersArray, now, 'werewolfProvisionalVote', { voterId: wolfPlayer.id, targetId: targetPlayer.id });
 
       expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({
         nightActions: {
@@ -344,9 +344,9 @@ describe('Night Actions Service', () => {
     });
 
     it('allows werewolf to confirm vote (overriding provisional)', async () => {
-      const wolfPlayer = mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
-      const provisionalTarget = mockPlayersArray.find(p => p.id === 'p1'); // Seer
-      const confirmedTarget = mockPlayersArray.find(p => p.id === 'p2'); // Doctor
+      const wolfPlayer = _mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
+      const provisionalTarget = _mockPlayersArray.find(p => p.id === 'p1'); // Seer
+      const confirmedTarget = _mockPlayersArray.find(p => p.id === 'p2'); // Doctor
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -356,7 +356,7 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.advanceNight(testGameState, mockPlayersArray, now, 'werewolfVote', { voterId: wolfPlayer.id, targetId: confirmedTarget.id });
+      await nightActions.advanceNight(testGameState, _mockPlayersArray, now, 'werewolfVote', { voterId: wolfPlayer.id, targetId: confirmedTarget.id });
 
       expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({
         nightActions: {
@@ -368,8 +368,8 @@ describe('Night Actions Service', () => {
     });
 
     it('advances from Werewolf to Sorcerer if Sorcerer exists', async () => {
-      const sorcererPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.SORCERER };
-      const players = [sorcererPlayer, ...mockPlayersArray.slice(1)];
+      const sorcererPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SORCERER };
+      const players = [sorcererPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -386,8 +386,8 @@ describe('Night Actions Service', () => {
     });
 
     it('advances from Doctor to Vigilante if Vigilante exists', async () => {
-      const vigilantePlayer = { ...mockPlayersArray[0], role: ROLE_IDS.VIGILANTE };
-      const players = [vigilantePlayer, ...mockPlayersArray.slice(1)];
+      const vigilantePlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.VIGILANTE };
+      const players = [vigilantePlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -404,9 +404,9 @@ describe('Night Actions Service', () => {
     });
 
     it('advances from Seer to Mason if Masons exist', async () => {
-      const masonPlayer1 = { ...mockPlayersArray[0], role: ROLE_IDS.MASON };
-      const masonPlayer2 = { ...mockPlayersArray[1], role: ROLE_IDS.MASON };
-      const players = [masonPlayer1, masonPlayer2, ...mockPlayersArray.slice(2)];
+      const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON };
+      const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
+      const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -423,9 +423,9 @@ describe('Night Actions Service', () => {
     });
 
     it('advances immediately if only one mason is alive and clicks ready', async () => {
-      const masonPlayer1 = { ...mockPlayersArray[0], role: ROLE_IDS.MASON, isAlive: true };
-      const masonPlayer2 = { ...mockPlayersArray[1], role: ROLE_IDS.MASON, isAlive: false }; // Dead mason
-      const players = [masonPlayer1, masonPlayer2, ...mockPlayersArray.slice(2)];
+      const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON, isAlive: true };
+      const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON, isAlive: false }; // Dead mason
+      const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -440,9 +440,9 @@ describe('Night Actions Service', () => {
     });
 
     it('resets masonsReady when entering mason phase', async () => {
-      const masonPlayer1 = { ...mockPlayersArray[0], role: ROLE_IDS.MASON };
-      const masonPlayer2 = { ...mockPlayersArray[1], role: ROLE_IDS.MASON };
-      const players = [masonPlayer1, masonPlayer2, ...mockPlayersArray.slice(2)];
+      const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON };
+      const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
+      const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -464,9 +464,9 @@ describe('Night Actions Service', () => {
     });
 
     it('updates doppelgangerTarget if Doppelganger makes a choice', async () => {
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER };
-      const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.SEER };
-      const players = [doppelgangerPlayer, targetPlayer, ...mockPlayersArray.slice(2)];
+      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER };
+      const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER };
+      const players = [doppelgangerPlayer, targetPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -495,7 +495,7 @@ describe('Night Actions Service', () => {
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
+        phase: PHASES.NIGHT_DOPPELGANGER,
         doppelgangerTarget: null, // No target set, but no role exists
       });
 
@@ -503,7 +503,7 @@ describe('Night Actions Service', () => {
 
       // Expect to skip Doppelganger and Cupid (if no Cupid), landing on Werewolf (if present)
       // or directly to Doctor if Werewolf is also not present/skipped.
-      // In mockPlayers, there is a Werewolf.
+      // In _mockPlayersArray, there is a Werewolf.
       expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({
         phase: PHASES.NIGHT_CUPID, // CUPID is next in sequence.
         phaseEndTime: expect.any(Number),
@@ -512,7 +512,7 @@ describe('Night Actions Service', () => {
 
     it('skips NIGHT_CUPID if no Cupid is present or lovers are already set', async () => {
       // Scenario 1: No Cupid present
-      let playersWithoutCupid = mockPlayersArray.filter(p => p.role !== ROLE_IDS.CUPID);
+      let playersWithoutCupid = _mockPlayersArray.filter(p => p.role !== ROLE_IDS.CUPID);
       let testGameState1 = new MockGameState({
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
@@ -529,7 +529,7 @@ describe('Night Actions Service', () => {
       testGameState1.update.mockClear();
 
       // Scenario 2: Cupid present, but lovers already set
-      let playersWithCupid = [{ ...mockPlayersArray[0], role: ROLE_IDS.CUPID }, ...mockPlayersArray.slice(1)];
+      let playersWithCupid = [{ ..._mockPlayersArray[0], role: ROLE_IDS.CUPID }, ..._mockPlayersArray.slice(1)];
       let testGameState2 = new MockGameState({
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
@@ -547,8 +547,8 @@ describe('Night Actions Service', () => {
 
     it('skips NIGHT_WEREWOLF if no Werewolves are present', async () => {
       // Setup players with no Werewolves, but a Doctor exists
-      let playersWithoutWerewolf = mockPlayersArray.filter(p => p.role !== ROLE_IDS.WEREWOLF);
-      let doctorPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.DOCTOR, isAlive: true };
+      let playersWithoutWerewolf = _mockPlayersArray.filter(p => p.role !== ROLE_IDS.WEREWOLF);
+      let doctorPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.DOCTOR, isAlive: true };
       let players = [doctorPlayer, ...playersWithoutWerewolf.slice(1)];
 
       let testGameState = new MockGameState({
@@ -561,7 +561,7 @@ describe('Night Actions Service', () => {
 
       // Expect to skip Werewolf and land on Minion (if present) or Sorcerer (if present),
       // or Doctor if both are also absent.
-      // In mockPlayers, a Doctor exists, but no Minion or Sorcerer.
+      // In _mockPlayersArray, a Doctor exists, but no Minion or Sorcerer.
       expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({
         phase: PHASES.NIGHT_DOCTOR, // Expect to skip MINION and SORCERER and land on DOCTOR.
         phaseEndTime: expect.any(Number),
@@ -570,14 +570,13 @@ describe('Night Actions Service', () => {
 
     it('skips multiple inactive phases to land on the next active phase', async () => {
       // Setup players: only a Seer is present, no Doppelganger, Cupid, Werewolf, Minion, Sorcerer, Doctor, Mason, Vigilante
-      const seerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.SEER, isAlive: true };
+      const seerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SEER, isAlive: true };
       const playersWithOnlySeer = [
         seerPlayer,
-        { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER, isAlive: true },
-        { ...mockPlayersArray[2], role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[1], role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[2], role: ROLE_IDS.VILLAGER, isAlive: true },
       ];
 
-      // Start the phase at Doppelganger, expecting it to skip all the way to Seer
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_DOPPELGANGER,
@@ -595,9 +594,9 @@ describe('Night Actions Service', () => {
 
     it('advances to NIGHT_DOPPELGANGER when a Doppelganger is present and untargeted', async () => {
       // Setup players with a Doppelganger, no Cupid to avoid complications
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER, isAlive: true };
-      const werewolfPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const players = [doppelgangerPlayer, werewolfPlayer, ...mockPlayersArray.slice(2)]; // Ensure no Cupid for now
+      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER, isAlive: true };
+      const werewolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const players = [doppelgangerPlayer, werewolfPlayer, ..._mockPlayersArray.slice(2)]; // Ensure no Cupid for now
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -616,10 +615,10 @@ describe('Night Actions Service', () => {
 
     it('advances to NIGHT_CUPID when Cupid is present and lovers are not set', async () => {
       // Setup players with a Cupid, and ensure Doppelganger is either absent or has made a choice
-      const cupidPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.CUPID, isAlive: true };
-      const werewolfPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const doctorPlayer = { ...mockPlayersArray[2], role: ROLE_IDS.DOCTOR, isAlive: true };
-      const players = [cupidPlayer, werewolfPlayer, doctorPlayer, ...mockPlayersArray.slice(3)];
+      const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID, isAlive: true };
+      const werewolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const doctorPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.DOCTOR, isAlive: true };
+      const players = [cupidPlayer, werewolfPlayer, doctorPlayer, ..._mockPlayersArray.slice(3)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -637,9 +636,9 @@ describe('Night Actions Service', () => {
     });
 
     it('skips NIGHT_DOPPELGANGER in subsequent nights if target is already chosen', async () => {
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER, isAlive: true };
-      const werewolfPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const players = [doppelgangerPlayer, werewolfPlayer, ...mockPlayersArray.slice(2)];
+      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER, isAlive: true };
+      const werewolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const players = [doppelgangerPlayer, werewolfPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -664,8 +663,8 @@ describe('Night Actions Service', () => {
       vi.spyOn(winConditions, 'checkWinCondition').mockReturnValueOnce({ isGameOver: true, winner: 'VILLAGERS', winners: ['VILLAGERS'] });
 
       const playersWithoutSpecialRoles = [
-        { ...mockPlayersArray[0], role: ROLE_IDS.SEER, isAlive: true },
-        { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER, isAlive: true },
+        { ..._mockPlayersArray[0], role: ROLE_IDS.SEER, isAlive: true },
+        { ..._mockPlayersArray[1], role: ROLE_IDS.VILLAGER, isAlive: true },
       ];
 
       const testGameState = new MockGameState({
@@ -685,8 +684,8 @@ describe('Night Actions Service', () => {
     });
 
     it('advances through Seer phase', async () => {
-      const seerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.SEER };
-      const players = [seerPlayer, ...mockPlayersArray.slice(1)];
+      const seerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SEER };
+      const players = [seerPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -704,8 +703,8 @@ describe('Night Actions Service', () => {
     });
 
     it('advances through Doctor phase', async () => {
-      const doctorPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.DOCTOR };
-      const players = [doctorPlayer, ...mockPlayersArray.slice(1)];
+      const doctorPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.DOCTOR };
+      const players = [doctorPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -722,14 +721,14 @@ describe('Night Actions Service', () => {
     });
 
     it('advances to Minion phase and sets phaseEndTime to null if minion exists', async () => {
-      const minionPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.MINION }; // p1 is minion
-      const wolfPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.WEREWOLF }; // p2 is wolf
+      const minionPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.MINION }; // p1 is minion
+      const wolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF }; // p2 is wolf
       // Only include the one werewolf (wolfPlayer) and minion, and some other players.
       const playersWithMinion = [
         minionPlayer,
         wolfPlayer,
-        { ...mockPlayersArray[3], isAlive: true, ready: false, role: ROLE_IDS.VILLAGER }, // p4
-        { ...mockPlayersArray[4], isAlive: true, ready: false, role: ROLE_IDS.VILLAGER }, // p5
+        { ..._mockPlayersArray[3], isAlive: true, ready: false, role: ROLE_IDS.VILLAGER }, // p4
+        { ..._mockPlayersArray[4], isAlive: true, ready: false, role: ROLE_IDS.VILLAGER }, // p5
       ];
 
       const testGameState = new MockGameState({
@@ -749,8 +748,8 @@ describe('Night Actions Service', () => {
 
   describe('resolveNight', () => {
     it('eliminates werewolf target', async () => {
-      const wolfPlayer = mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
-      const doctorPlayer = mockPlayersArray.find(p => p.role === ROLE_IDS.DOCTOR);
+      const wolfPlayer = _mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
+      const doctorPlayer = _mockPlayersArray.find(p => p.role === ROLE_IDS.DOCTOR);
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -760,7 +759,7 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.resolveNight(testGameState, mockPlayersArray, testGameState.nightActions);
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
 
       expect(testGameState.update).toHaveBeenCalled();
       const updateCall = testGameState.update.mock.calls[0][0];
@@ -774,8 +773,8 @@ describe('Night Actions Service', () => {
     });
 
     it('saves target if doctor protects', async () => {
-      const wolfPlayer = mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
-      const villagerPlayer = mockPlayersArray.find(p => p.id === 'p4'); // Assuming p4 is Villager
+      const wolfPlayer = _mockPlayersArray.find(p => p.role === ROLE_IDS.WEREWOLF);
+      const villagerPlayer = _mockPlayersArray.find(p => p.id === 'p4'); // Assuming p4 is Villager
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -786,7 +785,7 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.resolveNight(testGameState, mockPlayersArray, testGameState.nightActions);
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
 
       const updateCall = testGameState.update.mock.calls[0][0];
 
@@ -799,9 +798,9 @@ describe('Night Actions Service', () => {
     });
 
     it('handles Sorcerer successfully finding Seer', async () => {
-      const sorcererPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.SORCERER, foundSeer: false };
-      const seerPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.SEER };
-      const playersWithSorcererSeer = [sorcererPlayer, seerPlayer, ...mockPlayersArray.slice(2)];
+      const sorcererPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SORCERER, foundSeer: false };
+      const seerPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER };
+      const playersWithSorcererSeer = [sorcererPlayer, seerPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -820,14 +819,14 @@ describe('Night Actions Service', () => {
     });
 
     it('handles Doppelganger transformation when target dies during night', async () => {
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
-      const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
-      const werewolfPlayer = { ...mockPlayersArray[2], role: ROLE_IDS.WEREWOLF }; // p3 is Werewolf
+      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
+      const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
+      const werewolfPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.WEREWOLF }; // p3 is Werewolf
       const playersWithDoppelgangerWerewolf = [
         doppelgangerPlayer,
         targetPlayer,
         werewolfPlayer,
-        ...mockPlayersArray.slice(3)
+        ..._mockPlayersArray.slice(3)
       ];
 
       const testGameState = new MockGameState({
@@ -856,12 +855,12 @@ describe('Night Actions Service', () => {
     });
 
     it('eliminates vigilante target if not protected', async () => {
-      const vigilantePlayer = { ...mockPlayersArray[0], role: ROLE_IDS.VIGILANTE }; // p1 is Vigilante
-      const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2 is target
+      const vigilantePlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.VIGILANTE }; // p1 is Vigilante
+      const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2 is target
       const playersWithVigilante = [
         vigilantePlayer,
         targetPlayer,
-        ...mockPlayersArray.slice(2)
+        ..._mockPlayersArray.slice(2)
       ];
 
       const testGameState = new MockGameState({
@@ -885,16 +884,16 @@ describe('Night Actions Service', () => {
     });
 
     it('saves vigilante target if doctor protects', async () => {
-      const vigilantePlayer = { ...mockPlayersArray[0], role: ROLE_IDS.VIGILANTE }; // p1 is Vigilante
-      const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2 is target
-      const doctorPlayer = { ...mockPlayersArray[2], role: ROLE_IDS.DOCTOR }; // p3 is Doctor
-      const werewolfPlayer = { ...mockPlayersArray[3], role: ROLE_IDS.WEREWOLF }; // p4 is Werewolf
+      const vigilantePlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.VIGILANTE }; // p1 is Vigilante
+      const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2 is target
+      const doctorPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.DOCTOR }; // p3 is Doctor
+      const werewolfPlayer = { ..._mockPlayersArray[3], role: ROLE_IDS.WEREWOLF }; // p4 is Werewolf
       const playersWithVigilanteDoctor = [
         vigilantePlayer,
         targetPlayer,
         doctorPlayer,
         werewolfPlayer, // Add a werewolf to prevent early win condition
-        ...mockPlayersArray.slice(4)
+        ..._mockPlayersArray.slice(4)
       ];
 
       const testGameState = new MockGameState({
@@ -927,7 +926,7 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.resolveNight(testGameState, mockPlayersArray, testGameState.nightActions);
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
 
       const updateCall = testGameState.update.mock.calls[0][0];
       const playersArray = Object.values(updateCall.players);
@@ -941,14 +940,14 @@ describe('Night Actions Service', () => {
     });
 
     it('handles lover chain death when the second lover dies first', async () => {
-      const werewolfPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.WEREWOLF }; // p1 is Werewolf
-      const lover1 = { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER, id: 'l1' };
-      const lover2 = { ...mockPlayersArray[2], role: ROLE_IDS.VILLAGER, id: 'l2' };
+      const werewolfPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.WEREWOLF }; // p1 is Werewolf
+      const lover1 = { ..._mockPlayersArray[1], role: ROLE_IDS.VILLAGER, id: 'l1' };
+      const lover2 = { ..._mockPlayersArray[2], role: ROLE_IDS.VILLAGER, id: 'l2' };
       const playersWithLovers = [
         werewolfPlayer,
         lover1,
         lover2,
-        ...mockPlayersArray.slice(3)
+        ..._mockPlayersArray.slice(3)
       ];
 
       const testGameState = new MockGameState({
@@ -975,9 +974,9 @@ describe('Night Actions Service', () => {
     });
 
     it('sets lovers alignment to LOVERS_TEAM for Forbidden Love (Wolf + Villager)', async () => {
-      const wolfPlayer = { ...mockPlayersArray[0], id: 'wolf1', role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const villagerPlayer = { ...mockPlayersArray[1], id: 'villager1', role: ROLE_IDS.VILLAGER, isAlive: true };
-      const cupidPlayer = { ...mockPlayersArray[2], id: 'cupid1', role: ROLE_IDS.CUPID, isAlive: true };
+      const wolfPlayer = { ..._mockPlayersArray[0], id: 'wolf1', role: ROLE_IDS.WEREWOLF, isAlive: true };
+      const villagerPlayer = { ..._mockPlayersArray[1], id: 'villager1', role: ROLE_IDS.VILLAGER, isAlive: true };
+      const cupidPlayer = { ..._mockPlayersArray[2], id: 'cupid1', role: ROLE_IDS.CUPID, isAlive: true };
 
       const players = [wolfPlayer, villagerPlayer, cupidPlayer];
 
@@ -1008,14 +1007,14 @@ describe('Night Actions Service', () => {
     });
 
     it('handles Hunter dying during the night', async () => {
-      const werewolfPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.WEREWOLF }; // p1 is Werewolf
-      const hunterPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.HUNTER }; // p2 is Hunter, dies
-      const doctorPlayer = { ...mockPlayersArray[2], role: ROLE_IDS.DOCTOR }; // p3 is Doctor, not protecting hunter
+      const werewolfPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.WEREWOLF }; // p1 is Werewolf
+      const hunterPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.HUNTER }; // p2 is Hunter, dies
+      const doctorPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.DOCTOR }; // p3 is Doctor, not protecting hunter
       const playersWithHunterDying = [
         werewolfPlayer,
         hunterPlayer,
         doctorPlayer,
-        ...mockPlayersArray.slice(3)
+        ..._mockPlayersArray.slice(3)
       ];
 
       const testGameState = new MockGameState({
@@ -1112,7 +1111,7 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.handleHunterShot(testGameState, mockPlayersArray, 'p2');
+      await nightActions.handleHunterShot(testGameState, _mockPlayersArray, 'p2');
 
       expect(testGameState.update).toHaveBeenCalled();
       const updateCall = testGameState.update.mock.calls[0][0];
@@ -1136,7 +1135,7 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.handleHunterShot(testGameState, mockPlayersArray, 'p1'); // Kill lover 1
+      await nightActions.handleHunterShot(testGameState, _mockPlayersArray, 'p1'); // Kill lover 1
 
       expect(testGameState.update).toHaveBeenCalled();
       const updateCall = testGameState.update.mock.calls[0][0];
@@ -1151,16 +1150,16 @@ describe('Night Actions Service', () => {
     });
 
     it('handles Doppelganger transformation when target is shot by Hunter', async () => {
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
-      const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
-      const hunterPlayer = { ...mockPlayersArray[2], role: ROLE_IDS.HUNTER }; // p3 is Hunter
-      const werewolfPlayer = { ...mockPlayersArray[3], role: ROLE_IDS.WEREWOLF }; // p4 is Werewolf
+      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
+      const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
+      const hunterPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.HUNTER }; // p3 is Hunter
+      const werewolfPlayer = { ..._mockPlayersArray[3], role: ROLE_IDS.WEREWOLF }; // p4 is Werewolf
       const playersWithDoppelgangerHunter = [
         doppelgangerPlayer,
         targetPlayer,
         hunterPlayer,
         werewolfPlayer, // Add a werewolf to prevent early win condition
-        ...mockPlayersArray.slice(4)
+        ..._mockPlayersArray.slice(4)
       ];
 
       const testGameState = new MockGameState({
@@ -1190,14 +1189,14 @@ describe('Night Actions Service', () => {
     });
 
     it('prevents Hunter from killing a player protected by the Doctor', async () => {
-      const hunterPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.HUNTER }; // p1 is Hunter
-      const victimPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2 is victim
-      const doctorPlayer = { ...mockPlayersArray[2], role: ROLE_IDS.DOCTOR }; // p3 is Doctor
+      const hunterPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.HUNTER }; // p1 is Hunter
+      const victimPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2 is victim
+      const doctorPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.DOCTOR }; // p3 is Doctor
       const playersWithHunterDoctor = [
         hunterPlayer,
         victimPlayer,
         doctorPlayer,
-        ...mockPlayersArray.slice(3)
+        ..._mockPlayersArray.slice(3)
       ];
 
       const testGameState = new MockGameState({

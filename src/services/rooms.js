@@ -1,6 +1,7 @@
-import {get, onValue, ref, serverTimestamp, set, update,} from "firebase/database";
+import { get, onValue, ref, serverTimestamp, set, update, } from "firebase/database";
 import GameState from '../models/GameState';
-import {generateRoomCode} from "../utils/index";
+import { generateRoomCode } from "../utils/index";
+import { rtdb } from "./firebase.js";
 
 /**
  * Creates a new room with a unique 4-letter code and writes initial state.
@@ -77,8 +78,8 @@ export function subscribeToRoom(roomCode, callback) {
   if (typeof callback !== "function") throw new Error("callback must be a function");
 
   const roomRef = ref(rtdb, `rooms/${roomCode}`);
-    return onValue(roomRef, (snapshot) => {
-      callback(snapshot.val());
+  return onValue(roomRef, (snapshot) => {
+    callback(snapshot.val());
   });
 }
 

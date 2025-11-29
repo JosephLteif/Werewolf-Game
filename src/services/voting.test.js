@@ -145,6 +145,23 @@ describe('Voting Service', () => {
   });
 
   describe('lockPlayerVote', () => {
+    let initialPlayers;
+    let initialPlayersMap;
+    let updatedMockPlayers;
+
+    beforeEach(() => {
+      initialPlayers = [
+        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.SEER },
+        { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.DOCTOR },
+        { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLE_IDS.WEREWOLF },
+        { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+        { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
+      ];
+      initialPlayersMap = {};
+      initialPlayers.forEach(p => { initialPlayersMap[p.id] = p; });
+      updatedMockPlayers = initialPlayers.map(p => ({ ...p, isAlive: true }));
+    });
+    
     it('does nothing if no vote cast', async () => {
       const testGameState = new MockGameState({ 
         ...mockInitialGameState, 
@@ -189,17 +206,6 @@ describe('Voting Service', () => {
     });
 
     it('calls resolveDayVoting when all alive players have locked their votes', async () => {
-      const initialPlayers = [
-        { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.SEER },
-        { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.DOCTOR },
-        { id: 'p3', name: 'Player 3', isAlive: true, ready: false, role: ROLE_IDS.WEREWOLF },
-        { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
-        { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
-      ];
-      const initialPlayersMap = {};
-      initialPlayers.forEach(p => { initialPlayersMap[p.id] = p; });
-
-
       const testGameState = new MockGameState({ 
         ...mockInitialGameState, 
         phase: PHASES.DAY_VOTING,
@@ -210,7 +216,6 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2', 'p3', 'p4'],
       });
 
-      const updatedMockPlayers = initialPlayers.map(p => ({ ...p, isAlive: true }));
       // This call will trigger the last lock and then resolveDayVoting
       await lockPlayerVote(testGameState, updatedMockPlayers, { uid: 'p5' });
 

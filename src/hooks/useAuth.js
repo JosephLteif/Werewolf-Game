@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 export function useAuth() {
@@ -32,10 +32,5 @@ export function useAuth() {
     return () => unsubscribe();
   }, []);
 
-  const resetIdentity = async () => {
-    await signOut(auth);
-    window.location.reload();
-  };
-
-  return { user, error, resetIdentity };
+  return { user, error };
 }

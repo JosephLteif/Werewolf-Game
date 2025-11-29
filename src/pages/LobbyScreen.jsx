@@ -6,7 +6,7 @@ import { CUPID_FATES } from '../constants';
 import { RoleInfoModal } from '../components/RoleInfoModal';
 import { roleRegistry } from '../roles/RoleRegistry';
 
-export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user, leaveRoom }) {
+export default function LobbyScreen({ gameState, isHost, players, startGame, setShowRoleInfo, showRoleInfo, user, leaveRoom }) {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
       <header className="flex justify-between items-center mb-6">
@@ -54,45 +54,45 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-slate-400">Action Timer (s)</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
-            {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, gameState.settings.actionWaitTime - 5) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, gameState.settings.actionWaitTime - 5) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
             <input
               type="number"
               value={gameState.settings.actionWaitTime}
-              onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
+              onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
               className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
               disabled={!isHost}
             />
-            {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, actionWaitTime: gameState.settings.actionWaitTime + 5 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, actionWaitTime: gameState.settings.actionWaitTime + 5 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
           </div>
         </div>
 
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-slate-400">Voting Timer (s)</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
-            {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, gameState.settings.votingWaitTime - 10) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, gameState.settings.votingWaitTime - 10) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
             <input
               type="number"
               value={gameState.settings.votingWaitTime}
-              onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
+              onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
               className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
               disabled={!isHost}
             />
-            {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, votingWaitTime: gameState.settings.votingWaitTime + 10 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, votingWaitTime: gameState.settings.votingWaitTime + 10 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
           </div>
         </div>
 
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-red-400">Wolf Count</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
-            {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, wolfCount: Math.max(1, gameState.settings.wolfCount - 1) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, wolfCount: Math.max(1, gameState.settings.wolfCount - 1) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
             <input
               type="number"
               value={gameState.settings.wolfCount}
-              onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, wolfCount: Math.max(1, parseInt(e.target.value) || 0) } })}
+              onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, wolfCount: Math.max(1, parseInt(e.target.value) || 0) } })}
               className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
               disabled={!isHost}
             />
-            {isHost && <button onClick={() => updateGame({ settings: { ...gameState.settings, wolfCount: gameState.settings.wolfCount + 1 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, wolfCount: gameState.settings.wolfCount + 1 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
           </div>
         </div>
 
@@ -103,7 +103,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
               type="checkbox"
               className="sr-only peer"
               checked={gameState.settings.showActiveRolesPanel || false}
-              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, showActiveRolesPanel: !(gameState.settings.showActiveRolesPanel || false) } })}
+              onChange={() => isHost && gameState.update({ settings: { ...gameState.settings, showActiveRolesPanel: !(gameState.settings.showActiveRolesPanel || false) } })}
               disabled={!isHost}
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -117,7 +117,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
               type="checkbox"
               className="sr-only peer"
               checked={gameState.settings.cupidCanChooseSelf || false}
-              onChange={() => isHost && updateGame({ settings: { ...gameState.settings, cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false) } })}
+              onChange={() => isHost && gameState.update({ settings: { ...gameState.settings, cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false) } })}
               disabled={!isHost}
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -129,7 +129,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
           <select
             className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
             value={gameState.settings.cupidFateOption || CUPID_FATES.SELFLESS} // Default to SELFLESS if not set
-            onChange={(e) => isHost && updateGame({ settings: { ...gameState.settings, cupidFateOption: e.target.value } })}
+            onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, cupidFateOption: e.target.value } })}
             disabled={!isHost}
           >
             <option value={CUPID_FATES.SELFLESS}>Selfless (Couple Win)</option>
@@ -159,7 +159,7 @@ export default function LobbyScreen({ gameState, isHost, players, updateGame, st
                     return (
                       <button
                         key={r.id}
-                        onClick={() => isHost ? updateGame({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
+                        onClick={() => isHost ? gameState.update({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
                         className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
                              ${isActive ? `${activeColor} text-white` : 'bg-slate-900 border-slate-700 text-slate-500'}
                              ${!isHost ? 'cursor-help opacity-80' : 'hover:opacity-80'}
