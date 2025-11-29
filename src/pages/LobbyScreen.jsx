@@ -3,7 +3,7 @@ import { Info, Copy, ArrowLeft } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { Teams } from '../models/Team';
 import { CUPID_FATES } from '../constants';
-import { RoleInfoModal } from '../modals/RoleInfoModal';
+import { RoleInfoModal } from '../components/RoleInfoModal';
 import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function LobbyScreen({ gameState, isHost, players, updateGame, startGame, setShowRoleInfo, showRoleInfo, user, leaveRoom }) {
