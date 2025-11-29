@@ -15,12 +15,20 @@ import NightIntroScreen from './pages/NightIntroScreen';
 import DayRevealScreen from './pages/DayRevealScreen';
 import DayVoteScreen from './pages/DayVoteScreen';
 import WerewolfNightActionScreen from './pages/WerewolfNightActionScreen';
-import TeammateList from './components/TeammateList';
+import NightWaitingScreen from './pages/NightWaitingScreen';
+import MinionNightActionScreen from './pages/MinionNightActionScreen';
+import SorcererNightActionScreen from './pages/SorcererNightActionScreen';
+import SeerNightActionScreen from './pages/SeerNightActionScreen';
+import MasonNightActionScreen from './pages/MasonNightActionScreen';
+import HunterActionScreen from './pages/HunterActionScreen';
+import WaitingForHunterScreen from './pages/WaitingForHunterScreen';
 import PlayerRoleDisplay from './components/PlayerRoleDisplay';
 import ActiveRolesPanel from './components/ActiveRolesPanel';
 import { rtdb } from "./services/firebase";
 import { ROLE_IDS } from './constants/roleIds';
 
+
+import AuthScreen from './pages/AuthScreen';
 
 export default function App() {
   const { user, resetIdentity } = useAuth();
@@ -163,47 +171,16 @@ export default function App() {
 
   if (!joined || !gameState) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-5xl font-black tracking-tighter text-indigo-500 flex items-center justify-center gap-3">
-            <Moon className="w-12 h-12" /> NIGHTFALL
-          </h1>
-          <p className="text-slate-400">Local Multiplayer • Join Room</p>
-        </div>
-
-        <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-sm border border-slate-700 space-y-4">
-          {errorMsg && <div className="bg-red-900/50 text-red-200 p-3 rounded text-sm text-center">{errorMsg}</div>}
-
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Your Name</label>
-            <input
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500"
-              placeholder="e.g. Wolfie"
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-            />
-          </div>
-
-          <div className="pt-4 flex flex-col gap-3">
-            <div className="flex gap-2">
-              <input
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-white uppercase tracking-widest text-center font-mono placeholder:normal-case placeholder:tracking-normal"
-                placeholder="Room Code"
-                maxLength={4}
-                value={roomCode}
-                onChange={e => setRoomCode(e.target.value.toUpperCase())}
-              />
-              <button onClick={joinRoom} disabled={!user} className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 px-6 font-bold rounded-lg">Join</button>
-            </div>
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-slate-700"></div>
-              <span className="flex-shrink mx-4 text-slate-600 text-xs">OR</span>
-              <div className="flex-grow border-t border-slate-700"></div>
-            </div>
-            <button onClick={createRoom} disabled={!user} className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 rounded-lg font-bold">Create New Room</button>
-          </div>
-        </div>
-      </div>
+      <AuthScreen
+        playerName={playerName}
+        setPlayerName={setPlayerName}
+        roomCode={roomCode}
+        setRoomCode={setRoomCode}
+        joinRoom={joinRoom}
+        createRoom={createRoom}
+        user={user}
+        errorMsg={errorMsg}
+      />
     );
   }
 
@@ -272,22 +249,7 @@ export default function App() {
     }
 
     if (!isMyTurn) {
-      return wrapGameContent(
-        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-indigo-900/30 flex items-center justify-center mb-6 animate-pulse">
-              <Moon className="w-12 h-12 text-indigo-400" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold mb-3 text-indigo-200">You are sleeping...</h2>
-          <p className="text-indigo-400/70 text-sm">Someone is taking their turn</p>
-          <div className="mt-8 flex gap-2">
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-      );
+      return wrapGameContent(<NightWaitingScreen />);
     }
 
     // ACTIVE ROLES UI
@@ -336,86 +298,27 @@ export default function App() {
     // MINION
     if (gameState.phase === PHASES.NIGHT_MINION) {
       return wrapGameContent(
-        <div className="min-h-screen bg-gradient-to-br from-red-950 via-rose-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
-          <div className="max-w-md w-full">
-            <div className="mb-8">
-              <Ghost className="w-24 h-24 text-red-400 mx-auto mb-4 drop-shadow-lg" />
-              <h2 className="text-4xl font-black text-red-400 mb-2">Your Allies</h2>
-              <p className="text-slate-400">The Werewolves are...</p>
-            </div>
-            <div className="space-y-3 mb-8">
-              {players.filter(p => p.role === ROLE_IDS.WEREWOLF).map(p => (
-                <div key={p.id} className="bg-gradient-to-r from-red-900/30 to-rose-900/30 border-2 border-red-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-red-500/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                      {p.name[0]}
-                    </div>
-                    {p.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
-          </div>
-        </div>
+        <MinionNightActionScreen
+          players={players}
+          advanceNightPhase={advanceNightPhase}
+        />
       );
     }
 
     // SORCERER
     if (gameState.phase === PHASES.NIGHT_SORCERER) {
       return wrapGameContent(
-        <div className="min-h-screen bg-gradient-to-br from-purple-950 via-pink-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
-          <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
-            <div className="text-center mb-8 mt-4">
-              <Sparkles className="w-16 h-16 text-purple-400 mx-auto mb-4 drop-shadow-lg" />
-              <h2 className="text-4xl font-black text-purple-400 mb-2">Sorcerer's Gaze</h2>
-              <p className="text-slate-400">Seek the Seer...</p>
-            </div>
-
-            {seerMessage ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 border-2 border-purple-500 p-8 rounded-2xl mb-8 max-w-md shadow-lg shadow-purple-500/30">
-                  <p className="text-2xl font-bold">{seerMessage}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setSeerMessage(null);
-                    advanceNightPhase('sorcererCheck', sorcererTarget);
-                    setSorcererTarget(null);
-                  }}
-                  className="w-full max-w-md bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
-                >
-                  Continue
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                  {players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        const isSeer = p.role === ROLE_IDS.SEER;
-                        setSeerMessage(`${p.name} is ${isSeer ? 'THE SEER' : 'NOT the Seer'}.`);
-                        setSorcererTarget(p.id);
-                      }}
-                      className="w-full p-4 bg-slate-900/50 rounded-2xl text-left font-bold border-2 border-slate-700 hover:border-purple-500 transition-all shadow-lg hover:shadow-xl flex items-center gap-4"
-                    >
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                        {p.name[0]}
-                      </div>
-                      <span className="text-lg">{p.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="text-center text-purple-400 font-mono font-bold text-2xl">
-                  {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
-                </div>
-                <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
-              </>
-            )}
-          </div>
-        </div>
+        <SorcererNightActionScreen
+          players={players}
+          user={user}
+          advanceNightPhase={advanceNightPhase}
+          gameState={gameState}
+          seerMessage={seerMessage}
+          setSeerMessage={setSeerMessage}
+          sorcererTarget={sorcererTarget}
+          setSorcererTarget={setSorcererTarget}
+          now={now}
+        />
       );
     }
 
@@ -436,101 +339,27 @@ export default function App() {
     // SEER
     if (gameState.phase === PHASES.NIGHT_SEER) {
       return wrapGameContent(
-        <div className="min-h-screen bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
-          <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
-            <div className="text-center mb-8 mt-4">
-              <Eye className="w-16 h-16 text-purple-400 mx-auto mb-4 drop-shadow-lg" />
-              <h2 className="text-4xl font-black text-purple-400 mb-2">Seer's Vision</h2>
-              <p className="text-slate-400">Reveal the truth...</p>
-            </div>
-
-            {seerMessage ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border-2 border-purple-500 p-8 rounded-2xl mb-8 max-w-md shadow-lg shadow-purple-500/30">
-                  <p className="text-2xl font-bold">{seerMessage}</p>
-                </div>
-                <button
-                  onClick={() => { setSeerMessage(null); advanceNightPhase(null, null); }}
-                  className="w-full max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
-                >
-                  Continue
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                  {players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        const isEvil = p.role === ROLE_IDS.WEREWOLF || p.role === ROLE_IDS.LYCAN;
-                        setSeerMessage(`${p.name} is ${isEvil ? 'EVIL' : 'GOOD'}.`);
-                      }}
-                      className="w-full p-4 bg-slate-900/50 rounded-2xl text-left font-bold border-2 border-slate-700 hover:border-purple-500 transition-all shadow-lg hover:shadow-xl flex items-center gap-4"
-                    >
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                        {p.name[0]}
-                      </div>
-                      <span className="text-lg">{p.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="text-center text-purple-400 font-mono font-bold text-2xl">
-                  {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
-                </div>
-                <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
-              </>
-            )}
-          </div>
-        </div>
+        <SeerNightActionScreen
+          players={players}
+          user={user}
+          advanceNightPhase={advanceNightPhase}
+          gameState={gameState}
+          seerMessage={seerMessage}
+          setSeerMessage={setSeerMessage}
+          now={now}
+        />
       );
     }
 
     // MASON
     if (gameState.phase === PHASES.NIGHT_MASON) {
-      const myMasonReady = gameState.nightActions?.masonsReady?.[user.uid];
-      const aliveMasons = players.filter(p => p.role === ROLE_IDS.MASON && p.isAlive);
-      const masonsReadyCount = Object.keys(gameState.nightActions?.masonsReady || {}).length;
-
       return wrapGameContent(
-        <div className="min-h-screen bg-gradient-to-br from-blue-950 via-cyan-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
-          <div className="max-w-md w-full">
-            <div className="mb-8">
-              <Hammer className="w-24 h-24 text-blue-400 mx-auto mb-4 drop-shadow-lg" />
-              <h2 className="text-4xl font-black text-blue-400 mb-2">Fellow Masons</h2>
-              <p className="text-slate-400">Your trusted allies</p>
-            </div>
-            <div className="space-y-3 mb-8">
-              {aliveMasons.filter(p => p.id !== user.uid).length > 0 ? (
-                aliveMasons.filter(p => p.id !== user.uid).map(p => (
-                  <div key={p.id} className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-2 border-blue-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                        {p.name[0]}
-                      </div>
-                      {p.name}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-slate-400 italic bg-slate-900/50 p-6 rounded-2xl border border-slate-700">You are the only Mason.</div>
-              )}
-            </div>
-            {myMasonReady ? (
-              <div className="text-center py-4">
-                <div className="inline-flex items-center gap-2 bg-green-900/50 text-green-400 px-4 py-2 rounded-full font-bold">
-                  <Check className="w-5 h-5" />
-                  Waiting for others...
-                </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  {masonsReadyCount} / {aliveMasons.length} Masons ready
-                </p>
-              </div>
-            ) : (
-              <button onClick={() => advanceNightPhase('masonReady', user.uid)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
-            )}
-          </div>
-        </div>
+        <MasonNightActionScreen
+          players={players}
+          user={user}
+          gameState={gameState}
+          advanceNightPhase={advanceNightPhase}
+        />
       );
     }
     // VIGILANTE
@@ -563,21 +392,13 @@ export default function App() {
   if (gameState.phase === PHASES.HUNTER_ACTION) {
     if (myPlayer.role === ROLE_IDS.HUNTER && !myPlayer.isAlive && !gameState.dayLog.includes("shot")) {
       return wrapGameContent(
-        <div className="min-h-screen bg-red-950 text-white p-6 flex flex-col items-center justify-center">
-          <Crosshair className="w-16 h-16 mb-4" />
-          <h2 className="text-2xl font-bold mb-4">REVENGE!</h2>
-          <p className="mb-6 text-center">Select someone to take with you.</p>
-          <div className="w-full space-y-2">
-            {players.filter(p => p.isAlive).map(p => (
-              <button key={p.id} onClick={() => handleHunterShotAction(p.id)} className="w-full p-4 bg-red-900/50 border border-red-500 rounded-xl font-bold">
-                {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <HunterActionScreen
+          players={players}
+          handleHunterShotAction={handleHunterShotAction}
+        />
       );
     }
-    return wrapGameContent(<div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center p-6 text-center">Waiting for Hunter...</div>);
+    return wrapGameContent(<WaitingForHunterScreen />);
   }
 
   // --- DAY PHASES ---

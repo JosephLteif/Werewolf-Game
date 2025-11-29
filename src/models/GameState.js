@@ -8,7 +8,7 @@ function defaultSettings() {
     cupidCanChooseSelf: false,
     cupidFateOption: "third_wheel",
     activeRoles: {
-      cupid: true,
+      cupid: false,
       doctor: false,
       hunter: false,
       seer: false,
