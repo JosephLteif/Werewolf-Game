@@ -9,7 +9,7 @@ export class Tanner extends Role {
     this.id = 'tanner';
     this.name = 'Tanner';
     this.icon = UserX;
-    this.description = 'You only win if you are eliminated.';
+    this.description = 'You only win if you are voted out.';
     this.alignment = ALIGNMENTS.NEUTRAL;
     this.team = Teams.NEUTRAL;
     this.weight = 0;

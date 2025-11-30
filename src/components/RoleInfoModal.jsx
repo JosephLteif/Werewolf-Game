@@ -29,7 +29,8 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                 <h4 className="font-bold text-white mb-1">Objective</h4>
                 <p>
                   Villagers must find and eliminate all Werewolves. Werewolves must eliminate
-                  Villagers until they equal or outnumber them.
+                  Villagers until they equal or outnumber them. The Tanner wins if they are
+                  voted out by a vote.
                 </p>
               </section>
               <section>
@@ -62,6 +63,20 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
                     <strong className="text-pink-400">Lovers:</strong> Win if they are the last two
                     players alive. Depending on the game settings, Cupid may also win if they are
                     alive and involved in a "Third Wheel" scenario.
+                  </li>
+                  <li>
+                    <strong className="text-amber-400">Tanner:</strong> Wins if voted out.
+                  </li>
+                </ul>
+              </section>
+              <section>
+                <h4 className="font-bold text-white mb-1">Tanner's Win Strategy</h4>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>
+                    <strong className="text-amber-300">Game Continues:</strong> If the Tanner is voted out, they win, and the game continues for the remaining players to achieve their win conditions. The Tanner is added to the list of winners at the end of the game.
+                  </li>
+                  <li>
+                    <strong className="text-amber-300">Game Ends:</strong> If the Tanner is voted out, they win, and the game ends immediately. Only the Tanner is declared the winner.
                   </li>
                 </ul>
               </section>
