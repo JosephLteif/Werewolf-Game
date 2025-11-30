@@ -41,7 +41,10 @@ export default function ActiveRolesPanel({ activeRoles, wolfCount, playerCount }
   if (rolesInSession.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 rounded-lg z-40 shadow-lg w-64">
+    <div
+      className="fixed bottom-4 left-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 rounded-lg z-40 shadow-lg w-64"
+      data-testid="active-roles-panel"
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between px-3 py-2 text-left"

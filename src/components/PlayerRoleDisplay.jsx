@@ -7,7 +7,10 @@ export default function PlayerRoleDisplay({ myPlayer }) {
   const role = roleRegistry.getRole(myPlayer.role); // Assuming myPlayer.role is the ID, e.g., 'WEREWOLF'
 
   return (
-    <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg">
+    <div
+      className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg"
+      data-testid="player-role-display"
+    >
       <div
         className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold"
         style={{ backgroundColor: myPlayer.avatarColor }}

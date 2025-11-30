@@ -49,7 +49,7 @@ export default function TeammateList({ players, myPlayer, gameState }) {
   if (relevantPlayers.length === 0 && !partner) return null;
 
   return (
-    <div className="fixed top-4 left-4 z-50 max-w-[200px]">
+    <div className="fixed top-4 left-4 z-50 max-w-[200px]" data-testid="teammate-list">
       <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700 rounded-xl shadow-xl overflow-hidden transition-all">
         {/* Header */}
         <button

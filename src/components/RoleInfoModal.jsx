@@ -14,6 +14,7 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50"
       onClick={onClose}
+      data-testid="role-info-modal-backdrop"
     >
       <div
         className="bg-slate-800 p-6 rounded-2xl max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto"

@@ -16,7 +16,7 @@ export default function VoterAvatars({
   const textSizeClass = size === '6' ? 'text-[10px]' : 'text-[9px]';
 
   return (
-    <div className="flex -space-x-2">
+    <div className="flex -space-x-2" data-testid="voter-avatars-component">
       {voters.map((voter) => (
         <div
           key={voter.id}
