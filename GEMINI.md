@@ -70,8 +70,5 @@ npm run preview
 *   **State Management**: Game state and user-specific data are managed through a combination of React's `useState`, `useEffect`, and custom hooks, with Firebase Realtime Database as the single source of truth for persistent game state.
 *   **Constants**: Key game data like roles and phases are defined as constants, improving readability and reducing magic strings.
 
-**Note on Code Duplication**:
-It has been observed that the `generateRoomCode` function is duplicated in both `src/rooms.js` and `src/utils.js`. It is recommended to consolidate this function into a single, shared utility file (e.g., `src/utils/index.js` or `src/utils.js` after moving it there exclusively) to avoid redundancy and ensure consistency.
-
 ---
 This `GEMINI.md` provides a foundation for understanding the "Nightfall Game" project. For detailed implementation, refer to the individual source files.
