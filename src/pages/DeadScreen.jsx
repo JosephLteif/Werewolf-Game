@@ -21,11 +21,12 @@ export default function DeadScreen({
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
     CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
     TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add Tanner
+    WINNER: { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' }, // Generic winner
   };
 
   const colors =
-    isGameOver && winners.length > 0
-      ? winnerColors[winners[0]]
+    isGameOver
+      ? winnerColors[winner] || winnerColors.WINNER // Use winner prop, fall back to generic
       : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
 
   // Filter winners

@@ -21,6 +21,7 @@ export function assignRoles(players, settings) {
   if (settings.activeRoles['lycan']) deck.push('lycan');
   if (settings.activeRoles['cupid']) deck.push('cupid');
   if (settings.activeRoles['doppelganger']) deck.push('doppelganger');
+  if (settings.activeRoles['tanner']) deck.push('tanner');
   if (settings.activeRoles['mayor']) deck.push('mayor');
   if (settings.activeRoles['mason']) {
     deck.push('mason');

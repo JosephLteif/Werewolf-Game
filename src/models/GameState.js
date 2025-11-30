@@ -1,4 +1,5 @@
 import { serverTimestamp } from 'firebase/database';
+import { TANNER_WIN_STRATEGIES } from '../constants/tannerWinStrategies';
 
 function defaultSettings() {
   return {
@@ -7,6 +8,7 @@ function defaultSettings() {
     wolfCount: 1,
     cupidCanChooseSelf: false,
     cupidFateOption: 'third_wheel',
+    tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,
     activeRoles: {
       cupid: false,
       doctor: false,
@@ -57,6 +59,7 @@ class GameState {
         vigilanteTarget: null,
         werewolfVotes: {},
         cupidLinks: [],
+        masonsReady: {},
       },
       vigilanteAmmo: {},
       lockedVotes: [],

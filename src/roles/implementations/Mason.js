@@ -28,7 +28,7 @@ export class Mason extends Role {
     if (action.type === 'masonReady') {
       return {
         masonsReady: {
-          ...(gameState.nightActions.masonsReady || {}),
+          ...(gameState.nightActions?.masonsReady || {}),
           [player.id]: true,
         },
       };

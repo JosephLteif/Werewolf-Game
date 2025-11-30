@@ -173,7 +173,7 @@ export const resolveDayVoting = async (gameState, players) => {
       await gameState.update({
         players: newPlayers,
 
-        winner: 'Tanner',
+        winner: 'TANNER',
 
         winners: [victim.id],
 

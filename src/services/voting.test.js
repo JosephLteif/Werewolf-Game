@@ -487,7 +487,7 @@ describe('Voting Service', () => {
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.phase).toBe(PHASES.GAME_OVER);
-      expect(testGameState._state.winner).toBe('Tanner');
+      expect(testGameState._state.winner).toBe('TANNER');
       expect(testGameState._state.winners).toEqual([tannerPlayer.id]);
     });
 
