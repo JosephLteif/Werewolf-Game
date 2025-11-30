@@ -9,7 +9,7 @@ export default function SeerNightActionScreen({
   gameState,
   seerMessage,
   setSeerMessage,
-  now
+  now,
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-indigo-950 to-slate-950 text-slate-100 p-4 flex flex-col relative">
@@ -26,7 +26,10 @@ export default function SeerNightActionScreen({
               <p className="text-2xl font-bold">{seerMessage}</p>
             </div>
             <button
-              onClick={() => { setSeerMessage(null); advanceNightPhase(null, null); }}
+              onClick={() => {
+                setSeerMessage(null);
+                advanceNightPhase(null, null);
+              }}
               className="w-full max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
             >
               Continue
@@ -35,26 +38,38 @@ export default function SeerNightActionScreen({
         ) : (
           <>
             <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-              {players.filter(p => p.isAlive && p.id !== user.uid).map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    const isEvil = p.role === ROLE_IDS.WEREWOLF || p.role === ROLE_IDS.LYCAN;
-                    setSeerMessage(`${p.name} is ${isEvil ? 'EVIL' : 'GOOD'}.`);
-                  }}
-                  className="w-full p-4 bg-slate-900/50 rounded-2xl text-left font-bold border-2 border-slate-700 hover:border-purple-500 transition-all shadow-lg hover:shadow-xl flex items-center gap-4"
-                >
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                    {p.name[0]}
-                  </div>
-                  <span className="text-lg">{p.name}</span>
-                </button>
-              ))}
+              {players
+                .filter((p) => p.isAlive && p.id !== user.uid)
+                .map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      const isEvil = p.role === ROLE_IDS.WEREWOLF || p.role === ROLE_IDS.LYCAN;
+                      setSeerMessage(`${p.name} is ${isEvil ? 'EVIL' : 'GOOD'}.`);
+                    }}
+                    className="w-full p-4 bg-slate-900/50 rounded-2xl text-left font-bold border-2 border-slate-700 hover:border-purple-500 transition-all shadow-lg hover:shadow-xl flex items-center gap-4"
+                  >
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: p.avatarColor }}
+                    >
+                      {p.name[0]}
+                    </div>
+                    <span className="text-lg">{p.name}</span>
+                  </button>
+                ))}
             </div>
             <div className="text-center text-purple-400 font-mono font-bold text-2xl">
-              {gameState.phaseEndTime ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's' : ''}
+              {gameState.phaseEndTime
+                ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000)) + 's'
+                : ''}
             </div>
-            <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2">Skip</button>
+            <button
+              onClick={() => advanceNightPhase(null, null)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2"
+            >
+              Skip
+            </button>
           </>
         )}
       </div>

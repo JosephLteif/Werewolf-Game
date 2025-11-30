@@ -24,13 +24,12 @@ import ActiveRolesPanel from './components/ActiveRolesPanel';
 import { ROLE_IDS } from './constants/roleIds';
 import TeammateList from './components/TeammateList';
 
-
 import AuthScreen from './pages/AuthScreen';
 
 export default function App() {
   // Local User State
-  const [roomCode, setRoomCode] = useState("");
-  const [playerName, setPlayerName] = useState("");
+  const [roomCode, setRoomCode] = useState('');
+  const [playerName, setPlayerName] = useState('');
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
 
@@ -38,17 +37,15 @@ export default function App() {
 
   const leaveRoom = useCallback(() => {
     setJoined(false);
-    setRoomCode("");
+    setRoomCode('');
   }, []);
 
   const { gameState, isHost } = useGameState(user, roomCode, joined);
 
-  const players = useMemo(() => (
-    gameState ? gameState.players : []
-  ), [gameState]);
+  const players = useMemo(() => (gameState ? gameState.players : []), [gameState]);
 
   // Local UI State
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState('');
   const [seerMessage, setSeerMessage] = useState(null);
   const [sorcererTarget, setSorcererTarget] = useState(null);
 
@@ -63,7 +60,10 @@ export default function App() {
     castVote,
     lockVote,
     resolveVoting,
-  } = useMemo(() => coreGameActions(gameState, players, user, isHost, now), [gameState, players, user, isHost, now]);
+  } = useMemo(
+    () => coreGameActions(gameState, players, user, isHost, now),
+    [gameState, players, user, isHost, now]
+  );
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -97,18 +97,22 @@ export default function App() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setRoleRevealParticles(Array.from({ length: 15 }).map(() => ({
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 3}s`,
-        dur: `${3 + Math.random() * 2}s`
-      })));
-      setNightIntroStars(Array.from({ length: 20 }).map(() => ({
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 2}s`,
-        dur: `${2 + Math.random() * 2}s`
-      })));
+      setRoleRevealParticles(
+        Array.from({ length: 15 }).map(() => ({
+          top: `${Math.random() * 100}%`,
+          left: `${Math.random() * 100}%`,
+          delay: `${Math.random() * 3}s`,
+          dur: `${3 + Math.random() * 2}s`,
+        }))
+      );
+      setNightIntroStars(
+        Array.from({ length: 20 }).map(() => ({
+          top: `${Math.random() * 100}%`,
+          left: `${Math.random() * 100}%`,
+          delay: `${Math.random() * 2}s`,
+          dur: `${2 + Math.random() * 2}s`,
+        }))
+      );
     }, 0);
     return () => clearTimeout(t);
   }, []);
@@ -116,8 +120,8 @@ export default function App() {
   // --- ACTIONS ---
 
   const createRoom = async () => {
-    if (!user) return setErrorMsg("Waiting for connection...");
-    if (!playerName) return setErrorMsg("Enter your name first!");
+    if (!user) return setErrorMsg('Waiting for connection...');
+    if (!playerName) return setErrorMsg('Enter your name first!');
 
     try {
       const color = `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`;
@@ -126,28 +130,32 @@ export default function App() {
       setJoined(true);
     } catch (e) {
       console.error(e);
-      setErrorMsg("Failed to create room. " + (e.message || e));
+      setErrorMsg('Failed to create room. ' + (e.message || e));
     }
   };
 
   const joinRoom = async () => {
-    if (!user) return setErrorMsg("Waiting for connection...");
-    if (!playerName) return setErrorMsg("Enter your name first!");
-    if (!roomCode) return setErrorMsg("Enter a room code!");
+    if (!user) return setErrorMsg('Waiting for connection...');
+    if (!playerName) return setErrorMsg('Enter your name first!');
+    if (!roomCode) return setErrorMsg('Enter a room code!');
 
     const code = roomCode.toUpperCase();
     try {
-      await joinRoomRT(code, { id: user.uid, name: playerName, avatarColor: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)` });
+      await joinRoomRT(code, {
+        id: user.uid,
+        name: playerName,
+        avatarColor: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`,
+      });
       setRoomCode(code);
       setJoined(true);
     } catch (e) {
       console.error(e);
-      setErrorMsg("Failed to join. " + (e.message || e));
+      setErrorMsg('Failed to join. ' + (e.message || e));
     }
   };
 
   // --- RENDER HELPERS ---
-  const myPlayer = players.find(p => p.id === user?.uid);
+  const myPlayer = players.find((p) => p.id === user?.uid);
   const amAlive = myPlayer?.isAlive;
 
   const wrapGameContent = (children) => (
@@ -212,7 +220,7 @@ export default function App() {
   }
 
   // --- NIGHT PHASE (GENERIC WAIT SCREEN) ---
-  const isMyTurn = (
+  const isMyTurn =
     (gameState.phase === PHASES.NIGHT_CUPID && myPlayer.role === ROLE_IDS.CUPID) ||
     (gameState.phase === PHASES.NIGHT_WEREWOLF && myPlayer.role === ROLE_IDS.WEREWOLF) ||
     (gameState.phase === PHASES.NIGHT_MINION && myPlayer.role === ROLE_IDS.MINION) ||
@@ -221,14 +229,31 @@ export default function App() {
     (gameState.phase === PHASES.NIGHT_SEER && myPlayer.role === ROLE_IDS.SEER) ||
     (gameState.phase === PHASES.NIGHT_MASON && myPlayer.role === ROLE_IDS.MASON) ||
     (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer.role === ROLE_IDS.VIGILANTE) ||
-    (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer.role === ROLE_IDS.DOPPELGANGER)
-  );
+    (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer.role === ROLE_IDS.DOPPELGANGER);
 
-  if ([PHASES.NIGHT_INTRO, PHASES.NIGHT_CUPID, PHASES.NIGHT_WEREWOLF, PHASES.NIGHT_MINION, PHASES.NIGHT_SORCERER, PHASES.NIGHT_DOCTOR, PHASES.NIGHT_SEER, PHASES.NIGHT_MASON, PHASES.NIGHT_VIGILANTE, PHASES.NIGHT_DOPPELGANGER].includes(gameState.phase)) {
-
+  if (
+    [
+      PHASES.NIGHT_INTRO,
+      PHASES.NIGHT_CUPID,
+      PHASES.NIGHT_WEREWOLF,
+      PHASES.NIGHT_MINION,
+      PHASES.NIGHT_SORCERER,
+      PHASES.NIGHT_DOCTOR,
+      PHASES.NIGHT_SEER,
+      PHASES.NIGHT_MASON,
+      PHASES.NIGHT_VIGILANTE,
+      PHASES.NIGHT_DOPPELGANGER,
+    ].includes(gameState.phase)
+  ) {
     // NIGHT INTRO
     if (gameState.phase === PHASES.NIGHT_INTRO) {
-      return wrapGameContent(<NightIntroScreen isHost={isHost} startNight={startNightPhase} nightIntroStars={nightIntroStars} />);
+      return wrapGameContent(
+        <NightIntroScreen
+          isHost={isHost}
+          startNight={startNightPhase}
+          nightIntroStars={nightIntroStars}
+        />
+      );
     }
 
     // WAITING SCREEN (If not my turn OR I am dead)
@@ -238,7 +263,7 @@ export default function App() {
           winner={null}
           winners={gameState?.winners || []}
           isGameOver={false}
-          onReset={() => { }}
+          onReset={() => {}}
           isHost={false}
           dayLog={gameState.dayLog}
           players={players}
@@ -257,7 +282,9 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_CUPID) {
       return wrapGameContent(
         <NightActionScreen
-          players={players.filter(p => p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid))}
+          players={players.filter(
+            (p) => p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid)
+          )}
           onAction={(ids) => advanceNightPhase('cupidLinks', ids)}
           myPlayer={myPlayer}
           multiSelect={true}
@@ -271,8 +298,10 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_DOPPELGANGER) {
       return wrapGameContent(
         <NightActionScreen
-          title="Doppelgänger" subtitle="Choose a player to copy if they die." color="slate"
-          players={players.filter(p => p.isAlive && p.id !== user.uid)}
+          title="Doppelgänger"
+          subtitle="Choose a player to copy if they die."
+          color="slate"
+          players={players.filter((p) => p.isAlive && p.id !== user.uid)}
           onAction={(id) => advanceNightPhase('doppelgangerCopy', id)}
           myPlayer={myPlayer}
           phaseEndTime={gameState.phaseEndTime}
@@ -297,10 +326,7 @@ export default function App() {
     // MINION
     if (gameState.phase === PHASES.NIGHT_MINION) {
       return wrapGameContent(
-        <MinionNightActionScreen
-          players={players}
-          advanceNightPhase={advanceNightPhase}
-        />
+        <MinionNightActionScreen players={players} advanceNightPhase={advanceNightPhase} />
       );
     }
 
@@ -325,8 +351,10 @@ export default function App() {
     if (gameState.phase === PHASES.NIGHT_DOCTOR) {
       return wrapGameContent(
         <NightActionScreen
-          title="Doctor" subtitle="Protect someone." color="blue"
-          players={players.filter(p => p.isAlive)}
+          title="Doctor"
+          subtitle="Protect someone."
+          color="blue"
+          players={players.filter((p) => p.isAlive)}
           onAction={(id) => advanceNightPhase('doctorProtect', id)}
           myPlayer={myPlayer}
           canSkip={true}
@@ -367,9 +395,9 @@ export default function App() {
       return wrapGameContent(
         <NightActionScreen
           title={`Vigilante (${ammo} ammo)`}
-          subtitle={ammo > 0 ? "Choose your target carefully." : "You're out of ammo."}
+          subtitle={ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo."}
           color="yellow"
-          players={players.filter(p => p.isAlive)}
+          players={players.filter((p) => p.isAlive)}
           onAction={(id) => {
             if (ammo > 0 && id) {
               // Use gameState.update for vigilanteAmmo
@@ -389,12 +417,13 @@ export default function App() {
 
   // --- HUNTER ACTION ---
   if (gameState.phase === PHASES.HUNTER_ACTION) {
-    if (myPlayer.role === ROLE_IDS.HUNTER && !myPlayer.isAlive && !gameState.dayLog.includes("shot")) {
+    if (
+      myPlayer.role === ROLE_IDS.HUNTER &&
+      !myPlayer.isAlive &&
+      !gameState.dayLog.includes('shot')
+    ) {
       return wrapGameContent(
-        <HunterActionScreen
-          players={players}
-          handleHunterShotAction={handleHunterShotAction}
-        />
+        <HunterActionScreen players={players} handleHunterShotAction={handleHunterShotAction} />
       );
     }
     return wrapGameContent(<WaitingForHunterScreen />);
@@ -402,13 +431,7 @@ export default function App() {
 
   // --- DAY PHASES ---
   if (gameState.phase === PHASES.DAY_REVEAL) {
-    return wrapGameContent(
-      <DayRevealScreen
-        gameState={gameState}
-        isHost={isHost}
-        now={now}
-      />
-    );
+    return wrapGameContent(<DayRevealScreen gameState={gameState} isHost={isHost} now={now} />);
   }
 
   if (gameState.phase === PHASES.DAY_VOTING) {
@@ -432,7 +455,17 @@ export default function App() {
         winner={gameState.winner}
         winners={gameState.winners}
         isGameOver={gameState.phase === PHASES.GAME_OVER}
-        onReset={() => gameState.update({ phase: PHASES.LOBBY, players: gameState.players, dayLog: "", nightActions: {}, votes: {}, lockedVotes: [], winners: [] })}
+        onReset={() =>
+          gameState.update({
+            phase: PHASES.LOBBY,
+            players: gameState.players,
+            dayLog: '',
+            nightActions: {},
+            votes: {},
+            lockedVotes: [],
+            winners: [],
+          })
+        }
         isHost={isHost}
         dayLog={gameState.dayLog}
         players={players}

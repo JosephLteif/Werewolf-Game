@@ -1,4 +1,4 @@
-                                            export const getAlivePlayers = (players) => {
+export const getAlivePlayers = (players) => {
   return players.filter((p) => p.isAlive);
 };
 

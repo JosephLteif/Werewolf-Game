@@ -1,0 +1,21 @@
+# Ignore artifacts:
+build/
+coverage/
+dist/
+node_modules/
+
+# Ignore development specific files:
+.env
+.DS_Store
+
+# Log files:
+*.log
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

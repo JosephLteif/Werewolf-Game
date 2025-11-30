@@ -12,52 +12,54 @@ import { Doppelganger } from './implementations/Doppelganger';
 import { Mason } from './implementations/Mason';
 import { Lycan } from './implementations/Lycan';
 import { Mayor } from './implementations/Mayor';
+import { Tanner } from './implementations/Tanner';
 
 class RoleRegistry {
-    constructor() {
-        this.roles = new Map();
-        this.roleInstances = [];
-        this.initialize();
-    }
+  constructor() {
+    this.roles = new Map();
+    this.roleInstances = [];
+    this.initialize();
+  }
 
-    initialize() {
-        // Instantiate all role classes
-        const roleInstances = [
-            new Villager(),
-            new Werewolf(),
-            new Seer(),
-            new Doctor(),
-            new Hunter(),
-            new Vigilante(),
-            new Sorcerer(),
-            new Minion(),
-            new Cupid(),
-            new Doppelganger(),
-            new Mason(),
-            new Lycan(),
-            new Mayor(),
-        ];
+  initialize() {
+    // Instantiate all role classes
+    const roleInstances = [
+      new Villager(),
+      new Werewolf(),
+      new Seer(),
+      new Doctor(),
+      new Hunter(),
+      new Vigilante(),
+      new Sorcerer(),
+      new Minion(),
+      new Cupid(),
+      new Doppelganger(),
+      new Mason(),
+      new Lycan(),
+      new Mayor(),
+      new Tanner(),
+    ];
 
-        // Store instances by ID
-        roleInstances.forEach(role => {
-            this.roles.set(role.id, role);
-        });
+    // Store instances by ID
+    roleInstances.forEach((role) => {
+      this.roles.set(role.id, role);
+    });
 
-        // Store all instances for getAllRoles()
-        this.roleInstances = roleInstances;
-    }
+    // Store all instances for getAllRoles()
+    this.roleInstances = roleInstances;
+  }
 
-    register(roleId, roleInstance) {
-        this.roles.set(roleId, roleInstance);
-    }
+  register(roleId, roleInstance) {
+    this.roles.set(roleId, roleInstance);
+  }
 
-    getRole(roleId) {
-        return this.roles.get(roleId);
-    }
+  getRole(roleId) {
+    return this.roles.get(roleId);
+  }
 
-    getAllRoles() {
-        return this.roleInstances;
-    }
+  getAllRoles() {
+    return this.roleInstances;
+  }
 }
 
 export const roleRegistry = new RoleRegistry();

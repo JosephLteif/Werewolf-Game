@@ -4,7 +4,7 @@ import { ROLE_IDS } from '../constants/roleIds';
 
 export default function MasonNightActionScreen({ players, user, gameState, advanceNightPhase }) {
   const myMasonReady = gameState.nightActions?.masonsReady?.[user.uid];
-  const aliveMasons = players.filter(p => p.role === ROLE_IDS.MASON && p.isAlive);
+  const aliveMasons = players.filter((p) => p.role === ROLE_IDS.MASON && p.isAlive);
   const masonsReadyCount = Object.keys(gameState.nightActions?.masonsReady || {}).length;
 
   return (
@@ -16,19 +16,29 @@ export default function MasonNightActionScreen({ players, user, gameState, advan
           <p className="text-slate-400">Your trusted allies</p>
         </div>
         <div className="space-y-3 mb-8">
-          {aliveMasons.filter(p => p.id !== user.uid).length > 0 ? (
-            aliveMasons.filter(p => p.id !== user.uid).map(p => (
-              <div key={p.id} className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-2 border-blue-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                    {p.name[0]}
+          {aliveMasons.filter((p) => p.id !== user.uid).length > 0 ? (
+            aliveMasons
+              .filter((p) => p.id !== user.uid)
+              .map((p) => (
+                <div
+                  key={p.id}
+                  className="bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-2 border-blue-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-blue-500/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: p.avatarColor }}
+                    >
+                      {p.name[0]}
+                    </div>
+                    {p.name}
                   </div>
-                  {p.name}
                 </div>
-              </div>
-            ))
+              ))
           ) : (
-            <div className="text-slate-400 italic bg-slate-900/50 p-6 rounded-2xl border border-slate-700">You are the only Mason.</div>
+            <div className="text-slate-400 italic bg-slate-900/50 p-6 rounded-2xl border border-slate-700">
+              You are the only Mason.
+            </div>
           )}
         </div>
         {myMasonReady ? (
@@ -42,7 +52,12 @@ export default function MasonNightActionScreen({ players, user, gameState, advan
             </p>
           </div>
         ) : (
-          <button onClick={() => advanceNightPhase('masonReady', user.uid)} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
+          <button
+            onClick={() => advanceNightPhase('masonReady', user.uid)}
+            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
+          >
+            I Understand
+          </button>
         )}
       </div>
     </div>

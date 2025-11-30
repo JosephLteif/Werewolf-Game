@@ -1,11 +1,7 @@
 import { PHASES } from '../constants';
 import { assignRoles } from '../utils/gameLogic';
 
-export const assignRolesAndStartGame = async (
-  gameState,
-  players,
-  isHost
-) => {
+export const assignRolesAndStartGame = async (gameState, players, isHost) => {
   if (!isHost) return;
   const settings = gameState.settings;
 
@@ -28,9 +24,7 @@ export const assignRolesAndStartGame = async (
 };
 
 export const markPlayerReady = async (players, user, gameState) => {
-  const newPlayers = players.map((p) =>
-    p.id === user.uid ? { ...p, ready: true } : p
-  );
+  const newPlayers = players.map((p) => (p.id === user.uid ? { ...p, ready: true } : p));
 
   const allReady = newPlayers.every((p) => p.ready || !p.isAlive);
 

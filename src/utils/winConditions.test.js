@@ -34,7 +34,7 @@ describe('Win Conditions Service', () => {
       expect(result).toEqual({
         winner: 'VILLAGERS',
         winners: ['VILLAGERS'],
-        isGameOver: true
+        isGameOver: true,
       });
     });
 
@@ -51,7 +51,7 @@ describe('Win Conditions Service', () => {
       expect(result).toEqual({
         winner: 'WEREWOLVES',
         winners: ['WEREWOLVES'],
-        isGameOver: true
+        isGameOver: true,
       });
     });
 
@@ -64,15 +64,13 @@ describe('Win Conditions Service', () => {
         { ...mockPlayers[4], isAlive: true },
       ];
 
-
       const result = checkWinCondition(playersAfterWolfDeath, [], []);
       expect(result).toEqual({
         winner: 'VILLAGERS',
         winners: ['VILLAGERS'],
-        isGameOver: true
+        isGameOver: true,
       });
     });
-
   });
 
   describe('isPlayerWinner', () => {
@@ -138,10 +136,6 @@ describe('Win Conditions Service', () => {
       const lovers = ['p1', 'p2'];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(false);
     });
-
-
-
-
 
     it('returns false if player role does not match winner type', () => {
       const player = { id: 'p1', role: 'seer' };

@@ -1,12 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  castPlayerVote,
-  lockPlayerVote,
-  resolveDayVoting,
-  determineVotingResult,
-} from './voting';
-import { PHASES } from '../constants';
-import { ROLE_IDS } from '../constants/roleIds';
+import { castPlayerVote, lockPlayerVote, resolveDayVoting, determineVotingResult } from './voting';
+import { PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
 
 // MockGameState class (re-used from nightActions.test.js and roles.test.js)
 class MockGameState {
@@ -15,7 +9,9 @@ class MockGameState {
     // Ensure players in _state is always a map, even if initialState provides an array
     if (Array.isArray(this._state.players)) {
       const playersMap = {};
-      this._state.players.forEach(p => { playersMap[p.id] = p; });
+      this._state.players.forEach((p) => {
+        playersMap[p.id] = p;
+      });
       this._state.players = playersMap;
     }
 
@@ -23,7 +19,9 @@ class MockGameState {
       // Handle updates to players specially: convert array to map for internal storage
       if (updates.players && Array.isArray(updates.players)) {
         const playersMap = {};
-        updates.players.forEach(p => { playersMap[p.id] = p; });
+        updates.players.forEach((p) => {
+          playersMap[p.id] = p;
+        });
         this._state.players = playersMap;
         const { players, ...restUpdates } = updates; // Extract players to avoid double assignment
         Object.assign(this._state, restUpdates); // Apply other updates
@@ -34,12 +32,24 @@ class MockGameState {
   }
 
   // Mimic getters of the real GameState class
-  get code() { return this._state.code; }
-  get hostId() { return this._state.hostId; }
-  get phase() { return this._state.phase; }
-  get dayLog() { return this._state.dayLog; }
-  get updatedAt() { return this._state.updatedAt; }
-  get settings() { return this._state.settings; }
+  get code() {
+    return this._state.code;
+  }
+  get hostId() {
+    return this._state.hostId;
+  }
+  get phase() {
+    return this._state.phase;
+  }
+  get dayLog() {
+    return this._state.dayLog;
+  }
+  get updatedAt() {
+    return this._state.updatedAt;
+  }
+  get settings() {
+    return this._state.settings;
+  }
   get players() {
     // Always return players as an array, converting from internal map
     return Object.values(this._state.players || {});
@@ -48,22 +58,41 @@ class MockGameState {
     // Always return the internal map
     return this._state.players;
   }
-  get nightActions() { return this._state.nightActions; }
-  get vigilanteAmmo() { return this._state.vigilanteAmmo; }
-  get lockedVotes() { return this._state.lockedVotes; }
-  get lovers() { return this._state.lovers; }
-  get votes() { return this._state.votes; }
-  get winner() { return this._state.winner; }
-  get winners() { return this._state.winners; }
-  get phaseEndTime() { return this._state.phaseEndTime; }
-  get doppelgangerPlayerId() { return this._state.doppelgangerPlayerId; }
-  get doppelgangerTarget() { return this._state.doppelgangerTarget; }
+  get nightActions() {
+    return this._state.nightActions;
+  }
+  get vigilanteAmmo() {
+    return this._state.vigilanteAmmo;
+  }
+  get lockedVotes() {
+    return this._state.lockedVotes;
+  }
+  get lovers() {
+    return this._state.lovers;
+  }
+  get votes() {
+    return this._state.votes;
+  }
+  get winner() {
+    return this._state.winner;
+  }
+  get winners() {
+    return this._state.winners;
+  }
+  get phaseEndTime() {
+    return this._state.phaseEndTime;
+  }
+  get doppelgangerPlayerId() {
+    return this._state.doppelgangerPlayerId;
+  }
+  get doppelgangerTarget() {
+    return this._state.doppelgangerTarget;
+  }
 
   isHost(playerUid) {
     return this.hostId === playerUid;
   }
 }
-
 
 describe('Voting Service', () => {
   let mockPlayersArray;
@@ -79,9 +108,11 @@ describe('Voting Service', () => {
       { id: 'p4', name: 'Player 4', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
-    
+
     const initialPlayersMap = {};
-    mockPlayersArray.forEach(p => { initialPlayersMap[p.id] = p; });
+    mockPlayersArray.forEach((p) => {
+      initialPlayersMap[p.id] = p;
+    });
 
     mockInitialGameState = {
       settings: {
@@ -108,17 +139,19 @@ describe('Voting Service', () => {
       const testGameState = new MockGameState({ ...mockInitialGameState });
       await castPlayerVote(testGameState, mockUser, 'p2');
 
-      expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({
-        votes: { [mockUser.uid]: 'p2' },
-      }));
+      expect(testGameState.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          votes: { [mockUser.uid]: 'p2' },
+        })
+      );
       // Assert directly on testGameState's internal state
       expect(testGameState._state.votes).toEqual({ [mockUser.uid]: 'p2' });
     });
 
     it('does nothing if vote already locked', async () => {
-      const testGameState = new MockGameState({ 
-        ...mockInitialGameState, 
-        lockedVotes: [mockUser.uid] 
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
+        lockedVotes: [mockUser.uid],
       });
 
       await castPlayerVote(testGameState, mockUser, 'p2');
@@ -127,19 +160,21 @@ describe('Voting Service', () => {
     });
 
     it('allows a player to change their vote before locking', async () => {
-      const testGameState = new MockGameState({ 
-        ...mockInitialGameState, 
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
-        votes: { [mockUser.uid]: 'p2' }, 
-        lockedVotes: [] 
+        votes: { [mockUser.uid]: 'p2' },
+        lockedVotes: [],
       });
 
       // Player 1 changes their vote to Player 3
       await castPlayerVote(testGameState, mockUser, 'p3');
 
-      expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({
-        votes: { [mockUser.uid]: 'p3' },
-      }));
+      expect(testGameState.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          votes: { [mockUser.uid]: 'p3' },
+        })
+      );
       expect(testGameState._state.votes).toEqual({ [mockUser.uid]: 'p3' });
     });
   });
@@ -158,15 +193,17 @@ describe('Voting Service', () => {
         { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       ];
       initialPlayersMap = {};
-      initialPlayers.forEach(p => { initialPlayersMap[p.id] = p; });
-      updatedMockPlayers = initialPlayers.map(p => ({ ...p, isAlive: true }));
+      initialPlayers.forEach((p) => {
+        initialPlayersMap[p.id] = p;
+      });
+      updatedMockPlayers = initialPlayers.map((p) => ({ ...p, isAlive: true }));
     });
-    
+
     it('does nothing if no vote cast', async () => {
-      const testGameState = new MockGameState({ 
-        ...mockInitialGameState, 
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
-        votes: {} 
+        votes: {},
       });
 
       await lockPlayerVote(testGameState, mockPlayersArray, mockUser);
@@ -175,11 +212,11 @@ describe('Voting Service', () => {
     });
 
     it('successfully locks vote', async () => {
-      const testGameState = new MockGameState({ 
-        ...mockInitialGameState, 
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
         votes: { [mockUser.uid]: 'p2' },
-        lockedVotes: [] 
+        lockedVotes: [],
       });
 
       await lockPlayerVote(testGameState, mockPlayersArray, mockUser);
@@ -193,11 +230,11 @@ describe('Voting Service', () => {
     });
 
     it('prevents double locking', async () => {
-      const testGameState = new MockGameState({ 
-        ...mockInitialGameState, 
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
         votes: { [mockUser.uid]: 'p2' },
-        lockedVotes: [mockUser.uid] 
+        lockedVotes: [mockUser.uid],
       });
 
       await lockPlayerVote(testGameState, mockPlayersArray, mockUser);
@@ -206,12 +243,16 @@ describe('Voting Service', () => {
     });
 
     it('calls resolveDayVoting when all alive players have locked their votes', async () => {
-      const testGameState = new MockGameState({ 
-        ...mockInitialGameState, 
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
         players: initialPlayersMap, // Use initialPlayers for this specific test
         votes: {
-          'p1': 'p2', 'p2': 'p1', 'p3': 'p1', 'p4': 'p1', 'p5': 'p1',
+          p1: 'p2',
+          p2: 'p1',
+          p3: 'p1',
+          p4: 'p1',
+          p5: 'p1',
         },
         lockedVotes: ['p1', 'p2', 'p3', 'p4'],
       });
@@ -230,7 +271,7 @@ describe('Voting Service', () => {
     it('eliminates player with max votes', async () => {
       const testGameState = new MockGameState({
         ...mockInitialGameState,
-        votes: { 'p1': 'p4', 'p2': 'p4', 'p3': 'p5' },
+        votes: { p1: 'p4', p2: 'p4', p3: 'p5' },
         lockedVotes: ['p1', 'p2', 'p3'],
       });
 
@@ -242,18 +283,22 @@ describe('Voting Service', () => {
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
     });
 
-    it('accounts for Mayor\'s double vote', async () => {
-      const playersWithMayor = mockPlayersArray.map(p => p.id === 'p1' ? { ...p, role: ROLE_IDS.MAYOR } : p);
+    it("accounts for Mayor's double vote", async () => {
+      const playersWithMayor = mockPlayersArray.map((p) =>
+        p.id === 'p1' ? { ...p, role: ROLE_IDS.MAYOR } : p
+      );
       const playersWithMayorMap = {};
-      playersWithMayor.forEach(p => { playersWithMayorMap[p.id] = p; });
+      playersWithMayor.forEach((p) => {
+        playersWithMayorMap[p.id] = p;
+      });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         players: playersWithMayorMap,
         votes: {
-          'p1': 'p5', // Mayor (p1) votes for p5
-          'p2': 'p5', // p2 votes for p5
-          'p4': 'p4', // p4 votes for p4
+          p1: 'p5', // Mayor (p1) votes for p5
+          p2: 'p5', // p2 votes for p5
+          p4: 'p4', // p4 votes for p4
         },
         lockedVotes: ['p1', 'p2', 'p4'],
       });
@@ -268,7 +313,7 @@ describe('Voting Service', () => {
     it('handles a tie in votes (no elimination)', async () => {
       const testGameState = new MockGameState({
         ...mockInitialGameState,
-        votes: { 'p1': 'p4', 'p2': 'p5', 'p3': 'p4', 'p4': 'p5' },
+        votes: { p1: 'p4', p2: 'p5', p3: 'p4', p4: 'p5' },
         lockedVotes: ['p1', 'p2', 'p3', 'p4'],
       });
 
@@ -282,7 +327,7 @@ describe('Voting Service', () => {
     it('handles a skip vote (no elimination)', async () => {
       const testGameState = new MockGameState({
         ...mockInitialGameState,
-        votes: { 'p1': 'skip', 'p2': 'p4', 'p3': 'skip' },
+        votes: { p1: 'skip', p2: 'p4', p3: 'skip' },
         lockedVotes: ['p1', 'p2', 'p3'],
       });
 
@@ -296,10 +341,15 @@ describe('Voting Service', () => {
     it('handles Doppelganger transformation when target is voted out', async () => {
       const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
       const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
-      const playersWithDoppelganger = [doppelgangerPlayer, targetPlayer, ...mockPlayersArray.slice(2)];
+      const playersWithDoppelganger = [
+        doppelgangerPlayer,
+        targetPlayer,
+        ...mockPlayersArray.slice(2),
+      ];
       const playersWithDoppelgangerMap = {};
-      playersWithDoppelganger.forEach(p => { playersWithDoppelgangerMap[p.id] = p; });
-
+      playersWithDoppelganger.forEach((p) => {
+        playersWithDoppelgangerMap[p.id] = p;
+      });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
@@ -307,8 +357,8 @@ describe('Voting Service', () => {
         doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
         doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
         votes: {
-          'p3': targetPlayer.id, // p3 votes for p2
-          'p4': targetPlayer.id, // p4 votes for p2
+          p3: targetPlayer.id, // p3 votes for p2
+          p4: targetPlayer.id, // p4 votes for p2
         },
         lockedVotes: ['p3', 'p4'],
       });
@@ -325,15 +375,17 @@ describe('Voting Service', () => {
       const lover2 = { ...mockPlayersArray[1], role: ROLE_IDS.VILLAGER }; // p2
       const playersWithLovers = [lover1, lover2, ...mockPlayersArray.slice(2)];
       const playersWithLoversMap = {};
-      playersWithLovers.forEach(p => { playersWithLoversMap[p.id] = p; });
+      playersWithLovers.forEach((p) => {
+        playersWithLoversMap[p.id] = p;
+      });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         players: playersWithLoversMap,
         lovers: [lover1.id, lover2.id],
         votes: {
-          'p3': lover1.id, // p3 votes for lover1
-          'p4': lover1.id, // p4 votes for lover1
+          p3: lover1.id, // p3 votes for lover1
+          p4: lover1.id, // p4 votes for lover1
         },
         lockedVotes: ['p3', 'p4'],
       });
@@ -349,14 +401,16 @@ describe('Voting Service', () => {
       const hunterPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.HUNTER }; // p1 is Hunter
       const playersWithHunter = [hunterPlayer, ...mockPlayersArray.slice(1)];
       const playersWithHunterMap = {};
-      playersWithHunter.forEach(p => { playersWithHunterMap[p.id] = p; });
+      playersWithHunter.forEach((p) => {
+        playersWithHunterMap[p.id] = p;
+      });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         players: playersWithHunterMap,
         votes: {
-          'p2': hunterPlayer.id, // p2 votes for Hunter
-          'p3': hunterPlayer.id, // p3 votes for Hunter
+          p2: hunterPlayer.id, // p2 votes for Hunter
+          p3: hunterPlayer.id, // p3 votes for Hunter
         },
         lockedVotes: ['p2', 'p3'],
       });
@@ -373,7 +427,7 @@ describe('Voting Service', () => {
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
-        votes: { 'p1': 'p4', 'p2': 'p4', 'p3': 'p5' },
+        votes: { p1: 'p4', p2: 'p4', p3: 'p5' },
         lockedVotes: ['p1', 'p2'],
       });
 
@@ -390,11 +444,11 @@ describe('Voting Service', () => {
         ...mockInitialGameState,
         phase: PHASES.DAY_VOTING,
         votes: {
-          'p1': 'p4', // Locked
-          'p2': 'p4', // Locked
-          'p3': 'p5', // Not locked
-          'p4': 'p5', // Not locked
-          'p5': 'p5', // Not locked
+          p1: 'p4', // Locked
+          p2: 'p4', // Locked
+          p3: 'p5', // Not locked
+          p4: 'p5', // Not locked
+          p5: 'p5', // Not locked
         },
         lockedVotes: ['p1', 'p2'],
       });
@@ -406,6 +460,67 @@ describe('Voting Service', () => {
       expect(testGameState._state.players['p5'].isAlive).toBe(true);
       expect(testGameState._state.dayLog).toContain('Player 4 was voted out.');
     });
+
+    it('handles Tanner win with END_GAME strategy', async () => {
+      const tannerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.TANNER };
+      const playersWithTanner = [tannerPlayer, ...mockPlayersArray.slice(1)];
+      const playersWithTannerMap = {};
+      playersWithTanner.forEach((p) => {
+        playersWithTannerMap[p.id] = p;
+      });
+
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
+        settings: {
+          ...mockInitialGameState.settings,
+          tannerWinStrategy: TANNER_WIN_STRATEGIES.END_GAME,
+        },
+        players: playersWithTannerMap,
+        votes: {
+          p2: tannerPlayer.id,
+          p3: tannerPlayer.id,
+        },
+        lockedVotes: ['p2', 'p3'],
+      });
+
+      await resolveDayVoting(testGameState, playersWithTanner);
+
+      expect(testGameState.update).toHaveBeenCalled();
+      expect(testGameState._state.phase).toBe(PHASES.GAME_OVER);
+      expect(testGameState._state.winner).toBe('Tanner');
+      expect(testGameState._state.winners).toEqual([tannerPlayer.id]);
+    });
+
+    it('handles Tanner win with CONTINUE_GAME strategy', async () => {
+      const tannerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.TANNER };
+      const playersWithTanner = [tannerPlayer, ...mockPlayersArray.slice(1)];
+      const playersWithTannerMap = {};
+      playersWithTanner.forEach((p) => {
+        playersWithTannerMap[p.id] = p;
+      });
+
+      const testGameState = new MockGameState({
+        ...mockInitialGameState,
+        settings: {
+          ...mockInitialGameState.settings,
+          tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,
+        },
+        players: playersWithTannerMap,
+        votes: {
+          p2: tannerPlayer.id,
+          p3: tannerPlayer.id,
+        },
+        lockedVotes: ['p2', 'p3'],
+        winners: [],
+      });
+
+      await resolveDayVoting(testGameState, playersWithTanner);
+
+      expect(testGameState.update).toHaveBeenCalled();
+      expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
+      expect(testGameState._state.winners).toEqual([tannerPlayer.id]);
+      expect(testGameState._state.players[tannerPlayer.id].isAlive).toBe(false);
+    });
   });
 
   describe('determineVotingResult', () => {
@@ -416,20 +531,20 @@ describe('Voting Service', () => {
     });
 
     it('returns elimination with the correct victim', () => {
-      const voteCounts = { 'p1': 2, 'p2': 1 };
+      const voteCounts = { p1: 2, p2: 1 };
       const result = determineVotingResult(voteCounts);
       expect(result.type).toBe('elimination');
       expect(result.victims).toEqual(['p1']);
     });
 
     it('returns no_elimination on a tie', () => {
-      const voteCounts = { 'p1': 2, 'p2': 2 };
+      const voteCounts = { p1: 2, p2: 2 };
       const result = determineVotingResult(voteCounts);
       expect(result.type).toBe('no_elimination');
     });
 
     it('returns no_elimination on a skip vote win', () => {
-      const voteCounts = { 'skip': 2, 'p2': 1 };
+      const voteCounts = { skip: 2, p2: 1 };
       const result = determineVotingResult(voteCounts);
       expect(result.type).toBe('no_elimination');
     });

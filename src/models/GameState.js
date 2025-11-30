@@ -6,7 +6,7 @@ function defaultSettings() {
     votingWaitTime: 240,
     wolfCount: 1,
     cupidCanChooseSelf: false,
-    cupidFateOption: "third_wheel",
+    cupidFateOption: 'third_wheel',
     activeRoles: {
       cupid: false,
       doctor: false,
@@ -21,10 +21,10 @@ function defaultSettings() {
 class GameState {
   constructor(initialState, updateGameCallback) {
     if (!initialState || typeof initialState !== 'object') {
-      throw new Error("initialState must be a non-null object.");
+      throw new Error('initialState must be a non-null object.');
     }
     if (typeof updateGameCallback !== 'function') {
-      throw new Error("updateGameCallback must be a function.");
+      throw new Error('updateGameCallback must be a function.');
     }
 
     this._state = initialState;
@@ -32,9 +32,9 @@ class GameState {
   }
 
   static createInitialState(hostUser, code) {
-    const hostId = hostUser.id || hostUser.uid || "host";
+    const hostId = hostUser.id || hostUser.uid || 'host';
     const playerObj = {
-      name: hostUser.name || hostUser.displayName || "Host",
+      name: hostUser.name || hostUser.displayName || 'Host',
       isAlive: true,
       ready: false,
       avatarColor: hostUser.avatarColor || null,
@@ -44,8 +44,8 @@ class GameState {
     return {
       code,
       hostId,
-      phase: "LOBBY",
-      dayLog: "Waiting for game to start...",
+      phase: 'LOBBY',
+      dayLog: 'Waiting for game to start...',
       updatedAt: serverTimestamp(),
       settings: defaultSettings(),
       players: {
@@ -63,6 +63,7 @@ class GameState {
       lovers: [],
       votes: {},
       winner: null,
+      winners: [],
     };
   }
 
@@ -145,7 +146,7 @@ class GameState {
   async setPlayers(newPlayers) {
     // Assume newPlayers is an array of player objects and convert to map
     const playersMap = {};
-    newPlayers.forEach(p => {
+    newPlayers.forEach((p) => {
       playersMap[p.id] = p;
     });
     await this._updateGame({ players: playersMap });
@@ -204,14 +205,13 @@ class GameState {
 
   // Finds a player by their UID.
   findPlayer(playerUid) {
-    return this.players.find(p => p.id === playerUid);
+    return this.players.find((p) => p.id === playerUid);
   }
 
   // Returns true if all players are ready, or if all alive players are ready.
   areAllPlayersReady(includeDead = false) {
-    return this.players.every(p => p.ready || (includeDead ? false : !p.isAlive));
+    return this.players.every((p) => p.ready || (includeDead ? false : !p.isAlive));
   }
-
 }
 
 export default GameState;

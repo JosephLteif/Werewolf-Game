@@ -2,27 +2,51 @@ import React from 'react';
 import { Info, Copy, ArrowLeft } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { Teams } from '../models/Team';
-import { CUPID_FATES } from '../constants';
+import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
 import { RoleInfoModal } from '../components/RoleInfoModal';
 import { roleRegistry } from '../roles/RoleRegistry';
 
-export default function LobbyScreen({ gameState, isHost, players, startGame, setShowRoleInfo, showRoleInfo, user, leaveRoom }) {
+export default function LobbyScreen({
+  gameState,
+  isHost,
+  players,
+  startGame,
+  setShowRoleInfo,
+  showRoleInfo,
+  user,
+  leaveRoom,
+}) {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
       <header className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <button onClick={leaveRoom} className="text-slate-500 hover:text-white"><ArrowLeft className="w-6 h-6" /></button>
+          <button onClick={leaveRoom} className="text-slate-500 hover:text-white">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
           <div>
             <div className="text-xs text-slate-500 uppercase">Room Code</div>
             <div className="text-3xl font-mono font-black text-indigo-400 tracking-widest flex items-center gap-2">
               {gameState.code}
-              <button onClick={() => { navigator.clipboard.writeText(gameState.code); }}><Copy className="w-4 h-4 text-slate-600 hover:text-white" /></button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(gameState.code);
+                }}
+              >
+                <Copy className="w-4 h-4 text-slate-600 hover:text-white" />
+              </button>
             </div>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          {isHost && <div className="bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded text-xs font-bold">HOST</div>}
-          <button onClick={() => setShowRoleInfo('RULES')} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs font-bold">
+          {isHost && (
+            <div className="bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded text-xs font-bold">
+              HOST
+            </div>
+          )}
+          <button
+            onClick={() => setShowRoleInfo('RULES')}
+            className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs font-bold"
+          >
             <Info className="w-3 h-3" /> Rules
           </button>
         </div>
@@ -34,65 +58,188 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
           <span>{players.length}</span>
         </h3>
         <div className="grid grid-cols-1 gap-2">
-          {players.map(p => (
-            <div key={p.id} className="bg-slate-800 p-4 rounded-xl flex items-center gap-3 border border-slate-700">
+          {players.map((p) => (
+            <div
+              key={p.id}
+              className="bg-slate-800 p-4 rounded-xl flex items-center gap-3 border border-slate-700"
+            >
               <span className="font-bold text-lg">{p.name}</span>
-              {p.id === user.uid && <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">(You)</span>}
-              {p.id === gameState.hostId && <span className="text-xs text-slate-500 font-bold ml-auto border border-slate-600 px-2 py-1 rounded">HOST</span>}
+              {p.id === user.uid && (
+                <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">
+                  (You)
+                </span>
+              )}
+              {p.id === gameState.hostId && (
+                <span className="text-xs text-slate-500 font-bold ml-auto border border-slate-600 px-2 py-1 rounded">
+                  HOST
+                </span>
+              )}
             </div>
           ))}
         </div>
       </div>
 
       {/* Settings Panel - Visible to ALL, Editable by HOST */}
-      <div className={`space-y-4 bg-slate-800 p-4 rounded-xl border border-slate-700 ${!isHost ? 'opacity-70 cursor-not-allowed' : ''}`}>
+      <div
+        className={`space-y-4 bg-slate-800 p-4 rounded-xl border border-slate-700 ${!isHost ? 'opacity-70 cursor-not-allowed' : ''}`}
+      >
         <h3 className="text-slate-500 font-bold flex items-center gap-2">
           <Info className="w-4 h-4" /> Game Settings
-          {!isHost && <span className="text-xs font-normal text-slate-600 ml-auto">(Host Only)</span>}
+          {!isHost && (
+            <span className="text-xs font-normal text-slate-600 ml-auto">(Host Only)</span>
+          )}
         </h3>
 
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-slate-400">Action Timer (s)</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
-            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, gameState.settings.actionWaitTime - 5) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+            {isHost && (
+              <button
+                onClick={() =>
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      actionWaitTime: Math.max(10, gameState.settings.actionWaitTime - 5),
+                    },
+                  })
+                }
+                className="w-8 h-8 hover:bg-slate-700 rounded"
+              >
+                -
+              </button>
+            )}
             <input
               type="number"
               value={gameState.settings.actionWaitTime}
-              onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, actionWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
+              onChange={(e) =>
+                isHost &&
+                gameState.update({
+                  settings: {
+                    ...gameState.settings,
+                    actionWaitTime: Math.max(10, parseInt(e.target.value) || 0),
+                  },
+                })
+              }
               className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
               disabled={!isHost}
             />
-            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, actionWaitTime: gameState.settings.actionWaitTime + 5 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            {isHost && (
+              <button
+                onClick={() =>
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      actionWaitTime: gameState.settings.actionWaitTime + 5,
+                    },
+                  })
+                }
+                className="w-8 h-8 hover:bg-slate-700 rounded"
+              >
+                +
+              </button>
+            )}
           </div>
         </div>
 
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-slate-400">Voting Timer (s)</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
-            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, gameState.settings.votingWaitTime - 10) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+            {isHost && (
+              <button
+                onClick={() =>
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      votingWaitTime: Math.max(10, gameState.settings.votingWaitTime - 10),
+                    },
+                  })
+                }
+                className="w-8 h-8 hover:bg-slate-700 rounded"
+              >
+                -
+              </button>
+            )}
             <input
               type="number"
               value={gameState.settings.votingWaitTime}
-              onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, votingWaitTime: Math.max(10, parseInt(e.target.value) || 0) } })}
+              onChange={(e) =>
+                isHost &&
+                gameState.update({
+                  settings: {
+                    ...gameState.settings,
+                    votingWaitTime: Math.max(10, parseInt(e.target.value) || 0),
+                  },
+                })
+              }
               className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
               disabled={!isHost}
             />
-            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, votingWaitTime: gameState.settings.votingWaitTime + 10 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            {isHost && (
+              <button
+                onClick={() =>
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      votingWaitTime: gameState.settings.votingWaitTime + 10,
+                    },
+                  })
+                }
+                className="w-8 h-8 hover:bg-slate-700 rounded"
+              >
+                +
+              </button>
+            )}
           </div>
         </div>
 
         <div className="flex justify-between items-center">
           <span className="text-sm font-bold text-red-400">Wolf Count</span>
           <div className="flex items-center gap-3 bg-slate-900 rounded p-1">
-            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, wolfCount: Math.max(1, gameState.settings.wolfCount - 1) } })} className="w-8 h-8 hover:bg-slate-700 rounded">-</button>}
+            {isHost && (
+              <button
+                onClick={() =>
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      wolfCount: Math.max(1, gameState.settings.wolfCount - 1),
+                    },
+                  })
+                }
+                className="w-8 h-8 hover:bg-slate-700 rounded"
+              >
+                -
+              </button>
+            )}
             <input
               type="number"
               value={gameState.settings.wolfCount}
-              onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, wolfCount: Math.max(1, parseInt(e.target.value) || 0) } })}
+              onChange={(e) =>
+                isHost &&
+                gameState.update({
+                  settings: {
+                    ...gameState.settings,
+                    wolfCount: Math.max(1, parseInt(e.target.value) || 0),
+                  },
+                })
+              }
               className="font-mono px-2 w-12 text-center bg-slate-900 rounded border border-slate-700 focus:outline-none focus:border-indigo-500"
               disabled={!isHost}
             />
-            {isHost && <button onClick={() => gameState.update({ settings: { ...gameState.settings, wolfCount: gameState.settings.wolfCount + 1 } })} className="w-8 h-8 hover:bg-slate-700 rounded">+</button>}
+            {isHost && (
+              <button
+                onClick={() =>
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      wolfCount: gameState.settings.wolfCount + 1,
+                    },
+                  })
+                }
+                className="w-8 h-8 hover:bg-slate-700 rounded"
+              >
+                +
+              </button>
+            )}
           </div>
         </div>
 
@@ -103,7 +250,15 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
               type="checkbox"
               className="sr-only peer"
               checked={gameState.settings.showActiveRolesPanel || false}
-              onChange={() => isHost && gameState.update({ settings: { ...gameState.settings, showActiveRolesPanel: !(gameState.settings.showActiveRolesPanel || false) } })}
+              onChange={() =>
+                isHost &&
+                gameState.update({
+                  settings: {
+                    ...gameState.settings,
+                    showActiveRolesPanel: !(gameState.settings.showActiveRolesPanel || false),
+                  },
+                })
+              }
               disabled={!isHost}
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -117,7 +272,15 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
               type="checkbox"
               className="sr-only peer"
               checked={gameState.settings.cupidCanChooseSelf || false}
-              onChange={() => isHost && gameState.update({ settings: { ...gameState.settings, cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false) } })}
+              onChange={() =>
+                isHost &&
+                gameState.update({
+                  settings: {
+                    ...gameState.settings,
+                    cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false),
+                  },
+                })
+              }
               disabled={!isHost}
             />
             <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -129,7 +292,12 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
           <select
             className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
             value={gameState.settings.cupidFateOption || CUPID_FATES.SELFLESS} // Default to SELFLESS if not set
-            onChange={(e) => isHost && gameState.update({ settings: { ...gameState.settings, cupidFateOption: e.target.value } })}
+            onChange={(e) =>
+              isHost &&
+              gameState.update({
+                settings: { ...gameState.settings, cupidFateOption: e.target.value },
+              })
+            }
             disabled={!isHost}
           >
             <option value={CUPID_FATES.SELFLESS}>Selfless (Couple Win)</option>
@@ -137,50 +305,93 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
           </select>
         </div>
 
+        {gameState.settings.activeRoles[ROLE_IDS.TANNER] && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-slate-400">Tanner Win</span>
+            <select
+              className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+              value={gameState.settings.tannerWinStrategy || TANNER_WIN_STRATEGIES.CONTINUE_GAME}
+              onChange={(e) =>
+                isHost &&
+                gameState.update({
+                  settings: { ...gameState.settings, tannerWinStrategy: e.target.value },
+                })
+              }
+              disabled={!isHost}
+            >
+              <option value={TANNER_WIN_STRATEGIES.CONTINUE_GAME}>Game Continues</option>
+              <option value={TANNER_WIN_STRATEGIES.END_GAME}>Game Ends</option>
+            </select>
+          </div>
+        )}
+
         <div className="space-y-4">
-          {['good', 'evil', 'neutral'].map(alignment => {
+          {['good', 'evil', 'neutral'].map((alignment) => {
             return (
               <div key={alignment}>
-                <h4 className="text-xs font-bold uppercase text-slate-500 mb-2 tracking-widest">{alignment} Roles</h4>
+                <h4 className="text-xs font-bold uppercase text-slate-500 mb-2 tracking-widest">
+                  {alignment} Roles
+                </h4>
                 <div className="flex flex-wrap gap-2">
-                  {roleRegistry.getAllRoles().filter(r => {
-                    if (r.selectable === false) return false;
-                    if (r.id === 'werewolf' || r.id === 'villager') return false;
-                    return r.alignment === alignment;
-                  }).map(r => {
-                    const isActive = gameState.settings.activeRoles[r.id];
-                    const alignmentColors = {
-                      good: 'bg-blue-600 border-blue-500',
-                      evil: 'bg-red-600 border-red-500',
-                      neutral: 'bg-purple-600 border-purple-500'
-                    };
-                    const activeColor = alignmentColors[alignment];
+                  {roleRegistry
+                    .getAllRoles()
+                    .filter((r) => {
+                      if (r.selectable === false) return false;
+                      if (r.id === 'werewolf' || r.id === 'villager') return false;
+                      return r.alignment === alignment;
+                    })
+                    .map((r) => {
+                      const isActive = gameState.settings.activeRoles[r.id];
+                      const alignmentColors = {
+                        good: 'bg-blue-600 border-blue-500',
+                        evil: 'bg-red-600 border-red-500',
+                        neutral: 'bg-purple-600 border-purple-500',
+                      };
+                      const activeColor = alignmentColors[alignment];
 
-                    return (
-                      <button
-                        key={r.id}
-                        onClick={() => isHost ? gameState.update({ settings: { ...gameState.settings, activeRoles: { ...gameState.settings.activeRoles, [r.id]: !isActive } } }) : setShowRoleInfo(r.id)}
-                        className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() =>
+                            isHost
+                              ? gameState.update({
+                                  settings: {
+                                    ...gameState.settings,
+                                    activeRoles: {
+                                      ...gameState.settings.activeRoles,
+                                      [r.id]: !isActive,
+                                    },
+                                  },
+                                })
+                              : setShowRoleInfo(r.id)
+                          }
+                          className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
                              ${isActive ? `${activeColor} text-white` : 'bg-slate-900 border-slate-700 text-slate-500'}
                              ${!isHost ? 'cursor-help opacity-80' : 'hover:opacity-80'}
                         `}
-                      >
-                        <r.icon className="w-3 h-3" />
-                        {r.name}
-                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${isActive ? 'bg-white/20' : 'bg-slate-800'}`}>
-                          {r.weight > 0 ? '+' : ''}{r.weight}
-                        </span>
-                        {isHost && (
-                          <div
-                            onClick={(e) => { e.stopPropagation(); setShowRoleInfo(r.id); }}
-                            className="ml-1 p-1 hover:bg-white/20 rounded-full cursor-help"
+                        >
+                          <r.icon className="w-3 h-3" />
+                          {r.name}
+                          <span
+                            className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${isActive ? 'bg-white/20' : 'bg-slate-800'}`}
                           >
-                            <Info className="w-3 h-3" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                            {r.weight > 0 ? '+' : ''}
+                            {r.weight}
+                          </span>
+                          {isHost && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowRoleInfo(r.id);
+                              }}
+                              className="ml-1 p-1 hover:bg-white/20 rounded-full cursor-help"
+                            >
+                              <Info className="w-3 h-3" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             );
@@ -189,10 +400,12 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
 
         {/* Game Balance - Visible to All Players */}
         {(() => {
-          const activeSpecialRolesCount = Object.entries(gameState.settings.activeRoles)
-            .filter(([id, isActive]) => isActive && id !== ROLE_IDS.MASON).length;
+          const activeSpecialRolesCount = Object.entries(gameState.settings.activeRoles).filter(
+            ([id, isActive]) => isActive && id !== ROLE_IDS.MASON
+          ).length;
           const masonCount = gameState.settings.activeRoles[ROLE_IDS.MASON] ? 2 : 0;
-          const totalRolesNeeded = gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
+          const totalRolesNeeded =
+            gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
           const playersCount = players.length;
 
           // Calculate balance weight
@@ -205,7 +418,7 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
           // Add active role weights
           Object.entries(gameState.settings.activeRoles).forEach(([roleId, isActive]) => {
             if (isActive) {
-              const role = roleRegistry.getAllRoles().find(r => r.id === roleId);
+              const role = roleRegistry.getAllRoles().find((r) => r.id === roleId);
               if (role) {
                 // Mason comes in pairs
                 if (roleId === ROLE_IDS.MASON) {
@@ -259,7 +472,8 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
                     />
                   </div>
                   <span className={`text-sm font-mono font-bold ${balanceColor}`}>
-                    {balanceWeight > 0 ? '+' : ''}{balanceWeight}
+                    {balanceWeight > 0 ? '+' : ''}
+                    {balanceWeight}
                   </span>
                 </div>
 
@@ -268,22 +482,30 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Werewolves</span>
                     <span className="font-mono text-slate-300">
-                      {gameState.settings.wolfCount} × {roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight} = {gameState.settings.wolfCount * roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight}
+                      {gameState.settings.wolfCount} ×{' '}
+                      {roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight} ={' '}
+                      {gameState.settings.wolfCount *
+                        roleRegistry.getRole(ROLE_IDS.WEREWOLF).weight}
                     </span>
                   </div>
 
                   {Object.entries(gameState.settings.activeRoles)
                     .filter(([, isActive]) => isActive)
                     .map(([roleId]) => {
-                      const role = roleRegistry.getAllRoles().find(r => r.id === roleId);
+                      const role = roleRegistry.getAllRoles().find((r) => r.id === roleId);
                       if (!role) return null;
                       const count = roleId === ROLE_IDS.MASON ? 2 : 1;
                       const totalWeight = role.weight * count;
                       return (
                         <div key={roleId} className="flex justify-between items-center">
-                          <span className="text-slate-400">{role.name}{count > 1 ? 's' : ''}</span>
+                          <span className="text-slate-400">
+                            {role.name}
+                            {count > 1 ? 's' : ''}
+                          </span>
                           <span className="font-mono text-slate-300">
-                            {count} × {role.weight > 0 ? '+' : ''}{role.weight} = {totalWeight > 0 ? '+' : ''}{totalWeight}
+                            {count} × {role.weight > 0 ? '+' : ''}
+                            {role.weight} = {totalWeight > 0 ? '+' : ''}
+                            {totalWeight}
                           </span>
                         </div>
                       );
@@ -293,7 +515,8 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400">Villagers</span>
                       <span className="font-mono text-slate-300">
-                        {villagersCount} × +{roleRegistry.getRole(ROLE_IDS.VILLAGER).weight} = +{villagersCount * roleRegistry.getRole(ROLE_IDS.VILLAGER).weight}
+                        {villagersCount} × +{roleRegistry.getRole(ROLE_IDS.VILLAGER).weight} = +
+                        {villagersCount * roleRegistry.getRole(ROLE_IDS.VILLAGER).weight}
                       </span>
                     </div>
                   )}
@@ -301,7 +524,8 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
                   <div className="flex justify-between items-center pt-1.5 border-t border-slate-700 font-bold">
                     <span className="text-slate-300">Total</span>
                     <span className={`font-mono ${balanceColor}`}>
-                      {balanceWeight > 0 ? '+' : ''}{balanceWeight}
+                      {balanceWeight > 0 ? '+' : ''}
+                      {balanceWeight}
                     </span>
                   </div>
                 </div>
@@ -334,7 +558,11 @@ export default function LobbyScreen({ gameState, isHost, players, startGame, set
         })()}
       </div>
 
-      {!isHost && <div className="text-center text-slate-500 animate-pulse mt-4">Waiting for host to start...</div>}
+      {!isHost && (
+        <div className="text-center text-slate-500 animate-pulse mt-4">
+          Waiting for host to start...
+        </div>
+      )}
 
       <RoleInfoModal showRoleInfo={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
     </div>

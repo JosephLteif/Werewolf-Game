@@ -14,7 +14,7 @@ export function useGameState(user, roomCode, joined) {
         // Instantiate GameState class with data and the updateGameCallback
         setGameState(new GameState(data, (updates) => updateRoom(roomCode, updates)));
       } else {
-        setError("Room closed or does not exist.");
+        setError('Room closed or does not exist.');
         setGameState(null);
       }
     });

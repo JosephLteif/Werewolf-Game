@@ -1,8 +1,7 @@
-import { PHASES } from '../constants';
+import { PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { findPlayerById } from '../utils/playersUtils';
 import { handleDoppelgangerTransformation } from '../utils/gameLogic';
-import { ROLE_IDS } from '../constants/roleIds';
 
 /**
  * Voting Service
@@ -16,8 +15,8 @@ export function countVotes(votes, players) {
   const voteCounts = {};
 
   Object.entries(votes || {}).forEach(([voterId, targetId]) => {
-    const voter = players.find(p => p.id === voterId);
-    const weight = (voter && voter.role === ROLE_IDS.MAYOR && voter.isAlive) ? 2 : 1;
+    const voter = players.find((p) => p.id === voterId);
+    const weight = voter && voter.role === ROLE_IDS.MAYOR && voter.isAlive ? 2 : 1;
     voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
   });
 
@@ -65,30 +64,21 @@ export function allVotesLocked(lockedVotes, alivePlayers) {
 // New functions for day voting
 
 export const castPlayerVote = async (gameState, user, targetId) => {
-
   // Can't vote if already locked
 
   if ((gameState.lockedVotes || []).includes(user.uid)) return;
-
-
 
   const votes = gameState.votes || {};
 
   const newVotes = { ...votes, [user.uid]: targetId };
 
   await gameState.update({ votes: newVotes });
-
 };
 
-
-
 export const lockPlayerVote = async (gameState, players, user) => {
-
   // Can't lock if no vote cast
 
   if (!gameState.votes?.[user.uid]) return;
-
-
 
   // Can't lock if already locked
 
@@ -96,110 +86,60 @@ export const lockPlayerVote = async (gameState, players, user) => {
 
   if (lockedVotes.includes(user.uid)) return;
 
-
-
   const newLockedVotes = [...lockedVotes, user.uid];
 
   await gameState.update({ lockedVotes: newLockedVotes });
-
-
 
   // Check if everyone has locked
 
   const alivePlayers = players.filter((p) => p.isAlive);
 
   if (newLockedVotes.length === alivePlayers.length) {
-
     // Trigger resolution
 
     await resolveDayVoting(gameState, players);
-
   }
-
 };
 
-
-
-
-
 const handleLoverDeathOnVote = (victim, newPlayers, gameState) => {
-
   if (gameState.lovers && gameState.lovers.includes(victim.id)) {
-
     const otherLoverId = gameState.lovers.find((id) => id !== victim.id);
-
     const otherLover = findPlayerById(newPlayers, otherLoverId);
 
     if (otherLover && otherLover.isAlive) {
-
       otherLover.isAlive = false;
-
     }
-
   }
-
 };
 
-
-
 const handleHunterVoteDeath = async (victim, newPlayers, gameState) => {
-
   await gameState.update({
-
     players: newPlayers,
-
     dayLog: `${victim.name} (Hunter) was voted out!`,
-
     phase: PHASES.HUNTER_ACTION,
-
     votes: {},
-
     lockedVotes: [],
-
   });
 
   return true;
-
 };
 
-
-
 export const resolveDayVoting = async (gameState, players) => {
-
   const lockedVoterIds = gameState.lockedVotes || [];
+  const votesToCount = Object.entries(gameState.votes || {}).reduce((acc, [voterId, targetId]) => {
+    if (lockedVoterIds.includes(voterId)) {
+      acc[voterId] = targetId;
+    }
 
-  const votesToCount = Object.entries(gameState.votes || {}).reduce(
-
-    (acc, [voterId, targetId]) => {
-
-      if (lockedVoterIds.includes(voterId)) {
-
-        acc[voterId] = targetId;
-
-      }
-
-      return acc;
-
-    },
-
-    {}
-
-  );
-
-
-
-
+    return acc;
+  }, {});
 
   const voteCounts = countVotes(votesToCount, players);
 
   const { type, victims } = determineVotingResult(voteCounts);
 
-
-
   if (type === 'no_elimination') {
-
     await gameState.update({
-
       dayLog: 'No one was eliminated.',
 
       phase: PHASES.NIGHT_INTRO,
@@ -207,14 +147,10 @@ export const resolveDayVoting = async (gameState, players) => {
       votes: {},
 
       lockedVotes: [],
-
     });
 
     return;
-
   }
-
-
 
   const targetId = victims[0];
 
@@ -222,86 +158,81 @@ export const resolveDayVoting = async (gameState, players) => {
 
   const victim = findPlayerById(newPlayers, targetId);
 
-
-
   if (victim) {
-
     victim.isAlive = false;
-
   } else {
-
-    console.error("Voted victim not found:", targetId);
+    console.error('Voted victim not found:', targetId);
 
     return;
-
   }
 
+  // Handle Tanner Win
 
+  if (victim.role === ROLE_IDS.TANNER) {
+    if (gameState.settings.tannerWinStrategy === TANNER_WIN_STRATEGIES.END_GAME) {
+      await gameState.update({
+        players: newPlayers,
 
+        winner: 'Tanner',
 
+        winners: [victim.id],
 
+        phase: PHASES.GAME_OVER,
+      });
 
+      return;
+    } else {
+      // Continue game, but Tanner has won
 
-    // Doppelgänger Transformation (Voting Death)
+      const winners = [...(gameState.winners || []), victim.id];
 
+      await gameState.update({ winners });
+    }
+  }
 
+  // Doppelgänger Transformation (Voting Death)
 
-
-
-
-
-    newPlayers = handleDoppelgangerTransformation(newPlayers, gameState.doppelgangerPlayerId, gameState.doppelgangerTarget, victim.id);
-
-
+  newPlayers = handleDoppelgangerTransformation(
+    newPlayers,
+    gameState.doppelgangerPlayerId,
+    gameState.doppelgangerTarget,
+    victim.id
+  );
 
   // Lovers Check
 
   handleLoverDeathOnVote(victim, newPlayers, gameState);
 
-
-
   // Hunter Vote Death
 
   if (victim.role === ROLE_IDS.HUNTER) {
-
     if (await handleHunterVoteDeath(victim, newPlayers, gameState)) return;
-
   }
 
-
-
-  const winResult = checkWinCondition(newPlayers, gameState.lovers, gameState.winners, gameState.settings);
+  const winResult = checkWinCondition(
+    newPlayers,
+    gameState.lovers,
+    gameState.winners,
+    gameState.settings
+  );
 
   if (winResult) {
-
     await gameState.update({
-
       players: newPlayers,
 
       ...winResult,
 
       phase: PHASES.GAME_OVER,
-
     });
 
     return;
-
   }
 
-
-
   await gameState.update({
-
     players: newPlayers,
-
     dayLog: `${victim.name} was voted out.`,
-
     phase: PHASES.NIGHT_INTRO,
-
     votes: {},
-
     lockedVotes: [],
-
   });
-
 };

@@ -11,7 +11,7 @@ export default function NightActionScreen({
   multiSelect,
   maxSelect,
   canSkip,
-  phaseEndTime
+  phaseEndTime,
 }) {
   const [targets, setTargets] = useState([]);
   const [now, setNow] = useState(() => Date.now());
@@ -26,7 +26,7 @@ export default function NightActionScreen({
   const toggleTarget = (id) => {
     if (multiSelect) {
       if (targets.includes(id)) {
-        setTargets(targets.filter(t => t !== id));
+        setTargets(targets.filter((t) => t !== id));
       } else if (targets.length < maxSelect) {
         setTargets([...targets, id]);
       }
@@ -42,7 +42,7 @@ export default function NightActionScreen({
       border: 'border-red-500',
       text: 'text-red-400',
       button: 'from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500',
-      glow: 'shadow-red-500/30'
+      glow: 'shadow-red-500/30',
     },
     blue: {
       bg: 'from-blue-950 via-cyan-950 to-slate-950',
@@ -50,7 +50,7 @@ export default function NightActionScreen({
       border: 'border-blue-400',
       text: 'text-blue-400',
       button: 'from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500',
-      glow: 'shadow-blue-500/30'
+      glow: 'shadow-blue-500/30',
     },
     purple: {
       bg: 'from-purple-950 via-pink-950 to-slate-950',
@@ -58,7 +58,7 @@ export default function NightActionScreen({
       border: 'border-purple-400',
       text: 'text-purple-400',
       button: 'from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500',
-      glow: 'shadow-purple-500/30'
+      glow: 'shadow-purple-500/30',
     },
     yellow: {
       bg: 'from-yellow-950 via-amber-950 to-slate-950',
@@ -66,8 +66,8 @@ export default function NightActionScreen({
       border: 'border-yellow-400',
       text: 'text-yellow-400',
       button: 'from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500',
-      glow: 'shadow-yellow-500/30'
-    }
+      glow: 'shadow-yellow-500/30',
+    },
   };
 
   const theme = colorThemes[color] || colorThemes.purple;
@@ -80,9 +80,7 @@ export default function NightActionScreen({
           <h2 className={`text-4xl font-black ${theme.text} mb-2 drop-shadow-lg`}>{title}</h2>
           <p className="text-slate-400 text-base">{subtitle}</p>
           {timeLeft !== null && (
-            <div className={`text-3xl font-mono font-black ${theme.text} mt-2`}>
-              {timeLeft}s
-            </div>
+            <div className={`text-3xl font-mono font-black ${theme.text} mt-2`}>{timeLeft}s</div>
           )}
           {multiSelect && (
             <div className="mt-3 inline-flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-full border border-slate-700">
@@ -95,7 +93,7 @@ export default function NightActionScreen({
 
         {/* Player Cards */}
         <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-          {players.map(p => {
+          {players.map((p) => {
             const isSelected = targets.includes(p.id);
 
             return (
@@ -103,9 +101,10 @@ export default function NightActionScreen({
                 key={p.id}
                 onClick={() => toggleTarget(p.id)}
                 className={`w-full relative overflow-hidden rounded-2xl border-2 transition-all shadow-lg hover:shadow-xl
-                  ${isSelected
-                    ? `bg-gradient-to-r ${theme.cardBg} ${theme.border} ${theme.glow}`
-                    : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
+                  ${
+                    isSelected
+                      ? `bg-gradient-to-r ${theme.cardBg} ${theme.border} ${theme.glow}`
+                      : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
                   }`}
               >
                 <div className="relative p-4 flex items-center gap-4">
@@ -121,9 +120,7 @@ export default function NightActionScreen({
                     {extras && <div className="text-sm">{extras(p)}</div>}
                   </div>
 
-                  {isSelected && (
-                    <Check className={`w-6 h-6 ${theme.text}`} />
-                  )}
+                  {isSelected && <Check className={`w-6 h-6 ${theme.text}`} />}
                 </div>
               </button>
             );

@@ -1,49 +1,65 @@
 import { useState, useEffect } from 'react';
 import { Skull, RotateCcw } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
-import { roleRegistry } from "../roles/RoleRegistry.js";
+import { roleRegistry } from '../roles/RoleRegistry.js';
 
-export default function DeadScreen({ winner, winners = [], isGameOver, onReset, isHost, dayLog, players, lovers }) {
+export default function DeadScreen({
+  winner,
+  winners = [],
+  isGameOver,
+  onReset,
+  isHost,
+  dayLog,
+  players,
+  lovers,
+}) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
     WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
-    CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' }
+    CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
   };
 
-  const colors = isGameOver && winners.length > 0 ? winnerColors[winners[0]] : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
+  const colors =
+    isGameOver && winners.length > 0
+      ? winnerColors[winners[0]]
+      : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
 
   // Filter winners
-  const winningPlayers = players ? players.filter(p => {
-    if (!winners.length) return false;
-    let isWinner = false;
-    if (winners.includes('LOVERS')) {
-      isWinner = isWinner || (lovers && lovers.includes(p.id));
-    }
-    if (winners.includes('VILLAGERS')) {
-      isWinner = isWinner || (roleRegistry.getRole(p.role).alignment === 'good');
-    }
-    if (winners.includes('WEREWOLVES')) {
-      const role = roleRegistry.getRole(p.role);
-      if (role.id === ROLE_IDS.SORCERER) isWinner = isWinner || !!p.foundSeer;
-      else isWinner = isWinner || (role.alignment === 'evil');
-    }
+  const winningPlayers = players
+    ? players.filter((p) => {
+        if (!winners.length) return false;
+        let isWinner = false;
+        if (winners.includes('LOVERS')) {
+          isWinner = isWinner || (lovers && lovers.includes(p.id));
+        }
+        if (winners.includes('VILLAGERS')) {
+          isWinner = isWinner || roleRegistry.getRole(p.role).alignment === 'good';
+        }
+        if (winners.includes('WEREWOLVES')) {
+          const role = roleRegistry.getRole(p.role);
+          if (role.id === ROLE_IDS.SORCERER) isWinner = isWinner || !!p.foundSeer;
+          else isWinner = isWinner || role.alignment === 'evil';
+        }
 
-    if (winners.includes('CUPID')) {
-      isWinner = isWinner || (p.role === ROLE_IDS.CUPID);
-    }
-    return isWinner;
-  }) : [];
+        if (winners.includes('CUPID')) {
+          isWinner = isWinner || p.role === ROLE_IDS.CUPID;
+        }
+        return isWinner;
+      })
+    : [];
   const [deadParticles, setDeadParticles] = useState(null);
   useEffect(() => {
     if (!isGameOver) return;
     const t = setTimeout(() => {
-      setDeadParticles(Array.from({ length: 30 }).map(() => ({
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 3}s`,
-        dur: `${2 + Math.random() * 3}s`
-      })));
+      setDeadParticles(
+        Array.from({ length: 30 }).map(() => ({
+          top: `${Math.random() * 100}%`,
+          left: `${Math.random() * 100}%`,
+          delay: `${Math.random() * 3}s`,
+          dur: `${2 + Math.random() * 3}s`,
+        }))
+      );
     }, 0);
     return () => clearTimeout(t);
   }, [isGameOver]);
@@ -53,43 +69,58 @@ export default function DeadScreen({ winner, winners = [], isGameOver, onReset, 
       {/* Ambient background */}
       {isGameOver && (
         <div className="absolute inset-0 opacity-10">
-          {deadParticles && deadParticles.map((p, i) => (
-            <div
-              key={i}
-              className={`absolute w-1 h-1 ${colors.text} rounded-full animate-pulse`}
-              style={{
-                top: p.top,
-                left: p.left,
-                animationDelay: p.delay,
-                animationDuration: p.dur
-              }}
-            />
-          ))}
+          {deadParticles &&
+            deadParticles.map((p, i) => (
+              <div
+                key={i}
+                className={`absolute w-1 h-1 ${colors.text} rounded-full animate-pulse`}
+                style={{
+                  top: p.top,
+                  left: p.left,
+                  animationDelay: p.delay,
+                  animationDuration: p.dur,
+                }}
+              />
+            ))}
         </div>
       )}
 
       <div className="relative z-10 max-w-md w-full">
         {isGameOver ? (
           <>
-            <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center mb-8 shadow-2xl animate-pulse mx-auto`}>
+            <div
+              className={`w-32 h-32 rounded-full bg-gradient-to-br ${colors.bg} flex items-center justify-center mb-8 shadow-2xl animate-pulse mx-auto`}
+            >
               <Skull className="w-16 h-16 text-white" />
             </div>
-            <h2 className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}>
+            <h2
+              className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}
+            >
               {winner} WIN!
             </h2>
             <p className="text-slate-400 mb-8 text-xl">Game Over</p>
 
             {winningPlayers.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">Winning Players</h3>
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">
+                  Winning Players
+                </h3>
                 <div className="flex flex-wrap justify-center gap-3">
-                  {winningPlayers.map(p => (
-                    <div key={p.id} className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-full">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: p.avatarColor }}>
+                  {winningPlayers.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-full"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                        style={{ backgroundColor: p.avatarColor }}
+                      >
                         {p.name[0]}
                       </div>
                       <span className="font-bold text-sm">{p.name}</span>
-                      <span className="text-xs text-slate-500">({roleRegistry.getRole(p.role).name})</span>
+                      <span className="text-xs text-slate-500">
+                        ({roleRegistry.getRole(p.role).name})
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -104,7 +135,9 @@ export default function DeadScreen({ winner, winners = [], isGameOver, onReset, 
 
             {dayLog && (
               <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl backdrop-blur-sm">
-                <h3 className="text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">Latest News</h3>
+                <h3 className="text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">
+                  Latest News
+                </h3>
                 <p className="text-slate-200 font-medium leading-relaxed">{dayLog}</p>
               </div>
             )}

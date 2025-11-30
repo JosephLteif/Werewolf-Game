@@ -2,13 +2,7 @@ import { assignRolesAndStartGame, markPlayerReady } from './roles';
 import { startNight, advanceNight, resolveNight, handleHunterShot } from './nightActions';
 import { castPlayerVote, lockPlayerVote, resolveDayVoting } from './voting';
 
-export function coreGameActions(
-  gameState,
-  players,
-  user,
-  isHost,
-  now
-) {
+export function coreGameActions(gameState, players, user, isHost, now) {
   const startGame = async () => {
     await assignRolesAndStartGame(gameState, players, isHost);
   };

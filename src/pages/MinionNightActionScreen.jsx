@@ -12,18 +12,31 @@ export default function MinionNightActionScreen({ players, advanceNightPhase }) 
           <p className="text-slate-400">The Werewolves are...</p>
         </div>
         <div className="space-y-3 mb-8">
-          {players.filter(p => p.role === ROLE_IDS.WEREWOLF).map(p => (
-            <div key={p.id} className="bg-gradient-to-r from-red-900/30 to-rose-900/30 border-2 border-red-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-red-500/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: p.avatarColor }}>
-                  {p.name[0]}
+          {players
+            .filter((p) => p.role === ROLE_IDS.WEREWOLF)
+            .map((p) => (
+              <div
+                key={p.id}
+                className="bg-gradient-to-r from-red-900/30 to-rose-900/30 border-2 border-red-500 p-5 rounded-2xl font-bold text-lg shadow-lg shadow-red-500/20"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: p.avatarColor }}
+                  >
+                    {p.name[0]}
+                  </div>
+                  {p.name}
                 </div>
-                {p.name}
               </div>
-            </div>
-          ))}
+            ))}
         </div>
-        <button onClick={() => advanceNightPhase(null, null)} className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105">I Understand</button>
+        <button
+          onClick={() => advanceNightPhase(null, null)}
+          className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
+        >
+          I Understand
+        </button>
       </div>
     </div>
   );

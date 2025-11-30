@@ -1,7 +1,7 @@
-import { get, onValue, ref, serverTimestamp, set, update, } from "firebase/database";
+import { get, onValue, ref, serverTimestamp, set, update } from 'firebase/database';
 import GameState from '../models/GameState';
-import { generateRoomCode } from "../utils/index";
-import { rtdb } from "./firebase.js";
+import { generateRoomCode } from '../utils/index';
+import { rtdb } from './firebase.js';
 
 /**
  * Creates a new room with a unique 4-letter code and writes initial state.
@@ -26,20 +26,20 @@ export async function createRoom(hostUser, maxAttempts = 10) {
     return code;
   }
 
-  throw new Error("Unable to generate unique room code");
+  throw new Error('Unable to generate unique room code');
 }
 
 /**
  * Adds/updates a player entry under `rooms/{roomCode}/players/{user.id}` and updates `updatedAt`.
  */
 export async function joinRoom(roomCode, user) {
-  if (!roomCode) throw new Error("roomCode is required");
+  if (!roomCode) throw new Error('roomCode is required');
   const uid = user.id || user.uid;
-  if (!uid) throw new Error("user.id or user.uid is required");
+  if (!uid) throw new Error('user.id or user.uid is required');
 
   const playerRef = ref(rtdb, `rooms/${roomCode}/players/${uid}`);
   const playerData = {
-    name: user.name || user.displayName || "",
+    name: user.name || user.displayName || '',
     isAlive: true,
     ready: false,
     avatarColor: user.avatarColor || null,
@@ -59,8 +59,9 @@ export async function joinRoom(roomCode, user) {
  * Updates specific properties of a room's state.
  */
 export async function updateRoom(roomCode, updates) {
-  if (!roomCode) throw new Error("roomCode is required");
-  if (!updates || typeof updates !== 'object') throw new Error("updates must be a non-null object.");
+  if (!roomCode) throw new Error('roomCode is required');
+  if (!updates || typeof updates !== 'object')
+    throw new Error('updates must be a non-null object.');
 
   const roomRef = ref(rtdb, `rooms/${roomCode}`);
   await update(roomRef, {
@@ -74,8 +75,8 @@ export async function updateRoom(roomCode, updates) {
  * Returns an unsubscribe function.
  */
 export function subscribeToRoom(roomCode, callback) {
-  if (!roomCode) throw new Error("roomCode is required");
-  if (typeof callback !== "function") throw new Error("callback must be a function");
+  if (!roomCode) throw new Error('roomCode is required');
+  if (typeof callback !== 'function') throw new Error('callback must be a function');
 
   const roomRef = ref(rtdb, `rooms/${roomCode}`);
   return onValue(roomRef, (snapshot) => {

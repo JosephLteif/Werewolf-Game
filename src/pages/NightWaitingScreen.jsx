@@ -12,9 +12,18 @@ export default function NightWaitingScreen() {
       <h2 className="text-2xl font-bold mb-3 text-indigo-200">You are sleeping...</h2>
       <p className="text-indigo-400/70 text-sm">Someone is taking their turn</p>
       <div className="mt-8 flex gap-2">
-        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+        <div
+          className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
+          style={{ animationDelay: '0s' }}
+        ></div>
+        <div
+          className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
+          style={{ animationDelay: '0.2s' }}
+        ></div>
+        <div
+          className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
+          style={{ animationDelay: '0.4s' }}
+        ></div>
       </div>
     </div>
   );

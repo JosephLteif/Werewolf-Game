@@ -11,11 +11,13 @@ export function useAuth() {
       try {
         await signInAnonymously(auth);
       } catch (err) {
-        console.error("Auth failed:", err);
+        console.error('Auth failed:', err);
         if (err.code === 'auth/admin-restricted-operation') {
-          setError("Enable 'Anonymous' sign-in in Firebase Console > Authentication > Sign-in method.");
+          setError(
+            "Enable 'Anonymous' sign-in in Firebase Console > Authentication > Sign-in method."
+          );
         } else {
-          setError("Auth Error: " + err.message);
+          setError('Auth Error: ' + err.message);
         }
       }
     };

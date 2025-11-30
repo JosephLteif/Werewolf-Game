@@ -9,7 +9,9 @@ class MockGameState {
     // Ensure players in _state is always a map, even if initialState provides an array
     if (Array.isArray(this._state.players)) {
       const playersMap = {};
-      this._state.players.forEach(p => { playersMap[p.id] = p; });
+      this._state.players.forEach((p) => {
+        playersMap[p.id] = p;
+      });
       this._state.players = playersMap;
     }
 
@@ -17,7 +19,9 @@ class MockGameState {
       // Handle updates to players specially: convert array to map for internal storage
       if (updates.players && Array.isArray(updates.players)) {
         const playersMap = {};
-        updates.players.forEach(p => { playersMap[p.id] = p; });
+        updates.players.forEach((p) => {
+          playersMap[p.id] = p;
+        });
         this._state.players = playersMap;
         const { _players, ...restUpdates } = updates; // Extract players to avoid double assignment
         Object.assign(this._state, restUpdates); // Apply other updates
@@ -27,12 +31,24 @@ class MockGameState {
     });
   }
 
-  get code() { return this._state.code; }
-  get hostId() { return this._state.hostId; }
-  get phase() { return this._state.phase; }
-  get dayLog() { return this._state.dayLog; }
-  get updatedAt() { return this._state.updatedAt; }
-  get settings() { return this._state.settings; }
+  get code() {
+    return this._state.code;
+  }
+  get hostId() {
+    return this._state.hostId;
+  }
+  get phase() {
+    return this._state.phase;
+  }
+  get dayLog() {
+    return this._state.dayLog;
+  }
+  get updatedAt() {
+    return this._state.updatedAt;
+  }
+  get settings() {
+    return this._state.settings;
+  }
   get players() {
     // Always return players as an array, converting from internal map
     return Object.values(this._state.players || {});
@@ -41,14 +57,30 @@ class MockGameState {
     // Always return the internal map
     return this._state.players;
   }
-  get nightActions() { return this._state.nightActions; }
-  get vigilanteAmmo() { return this._state.vigilanteAmmo; }
-  get lockedVotes() { return this._state.lockedVotes; }
-  get lovers() { return this._state.lovers; }
-  get votes() { return this._state.votes; }
-  get winner() { return this._state.winner; }
-  get winners() { return this._state.winners; }
-  get phaseEndTime() { return this._state.phaseEndTime; }
+  get nightActions() {
+    return this._state.nightActions;
+  }
+  get vigilanteAmmo() {
+    return this._state.vigilanteAmmo;
+  }
+  get lockedVotes() {
+    return this._state.lockedVotes;
+  }
+  get lovers() {
+    return this._state.lovers;
+  }
+  get votes() {
+    return this._state.votes;
+  }
+  get winner() {
+    return this._state.winner;
+  }
+  get winners() {
+    return this._state.winners;
+  }
+  get phaseEndTime() {
+    return this._state.phaseEndTime;
+  }
 
   isHost(playerUid) {
     return this.hostId === playerUid;
@@ -71,7 +103,9 @@ describe('Role Assignment and Readiness', () => {
       { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
     const initialPlayersMap = {};
-    mockPlayersArray.forEach(p => { initialPlayersMap[p.id] = p; });
+    mockPlayersArray.forEach((p) => {
+      initialPlayersMap[p.id] = p;
+    });
 
     mockGameStateInstance = new MockGameState({
       settings: {
@@ -98,12 +132,12 @@ describe('Role Assignment and Readiness', () => {
       expect(updateCall.phase).toBe(PHASES.ROLE_REVEAL);
       expect(updateCall.players).toHaveLength(5);
 
-      const roles = updateCall.players.map(p => p.role);
+      const roles = updateCall.players.map((p) => p.role);
       expect(roles).toContain(ROLE_IDS.WEREWOLF);
       expect(roles).toContain(ROLE_IDS.SEER);
       expect(roles).toContain(ROLE_IDS.DOCTOR);
 
-      const villagers = roles.filter(r => r === ROLE_IDS.VILLAGER);
+      const villagers = roles.filter((r) => r === ROLE_IDS.VILLAGER);
       expect(villagers).toHaveLength(2);
     });
 
@@ -174,13 +208,16 @@ describe('Role Assignment and Readiness', () => {
         [ROLE_IDS.MASON]: 2,
       };
 
-      const totalSpecialRoles = Object.values(expectedRoleCounts).reduce((sum, count) => sum + count, 0);
+      const totalSpecialRoles = Object.values(expectedRoleCounts).reduce(
+        (sum, count) => sum + count,
+        0
+      );
       const expectedVillagers = comprehensivePlayers.length - totalSpecialRoles;
       if (expectedVillagers > 0) {
         expectedRoleCounts[ROLE_IDS.VILLAGER] = expectedVillagers;
       }
 
-      const roles = updateCall.players.map(p => p.role);
+      const roles = updateCall.players.map((p) => p.role);
       const roleCounts = roles.reduce((acc, role) => {
         acc[role] = (acc[role] || 0) + 1;
         return acc;
@@ -204,10 +241,14 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
         { id: 'p2', name: 'Player 2', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
       ];
-      const testGameState = new MockGameState({ ...mockGameStateInstance._state, players: {
-        'p1': initialPlayers[0],
-        'p2': initialPlayers[1],
-      }, phase: PHASES.DAY_VOTING });
+      const testGameState = new MockGameState({
+        ...mockGameStateInstance._state,
+        players: {
+          p1: initialPlayers[0],
+          p2: initialPlayers[1],
+        },
+        phase: PHASES.DAY_VOTING,
+      });
 
       await markPlayerReady(initialPlayers, mockUser, testGameState);
 
@@ -227,10 +268,14 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
         { id: 'p2', name: 'Player 2', isAlive: true, ready: true, role: ROLE_IDS.VILLAGER },
       ];
-      const testGameState = new MockGameState({ ...mockGameStateInstance._state, players: {
-        'p1': initialPlayers[0],
-        'p2': initialPlayers[1],
-      }, phase: PHASES.DAY_VOTING });
+      const testGameState = new MockGameState({
+        ...mockGameStateInstance._state,
+        players: {
+          p1: initialPlayers[0],
+          p2: initialPlayers[1],
+        },
+        phase: PHASES.DAY_VOTING,
+      });
 
       await markPlayerReady(initialPlayers, mockUser, testGameState);
 
@@ -250,10 +295,14 @@ describe('Role Assignment and Readiness', () => {
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
         { id: 'p2', name: 'Player 2', isAlive: false, ready: false, role: ROLE_IDS.VILLAGER },
       ];
-      const testGameState = new MockGameState({ ...mockGameStateInstance._state, players: {
-        'p1': initialPlayers[0],
-        'p2': initialPlayers[1],
-      }, phase: PHASES.DAY_VOTING });
+      const testGameState = new MockGameState({
+        ...mockGameStateInstance._state,
+        players: {
+          p1: initialPlayers[0],
+          p2: initialPlayers[1],
+        },
+        phase: PHASES.DAY_VOTING,
+      });
 
       await markPlayerReady(initialPlayers, mockUser, testGameState);
 
