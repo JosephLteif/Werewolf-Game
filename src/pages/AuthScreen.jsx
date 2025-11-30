@@ -1,4 +1,8 @@
 import { Moon } from 'lucide-react';
+// import LogoBig from '../assets/Logo 3-Big.jpg'; // Removed big logo import
+// Favicon.png is in the public directory, so we can reference it directly
+// as an absolute path.
+// import LogoSmall from '/favicon.png'; 
 
 export default function AuthScreen({
   playerName,
@@ -13,8 +17,10 @@ export default function AuthScreen({
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6">
       <div className="text-center space-y-2">
+        {/* <img src={LogoBig} alt="Nightfall Logo" className="mx-auto w-64 h-auto" /> */}
+        <img src="/favicon.png" alt="Nightfall Logo" className="mx-auto w-24 h-auto" /> {/* Use small logo directly */}
         <h1 className="text-5xl font-black tracking-tighter text-indigo-500 flex items-center justify-center gap-3">
-          <Moon className="w-12 h-12" /> NIGHTFALL
+          NIGHTFALL
         </h1>
         <p className="text-slate-400">Local Multiplayer • Join Room</p>
       </div>
