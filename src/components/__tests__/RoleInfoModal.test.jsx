@@ -57,6 +57,17 @@ const mockDoctorRole = {
   selectable: true,
 };
 
+const mockUnselectableRole = {
+  id: 'narrator',
+  name: 'Narrator',
+  description: 'Controls the game.',
+  team: Teams.NEUTRAL,
+  alignment: ALIGNMENTS.NEUTRAL,
+  weight: 0,
+  icon: () => <svg data-testid="narrator-icon" />,
+  selectable: false, // This role should not be selectable
+};
+
 // Mock the roleRegistry
 vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
   const actual = await importOriginal();
@@ -64,7 +75,7 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
     ...actual,
     roleRegistry: {
       ...actual.roleRegistry,
-      getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole]),
+      getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole, mockUnselectableRole]),
       getRole: vi.fn((roleId) => {
         switch (roleId) {
           case ROLE_IDS.VILLAGER:
@@ -73,6 +84,8 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
             return mockWerewolfRole;
           case ROLE_IDS.DOCTOR:
             return mockDoctorRole;
+          case 'narrator':
+            return mockUnselectableRole;
           default:
             return undefined;
         }
@@ -119,6 +132,8 @@ describe('RoleInfoModal', () => {
     expect(screen.getByText('Villager')).toBeInTheDocument();
     expect(screen.getByText('Werewolf')).toBeInTheDocument();
     expect(screen.getByText('Doctor')).toBeInTheDocument();
+    // Assert that the unselectable role is NOT displayed
+    expect(screen.queryByText('Narrator')).not.toBeInTheDocument();
   });
 
   it('calls onClose when the Close button is clicked', () => {

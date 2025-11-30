@@ -1,7 +1,7 @@
 import { TEAMS, CUPID_FATES } from '../constants';
 import { roleRegistry } from '../roles/RoleRegistry';
 import { ROLE_IDS } from '../constants/roleIds';
-import { Teams } from '../models/Team';
+import { Teams } from '../models/Team'; // Explicitly import Teams
 import { ALIGNMENTS } from '../constants/alignments';
 
 /**
@@ -99,7 +99,7 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
   const playerRole = roleRegistry.getRole(player.role);
   const teamId = player.alignment || (playerRole?.team?.id);
 
-  if (winners.includes('VILLAGERS') && teamId === TEAMS.VILLAGE) {
+  if (winners.includes('VILLAGERS') && teamId === Teams.VILLAGER.id) {
     isWinner = true;
   }
 
@@ -108,7 +108,7 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
       if (player.foundSeer) {
         isWinner = true;
       }
-    } else if (teamId === TEAMS.WEREWOLF) {
+    } else if (teamId === Teams.WEREWOLF.id) {
       isWinner = true;
     }
   }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import TeammateList from '../TeammateList';
 import { ROLE_IDS } from '../../constants/roleIds';
-import { Teams } from '../../models/Team';
+import { Teams } from '../../models/Team'; // Corrected import
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
@@ -42,6 +42,8 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
             return { id: ROLE_IDS.CUPID, name: 'Cupid' };
           case ROLE_IDS.VILLAGER:
             return { id: ROLE_IDS.VILLAGER, name: 'Villager' };
+          case 'ALLY_ROLE': // Custom role for testing 'Ally' branch
+            return { id: 'ALLY_ROLE', name: 'Ally Role' };
           default:
             return { id: roleId, name: 'Unknown' };
         }
@@ -52,23 +54,25 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
 
 describe('TeammateList', () => {
   const commonPlayers = [
-    { id: 'p1', name: 'Alice', role: ROLE_IDS.VILLAGER, avatarColor: '#111' },
-    { id: 'p2', name: 'Bob', role: ROLE_IDS.WEREWOLF, avatarColor: '#222' },
-    { id: 'p3', name: 'Charlie', role: ROLE_IDS.WEREWOLF, avatarColor: '#333' },
-    { id: 'p4', name: 'David', role: ROLE_IDS.MINION, avatarColor: '#444' },
-    { id: 'p5', name: 'Eve', role: ROLE_IDS.MASON, avatarColor: '#555' },
-    { id: 'p6', name: 'Frank', role: ROLE_IDS.MASON, avatarColor: '#666' },
-    { id: 'p7', name: 'Grace', role: ROLE_IDS.CUPID, avatarColor: '#777' },
-    { id: 'p8', name: 'Heidi', role: ROLE_IDS.VILLAGER, avatarColor: '#888' },
+    { id: 'p1', name: 'Alice', role: ROLE_IDS.VILLAGER, avatarColor: '#111', isAlive: true },
+    { id: 'p2', name: 'Bob', role: ROLE_IDS.WEREWOLF, avatarColor: '#222', isAlive: true },
+    { id: 'p3', name: 'Charlie', role: ROLE_IDS.WEREWOLF, avatarColor: '#333', isAlive: true },
+    { id: 'p4', name: 'David', role: ROLE_IDS.MINION, avatarColor: '#444', isAlive: true },
+    { id: 'p5', name: 'Eve', role: ROLE_IDS.MASON, avatarColor: '#555', isAlive: true },
+    { id: 'p6', name: 'Frank', role: ROLE_IDS.MASON, avatarColor: '#666', isAlive: true },
+    { id: 'p7', name: 'Grace', role: ROLE_IDS.CUPID, avatarColor: '#777', isAlive: true },
+    { id: 'p8', name: 'Heidi', role: ROLE_IDS.VILLAGER, avatarColor: '#888', isAlive: true },
+    { id: 'p9', name: 'Ivan', role: 'ALLY_ROLE', avatarColor: '#999', isAlive: true }, // For 'Ally' branch
   ];
 
-  it('renders without crashing', () => {
-    const myPlayer = { ...commonPlayers[0], role: ROLE_IDS.VILLAGER };
-    const gameState = { lovers: [] };
-    const { container } = render(
-      <TeammateList players={commonPlayers} myPlayer={myPlayer} gameState={gameState} />
-    );
-    // Since a Villager has no allies by default, it should not render any content
+  it('does not render if myPlayer is null (covers line 8)', () => {
+    const { container } = render(<TeammateList players={commonPlayers} myPlayer={null} gameState={{}} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('does not render if players is null (covers line 8)', () => {
+    const myPlayer = { ...commonPlayers[0] };
+    const { container } = render(<TeammateList players={null} myPlayer={myPlayer} gameState={{}} />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -119,11 +123,16 @@ describe('TeammateList', () => {
     expect(screen.queryByText('Charlie')).not.toBeInTheDocument();
   });
 
+  it('does not render Cupid allies if gameState.lovers is null or undefined (covers line 31)', () => {
+    const myPlayer = { ...commonPlayers[6], role: ROLE_IDS.CUPID }; // Grace the Cupid
+    render(<TeammateList players={commonPlayers} myPlayer={myPlayer} gameState={{}} />);
+    expect(screen.queryByText('Lovers')).not.toBeInTheDocument();
+  });
+
   it('renders for a Lover, showing their partner', () => {
     const myPlayer = { ...commonPlayers[0], role: ROLE_IDS.VILLAGER }; // Alice the Villager (also a lover)
     const gameState = { lovers: ['p1', 'p8'] }; // Alice and Heidi are lovers
     render(<TeammateList players={commonPlayers} myPlayer={myPlayer} gameState={gameState} />);
-    screen.debug(); // Debug output for inspection
 
     // Content should be visible by default
     expect(screen.getByText('My Lover')).toBeInTheDocument();
@@ -157,17 +166,44 @@ describe('TeammateList', () => {
     expect(screen.getByText('Charlie')).toBeInTheDocument(); // Visible again
   });
 
-  it('displays "💀 Dead" status for dead teammates', () => {
+  it('displays "💀 Dead" status for dead teammates and lovers (covers lines 91 and 119)', () => {
     const deadCharlie = { ...commonPlayers[2], isAlive: false };
-    const myPlayer = { ...commonPlayers[1], role: ROLE_IDS.WEREWOLF }; // Bob the Werewolf
-    const playersWithDead = [...commonPlayers.filter(p => p.id !== 'p3'), deadCharlie];
-    const gameState = { lovers: [] };
+    const deadAlice = { ...commonPlayers[0], isAlive: false }; // Alice is a lover
+    const myPlayer = { ...commonPlayers[1], role: ROLE_IDS.WEREWOLF }; // Bob the Werewolf (also a lover)
+
+    const playersWithDead = [
+      ...commonPlayers.filter(p => p.id !== 'p3' && p.id !== 'p1'),
+      deadCharlie,
+      deadAlice,
+    ];
+
+    const gameState = { lovers: ['p1', 'p2'] }; // Alice (dead) and Bob (alive) are lovers
 
     render(<TeammateList players={playersWithDead} myPlayer={myPlayer} gameState={gameState} />);
 
-    // Content should be visible by default, no click needed
     expect(screen.getByText('Charlie')).toBeInTheDocument();
-    expect(screen.getByText('💀 Dead')).toBeInTheDocument();
+    expect(screen.getAllByText('💀 Dead')).toHaveLength(2); // One for Charlie, one for Alice
+    expect(screen.getByText('My Lover')).toBeInTheDocument();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.queryByText('Partner')).not.toBeInTheDocument(); // 'Partner' should not be visible when dead
+  });
+
+  it('displays "Ally" for a relevant player who is not Minion/Werewolf (covers line 95)', () => {
+    const myPlayer = { ...commonPlayers[4], role: ROLE_IDS.MASON }; // Eve the Mason
+    const relevantAlly = { ...commonPlayers[5], role: ROLE_IDS.MASON, isAlive: true }; // Frank the Mason
+    const players = [
+      myPlayer,
+      relevantAlly,
+      { ...commonPlayers[0], isAlive: true, role: 'ALLY_ROLE' }, // Custom Ally (not part of the relevantPlayers logic in TeammateList)
+    ];
+    const gameState = { lovers: [] };
+
+    render(<TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />);
+
+    expect(screen.getByText('Fellow Masons')).toBeInTheDocument();
+    expect(screen.getByText('Frank')).toBeInTheDocument();
+    // For Frank (Mason), it should display 'Ally' as his role is not Minion/Werewolf
+    expect(screen.getByText('Ally')).toBeInTheDocument();
   });
 
   it('does not render if there are no relevant players or partners', () => {
