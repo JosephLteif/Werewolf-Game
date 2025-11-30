@@ -265,45 +265,49 @@ export default function LobbyScreen({
           </label>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-400">Cupid Can Choose Self</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={gameState.settings.cupidCanChooseSelf || false}
-              onChange={() =>
+        {gameState.settings.activeRoles[ROLE_IDS.CUPID] && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-slate-400">Cupid Can Choose Self</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={gameState.settings.cupidCanChooseSelf || false}
+                onChange={() =>
+                  isHost &&
+                  gameState.update({
+                    settings: {
+                      ...gameState.settings,
+                      cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false),
+                    },
+                  })
+                }
+                disabled={!isHost}
+              />
+              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+        )}
+
+        {gameState.settings.activeRoles[ROLE_IDS.CUPID] && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-slate-400">Cupid Strategy</span>
+            <select
+              className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+              value={gameState.settings.cupidFateOption || CUPID_FATES.SELFLESS} // Default to SELFLESS if not set
+              onChange={(e) =>
                 isHost &&
                 gameState.update({
-                  settings: {
-                    ...gameState.settings,
-                    cupidCanChooseSelf: !(gameState.settings.cupidCanChooseSelf || false),
-                  },
+                  settings: { ...gameState.settings, cupidFateOption: e.target.value },
                 })
               }
               disabled={!isHost}
-            />
-            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-          </label>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-400">Cupid Strategy</span>
-          <select
-            className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
-            value={gameState.settings.cupidFateOption || CUPID_FATES.SELFLESS} // Default to SELFLESS if not set
-            onChange={(e) =>
-              isHost &&
-              gameState.update({
-                settings: { ...gameState.settings, cupidFateOption: e.target.value },
-              })
-            }
-            disabled={!isHost}
-          >
-            <option value={CUPID_FATES.SELFLESS}>Selfless (Couple Win)</option>
-            <option value={CUPID_FATES.THIRD_WHEEL}>Third Wheel (Throuple Win)</option>
-          </select>
-        </div>
+            >
+              <option value={CUPID_FATES.SELFLESS}>Selfless (Couple Win)</option>
+              <option value={CUPID_FATES.THIRD_WHEEL}>Third Wheel (Throuple Win)</option>
+            </select>
+          </div>
+        )}
 
         {gameState.settings.activeRoles[ROLE_IDS.TANNER] && (
           <div className="flex items-center justify-between">
@@ -355,14 +359,14 @@ export default function LobbyScreen({
                           onClick={() =>
                             isHost
                               ? gameState.update({
-                                  settings: {
-                                    ...gameState.settings,
-                                    activeRoles: {
-                                      ...gameState.settings.activeRoles,
-                                      [r.id]: !isActive,
-                                    },
+                                settings: {
+                                  ...gameState.settings,
+                                  activeRoles: {
+                                    ...gameState.settings.activeRoles,
+                                    [r.id]: !isActive,
                                   },
-                                })
+                                },
+                              })
                               : setShowRoleInfo(r.id)
                           }
                           className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
