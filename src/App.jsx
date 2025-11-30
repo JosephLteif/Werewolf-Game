@@ -268,6 +268,7 @@ export default function App() {
           dayLog={gameState.dayLog}
           players={players}
           lovers={gameState.lovers}
+          gameSettings={gameState.settings}
         />
       );
     }
@@ -470,6 +471,7 @@ export default function App() {
         dayLog={gameState.dayLog}
         players={players}
         lovers={gameState.lovers}
+        gameSettings={gameState.settings}
       />
     );
   }

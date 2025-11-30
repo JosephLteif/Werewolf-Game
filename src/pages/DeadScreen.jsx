@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Skull, RotateCcw } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { roleRegistry } from '../roles/RoleRegistry.js';
+import { isPlayerWinner } from '../utils/winConditions';
+import { Skull, RotateCcw } from 'lucide-react';
 
 export default function DeadScreen({
   winner,
@@ -12,12 +13,14 @@ export default function DeadScreen({
   dayLog,
   players,
   lovers,
+  gameSettings, // Add gameSettings to props
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
     WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
     CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
+    TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add Tanner
   };
 
   const colors =
@@ -27,26 +30,7 @@ export default function DeadScreen({
 
   // Filter winners
   const winningPlayers = players
-    ? players.filter((p) => {
-        if (!winners.length) return false;
-        let isWinner = false;
-        if (winners.includes('LOVERS')) {
-          isWinner = isWinner || (lovers && lovers.includes(p.id));
-        }
-        if (winners.includes('VILLAGERS')) {
-          isWinner = isWinner || roleRegistry.getRole(p.role).alignment === 'good';
-        }
-        if (winners.includes('WEREWOLVES')) {
-          const role = roleRegistry.getRole(p.role);
-          if (role.id === ROLE_IDS.SORCERER) isWinner = isWinner || !!p.foundSeer;
-          else isWinner = isWinner || role.alignment === 'evil';
-        }
-
-        if (winners.includes('CUPID')) {
-          isWinner = isWinner || p.role === ROLE_IDS.CUPID;
-        }
-        return isWinner;
-      })
+    ? players.filter((p) => isPlayerWinner(p, winners, lovers, gameSettings))
     : [];
   const [deadParticles, setDeadParticles] = useState(null);
   useEffect(() => {
@@ -119,7 +103,7 @@ export default function DeadScreen({
                       </div>
                       <span className="font-bold text-sm">{p.name}</span>
                       <span className="text-xs text-slate-500">
-                        ({roleRegistry.getRole(p.role).name})
+                        ({(p.role === ROLE_IDS.TANNER && winners.includes(p.id)) ? 'Tanner' : roleRegistry.getRole(p.role)?.name || p.role})
                       </span>
                     </div>
                   ))}
