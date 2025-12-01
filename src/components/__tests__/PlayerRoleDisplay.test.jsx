@@ -74,7 +74,12 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
 
 describe('PlayerRoleDisplay', () => {
   it('renders without crashing', () => {
-    const myPlayer = { id: 'p1', name: 'Player 1', role: ROLE_IDS.VILLAGER, avatarColor: '#FF0000' };
+    const myPlayer = {
+      id: 'p1',
+      name: 'Player 1',
+      role: ROLE_IDS.VILLAGER,
+      avatarColor: '#FF0000',
+    };
     render(<PlayerRoleDisplay myPlayer={myPlayer} />);
     expect(screen.getByTestId('player-role-display')).toBeInTheDocument();
   });
@@ -85,7 +90,12 @@ describe('PlayerRoleDisplay', () => {
   });
 
   it('displays player name and avatar initial', () => {
-    const myPlayer = { id: 'p1', name: 'Player 1', role: ROLE_IDS.VILLAGER, avatarColor: '#FF0000' };
+    const myPlayer = {
+      id: 'p1',
+      name: 'Player 1',
+      role: ROLE_IDS.VILLAGER,
+      avatarColor: '#FF0000',
+    };
     render(<PlayerRoleDisplay myPlayer={myPlayer} />);
     expect(screen.getByText('Player 1')).toBeInTheDocument();
     expect(screen.getByText('P')).toBeInTheDocument();
@@ -99,14 +109,24 @@ describe('PlayerRoleDisplay', () => {
   });
 
   it('displays werewolf role name and icon', () => {
-    const myPlayer = { id: 'p1', name: 'Player 1', role: ROLE_IDS.WEREWOLF, avatarColor: '#0000FF' };
+    const myPlayer = {
+      id: 'p1',
+      name: 'Player 1',
+      role: ROLE_IDS.WEREWOLF,
+      avatarColor: '#0000FF',
+    };
     render(<PlayerRoleDisplay myPlayer={myPlayer} />);
     expect(screen.getByText('Werewolf')).toBeInTheDocument();
     expect(screen.getByTestId('werewolf-icon')).toBeInTheDocument(); // Assuming mockWerewolfRole uses werewolf-icon
   });
 
   it('displays villager role name and icon', () => {
-    const myPlayer = { id: 'p1', name: 'Player 1', role: ROLE_IDS.VILLAGER, avatarColor: '#FFFF00' };
+    const myPlayer = {
+      id: 'p1',
+      name: 'Player 1',
+      role: ROLE_IDS.VILLAGER,
+      avatarColor: '#FFFF00',
+    };
     render(<PlayerRoleDisplay myPlayer={myPlayer} />);
     expect(screen.getByText('Villager')).toBeInTheDocument();
     expect(screen.getByTestId('villager-icon')).toBeInTheDocument(); // Assuming mockVillagerRole uses villager-icon

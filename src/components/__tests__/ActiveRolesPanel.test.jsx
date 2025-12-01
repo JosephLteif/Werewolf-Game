@@ -88,7 +88,9 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
 describe('ActiveRolesPanel', () => {
   it('renders without crashing and shows "Roles in Session" title when roles are present', () => {
     // Provide active roles so the component actually renders
-    render(<ActiveRolesPanel activeRoles={{ [ROLE_IDS.VILLAGER]: true }} wolfCount={1} playerCount={3} />);
+    render(
+      <ActiveRolesPanel activeRoles={{ [ROLE_IDS.VILLAGER]: true }} wolfCount={1} playerCount={3} />
+    );
     expect(screen.getByText('Roles in Session')).toBeInTheDocument();
   });
 
@@ -165,7 +167,9 @@ describe('ActiveRolesPanel', () => {
   });
 
   it('does not render if activeRoles is null', () => {
-    const { container } = render(<ActiveRolesPanel activeRoles={null} wolfCount={0} playerCount={0} />);
+    const { container } = render(
+      <ActiveRolesPanel activeRoles={null} wolfCount={0} playerCount={0} />
+    );
     expect(container.firstChild).toBeNull();
   });
 
@@ -175,7 +179,9 @@ describe('ActiveRolesPanel', () => {
     render(<ActiveRolesPanel activeRoles={activeRoles} wolfCount={0} playerCount={0} />);
     expect(screen.queryByText('Roles in Session')).not.toBeInTheDocument();
     // Also explicitly check for the container as the component should return null
-    const { container } = render(<ActiveRolesPanel activeRoles={activeRoles} wolfCount={0} playerCount={0} />);
+    const { container } = render(
+      <ActiveRolesPanel activeRoles={activeRoles} wolfCount={0} playerCount={0} />
+    );
     expect(container.firstChild).toBeNull();
   });
 });

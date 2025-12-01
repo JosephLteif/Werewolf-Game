@@ -359,14 +359,14 @@ export default function LobbyScreen({
                           onClick={() =>
                             isHost
                               ? gameState.update({
-                                settings: {
-                                  ...gameState.settings,
-                                  activeRoles: {
-                                    ...gameState.settings.activeRoles,
-                                    [r.id]: !isActive,
+                                  settings: {
+                                    ...gameState.settings,
+                                    activeRoles: {
+                                      ...gameState.settings.activeRoles,
+                                      [r.id]: !isActive,
+                                    },
                                   },
-                                },
-                              })
+                                })
                               : setShowRoleInfo(r.id)
                           }
                           className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group

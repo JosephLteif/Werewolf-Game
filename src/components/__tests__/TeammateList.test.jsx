@@ -66,13 +66,17 @@ describe('TeammateList', () => {
   ];
 
   it('does not render if myPlayer is null (covers line 8)', () => {
-    const { container } = render(<TeammateList players={commonPlayers} myPlayer={null} gameState={{}} />);
+    const { container } = render(
+      <TeammateList players={commonPlayers} myPlayer={null} gameState={{}} />
+    );
     expect(container.firstChild).toBeNull();
   });
 
   it('does not render if players is null (covers line 8)', () => {
     const myPlayer = { ...commonPlayers[0] };
-    const { container } = render(<TeammateList players={null} myPlayer={myPlayer} gameState={{}} />);
+    const { container } = render(
+      <TeammateList players={null} myPlayer={myPlayer} gameState={{}} />
+    );
     expect(container.firstChild).toBeNull();
   });
 
@@ -172,7 +176,7 @@ describe('TeammateList', () => {
     const myPlayer = { ...commonPlayers[1], role: ROLE_IDS.WEREWOLF }; // Bob the Werewolf (also a lover)
 
     const playersWithDead = [
-      ...commonPlayers.filter(p => p.id !== 'p3' && p.id !== 'p1'),
+      ...commonPlayers.filter((p) => p.id !== 'p3' && p.id !== 'p1'),
       deadCharlie,
       deadAlice,
     ];

@@ -3,6 +3,9 @@ import { Hammer, Check } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 
 export default function MasonNightActionScreen({ players, user, gameState, advanceNightPhase }) {
+  if (!user) {
+    return null;
+  }
   const myMasonReady = gameState.nightActions?.masonsReady?.[user.uid];
   const aliveMasons = players.filter((p) => p.role === ROLE_IDS.MASON && p.isAlive);
   const masonsReadyCount = Object.keys(gameState.nightActions?.masonsReady || {}).length;

@@ -66,7 +66,7 @@ Each player is assigned a role with a unique ability.
 | **Mason**        | Village (Good)  | You know who the other Masons are. You are on the side of the village.                            |
 | **Lycan**        | Village (Good)  | You are a villager, but the Seer sees you as a werewolf.                                          |
 | **Mayor**        | Village (Good)  | Your vote counts twice during the day. This can be revealed publicly.                             |
-| **Tanner**       | Neutral         | You only win if you are voted out.                                                               |
+| **Tanner**       | Neutral         | You only win if you are voted out.                                                                |
 
 ## 🛠️ Setup
 

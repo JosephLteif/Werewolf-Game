@@ -28,13 +28,21 @@ describe('Win Conditions Service', () => {
         case ROLE_IDS.DOCTOR:
           return { id: ROLE_IDS.DOCTOR, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.GOOD }; // Corrected team structure
         case ROLE_IDS.WEREWOLF:
-          return { id: ROLE_IDS.WEREWOLF, team: { id: TEAMS.WEREWOLF }, alignment: ALIGNMENTS.EVIL }; // Corrected team structure
+          return {
+            id: ROLE_IDS.WEREWOLF,
+            team: { id: TEAMS.WEREWOLF },
+            alignment: ALIGNMENTS.EVIL,
+          }; // Corrected team structure
         case ROLE_IDS.VILLAGER:
           return { id: ROLE_IDS.VILLAGER, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.GOOD }; // Corrected team structure
         case ROLE_IDS.CUPID:
           return { id: ROLE_IDS.CUPID, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.NEUTRAL }; // Corrected team structure
         case ROLE_IDS.SORCERER: // Added Sorcerer to mock
-          return { id: ROLE_IDS.SORCERER, team: { id: TEAMS.WEREWOLF }, alignment: ALIGNMENTS.EVIL }; // Corrected team structure
+          return {
+            id: ROLE_IDS.SORCERER,
+            team: { id: TEAMS.WEREWOLF },
+            alignment: ALIGNMENTS.EVIL,
+          }; // Corrected team structure
         default:
           return null;
       }

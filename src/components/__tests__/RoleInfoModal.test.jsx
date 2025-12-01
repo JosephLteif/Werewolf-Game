@@ -75,7 +75,12 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
     ...actual,
     roleRegistry: {
       ...actual.roleRegistry,
-      getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole, mockUnselectableRole]),
+      getAllRoles: vi.fn(() => [
+        mockVillagerRole,
+        mockWerewolfRole,
+        mockDoctorRole,
+        mockUnselectableRole,
+      ]),
       getRole: vi.fn((roleId) => {
         switch (roleId) {
           case ROLE_IDS.VILLAGER:

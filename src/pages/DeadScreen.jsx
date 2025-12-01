@@ -24,10 +24,9 @@ export default function DeadScreen({
     WINNER: { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' }, // Generic winner
   };
 
-  const colors =
-    isGameOver
-      ? winnerColors[winner] || winnerColors.WINNER // Use winner prop, fall back to generic
-      : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
+  const colors = isGameOver
+    ? winnerColors[winner] || winnerColors.WINNER // Use winner prop, fall back to generic
+    : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
 
   // Filter winners
   const winningPlayers = players
@@ -104,7 +103,11 @@ export default function DeadScreen({
                       </div>
                       <span className="font-bold text-sm">{p.name}</span>
                       <span className="text-xs text-slate-500">
-                        ({(p.role === ROLE_IDS.TANNER && winners.includes(p.id)) ? 'Tanner' : roleRegistry.getRole(p.role)?.name || p.role})
+                        (
+                        {p.role === ROLE_IDS.TANNER && winners.includes(p.id)
+                          ? 'Tanner'
+                          : roleRegistry.getRole(p.role)?.name || p.role}
+                        )
                       </span>
                     </div>
                   ))}

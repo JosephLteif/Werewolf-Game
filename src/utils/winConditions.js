@@ -97,7 +97,7 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
   }
 
   const playerRole = roleRegistry.getRole(player.role);
-  const teamId = player.alignment || (playerRole?.team?.id);
+  const teamId = player.alignment || playerRole?.team?.id;
 
   if (winners.includes('VILLAGERS') && teamId === Teams.VILLAGER.id) {
     isWinner = true;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { assignRolesAndStartGame, markPlayerReady } from '../services/roles';
 import { ROLE_IDS, PHASES } from '../constants';
-import { roleRegistry } from '../roles/RoleRegistry';
+
 import { Role } from '../roles/Role'; // Import the base Role class
 import { Cupid } from '../roles/implementations/Cupid'; // Import Cupid role
 import { Doctor } from '../roles/implementations/Doctor'; // Import Doctor role
@@ -369,7 +369,9 @@ describe('Role Assignment and Readiness', () => {
       // Clean up any custom roles from previous runs
       if (originalRoleRegistry.getRole('custom')) {
         originalRoleRegistry.roles.delete('custom');
-        originalRoleRegistry.roleInstances = originalRoleRegistry.roleInstances.filter(r => r.id !== 'custom');
+        originalRoleRegistry.roleInstances = originalRoleRegistry.roleInstances.filter(
+          (r) => r.id !== 'custom'
+        );
       }
     });
 
@@ -390,7 +392,6 @@ describe('Role Assignment and Readiness', () => {
     });
 
     it('register method adds a new role to the registry', () => {
-      const initialSize = originalRoleRegistry.getAllRoles().length;
       const newCustomRole = new CustomRole();
       originalRoleRegistry.register(newCustomRole.id, newCustomRole);
       expect(originalRoleRegistry.getRole('custom')).toBe(newCustomRole);
