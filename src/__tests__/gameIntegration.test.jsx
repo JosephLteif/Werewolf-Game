@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TEAMS, CUPID_FATES, PHASES } from '../constants';
+import { TEAMS, CUPID_FATES, PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { roleRegistry } from '../roles/RoleRegistry.js';
-// The following imports are not used in this test file:
-// import { resolveNight, startNight, advanceNight } from '../services/nightActions';
-// import { resolveDayVoting, castPlayerVote, lockPlayerVote } from '../services/voting';
+import { resolveNight } from '../services/nightActions';
+import { resolveDayVoting } from '../services/voting';
 
 // Helper function to create a player
 const createPlayer = (id, roleId, isAlive = true, alignment = null, extraProps = {}) => ({
@@ -63,11 +62,8 @@ describe('Game Integration Tests - Win Conditions', () => {
     // Mock implementation for updateGame
     MockUpdateGame = vi.fn(async (updates) => {
       console.log('mockUpdateGame: received updates', updates);
-      if (updates.phase) {
-        gameState.phase = updates.phase;
-        console.log('mockUpdateGame: forcefully set phase to', gameState.phase);
-      }
-      // Acknowledge other updates, but focus on phase for this debug
+
+      // Handle players specially: convert array to map for internal storage
       if (updates.players !== undefined) {
         if (Array.isArray(updates.players)) {
           const playersMap = {};
@@ -77,18 +73,14 @@ describe('Game Integration Tests - Win Conditions', () => {
           gameState.players = updates.players;
         }
       }
-      if (updates.winners !== undefined) {
-        gameState.winners = updates.winners;
-      }
-      if (updates.dayLog !== undefined) {
-        gameState.dayLog = updates.dayLog;
-      }
-      if (updates.votes !== undefined) {
-        gameState.votes = updates.votes;
-      }
-      if (updates.lockedVotes !== undefined) {
-        gameState.lockedVotes = updates.lockedVotes;
-      }
+
+      // Apply all other updates directly
+      Object.keys(updates).forEach(key => {
+        if (key !== 'players') {
+          gameState[key] = updates[key];
+        }
+      });
+
       // Ensure CurrentPlayers is always up-to-date for convenience in the test
       CurrentPlayers = Object.values(gameState.players);
       return gameState;
@@ -391,6 +383,131 @@ describe('Game Integration Tests - Win Conditions', () => {
       winner: 'LOVERS',
       winners: ['LOVERS', 'CUPID'],
       isGameOver: true,
+    });
+  });
+  describe('Advanced Game Scenarios', () => {
+    it('Scenario: Consensus - All wolves vote for the same target', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
+      const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+      const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
+      const villager3 = createPlayer('v3', ROLE_IDS.VILLAGER);
+      const villager4 = createPlayer('v4', ROLE_IDS.VILLAGER);
+      const villager5 = createPlayer('v5', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState([wolf1, wolf2, villager1, villager2, villager3, villager4, villager5], { wolfCount: 2 }, PHASES.NIGHT_WEREWOLF);
+      gameState.nightActions.werewolfVotes = {
+        [wolf1.id]: villager1.id,
+        [wolf2.id]: villager1.id,
+      };
+      gameState.update = MockUpdateGame;
+
+      await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      const updatedVillager = gameState.players[villager1.id];
+      expect(updatedVillager.isAlive).toBe(false);
+      expect(gameState.dayLog).toContain('Player 1 died');
+    });
+
+    it('Scenario: Split Vote - Wolves vote for different targets (Random resolution)', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
+      const villagerA = createPlayer('v1', ROLE_IDS.VILLAGER);
+      const villagerB = createPlayer('v2', ROLE_IDS.VILLAGER);
+      const villagerC = createPlayer('v3', ROLE_IDS.VILLAGER);
+      const villagerD = createPlayer('v4', ROLE_IDS.VILLAGER);
+      const villagerE = createPlayer('v5', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState(
+        [wolf1, wolf2, villagerA, villagerB, villagerC, villagerD, villagerE],
+        { wolfCount: 2 },
+        PHASES.NIGHT_WEREWOLF
+      );
+      gameState.nightActions.werewolfVotes = {
+        [wolf1.id]: villagerA.id,
+        [wolf2.id]: villagerB.id,
+      };
+      gameState.update = MockUpdateGame;
+
+      // Mock Math.random to favor the first target (Villager A)
+      vi.spyOn(Math, 'random').mockReturnValue(0.2);
+
+      await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      const updatedVillagerA = gameState.players[villagerA.id];
+      const updatedVillagerB = gameState.players[villagerB.id];
+
+      // One should be dead, the other alive. Based on mock, A should die.
+      expect(updatedVillagerA.isAlive).toBe(false);
+      expect(updatedVillagerB.isAlive).toBe(true);
+      expect(gameState.dayLog).toContain('died'); // Either Player 1 or Player 2 died
+    });
+
+    it('Scenario: Tanner Win Strategy - END_GAME', async () => {
+      const tanner = createPlayer('t1', ROLE_IDS.TANNER);
+      const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const villager = createPlayer('v1', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState(
+        [tanner, wolf, villager],
+        {
+          wolfCount: 1,
+          tannerWinStrategy: TANNER_WIN_STRATEGIES.END_GAME,
+        },
+        PHASES.DAY_VOTING
+      );
+      gameState.votes = {
+        [wolf.id]: tanner.id,
+        [villager.id]: tanner.id,
+        [tanner.id]: wolf.id,
+      };
+      gameState.lockedVotes = [wolf.id, villager.id, tanner.id];
+      gameState.update = MockUpdateGame;
+
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      expect(gameState.phase).toBe(PHASES.GAME_OVER);
+      expect(gameState.winner).toBe('TANNER');
+      expect(gameState.winners).toContain(tanner.id);
+    });
+
+    it('Scenario: Tanner Win Strategy - CONTINUE_GAME', async () => {
+      const tanner = createPlayer('t1', ROLE_IDS.TANNER);
+      const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+      const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState(
+        [tanner, wolf, villager1, villager2],
+        {
+          wolfCount: 1,
+          tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,
+        },
+        PHASES.DAY_VOTING
+      );
+      gameState.votes = {
+        [wolf.id]: tanner.id,
+        [villager1.id]: tanner.id,
+        [villager2.id]: tanner.id,
+        [tanner.id]: wolf.id,
+      };
+      gameState.lockedVotes = [wolf.id, villager1.id, villager2.id, tanner.id];
+      gameState.update = MockUpdateGame;
+
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      // Game should NOT be over (still 1 wolf vs 2 villagers)
+      expect(gameState.phase).not.toBe(PHASES.GAME_OVER);
+      expect(gameState.phase).toBe(PHASES.NIGHT_INTRO);
+      // Tanner should be in winners list
+      expect(gameState.winners).toContain(tanner.id);
+      // Tanner should be dead
+      const updatedTanner = gameState.players[tanner.id];
+      expect(updatedTanner.isAlive).toBe(false);
     });
   });
 });
