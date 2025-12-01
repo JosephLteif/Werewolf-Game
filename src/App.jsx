@@ -27,6 +27,7 @@ import TeammateList from './components/TeammateList';
 
 import AuthScreen from './pages/AuthScreen';
 import { History } from 'lucide-react'; // Import History icon
+import { motion, AnimatePresence } from 'framer-motion'; // Added Framer Motion imports
 
 export default function App() {
 
@@ -191,497 +192,173 @@ export default function App() {
     </>
   );
 
-  
 
-  
 
-    if (!user || !joined) {
+
+
+  if (!user || !joined) {
+
+    currentScreen = (
+
+      <AuthScreen
+
+        playerName={playerName}
+
+        setPlayerName={setPlayerName}
+
+        roomCode={roomCode}
+
+        setRoomCode={setRoomCode}
+
+        joinRoom={joinRoom}
+
+        createRoom={createRoom}
+
+        user={user}
+
+        errorMsg={errorMsg}
+
+      />
+
+    );
+
+  } else if (!gameState) {
+
+    currentScreen = <div>Loading game state...</div>;
+
+  } else {
+
+    myPlayer = players.find((p) => p.id === user?.uid);
+
+    amAlive = myPlayer?.isAlive;
+
+
+
+    isMyTurn =
+
+      (gameState.phase === PHASES.NIGHT_CUPID && myPlayer?.role === ROLE_IDS.CUPID) ||
+
+      (gameState.phase === PHASES.NIGHT_WEREWOLF && myPlayer?.role === ROLE_IDS.WEREWOLF) ||
+
+      (gameState.phase === PHASES.NIGHT_MINION && myPlayer?.role === ROLE_IDS.MINION) ||
+
+      (gameState.phase === PHASES.NIGHT_SORCERER && myPlayer?.role === ROLE_IDS.SORCERER) ||
+
+      (gameState.phase === PHASES.NIGHT_DOCTOR && myPlayer?.role === ROLE_IDS.DOCTOR) ||
+
+      (gameState.phase === PHASES.NIGHT_SEER && myPlayer?.role === ROLE_IDS.SEER) ||
+
+      (gameState.phase === PHASES.NIGHT_MASON && myPlayer?.role === ROLE_IDS.MASON) ||
+
+      (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer?.role === ROLE_IDS.VIGILANTE) ||
+
+      (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer?.role === ROLE_IDS.DOPPELGANGER);
+
+
+
+    if (gameState.phase === PHASES.LOBBY) {
 
       currentScreen = (
 
-        <AuthScreen
+        <LobbyScreen
 
-          playerName={playerName}
+          gameState={gameState}
 
-          setPlayerName={setPlayerName}
+          isHost={isHost}
 
-          roomCode={roomCode}
+          players={players}
 
-          setRoomCode={setRoomCode}
+          startGame={startGame}
 
-          joinRoom={joinRoom}
+          showRoleInfo={showRoleInfo}
 
-          createRoom={createRoom}
+          setShowRoleInfo={setShowRoleInfo}
 
           user={user}
 
-          errorMsg={errorMsg}
+          leaveRoom={leaveRoom}
 
         />
 
       );
 
-    } else if (!gameState) {
+    } else if (gameState.phase === PHASES.ROLE_REVEAL) {
 
-      currentScreen = <div>Loading game state...</div>;
+      currentScreen = wrapGameContent(
 
-    } else {
+        <RoleRevealScreen
 
-      myPlayer = players.find((p) => p.id === user?.uid);
+          myPlayer={myPlayer}
 
-      amAlive = myPlayer?.isAlive;
+          markReady={markReady}
 
-  
+          players={players}
 
-      isMyTurn =
+          roleRevealParticles={roleRevealParticles}
 
-        (gameState.phase === PHASES.NIGHT_CUPID && myPlayer?.role === ROLE_IDS.CUPID) ||
+        />
 
-        (gameState.phase === PHASES.NIGHT_WEREWOLF && myPlayer?.role === ROLE_IDS.WEREWOLF) ||
+      );
 
-        (gameState.phase === PHASES.NIGHT_MINION && myPlayer?.role === ROLE_IDS.MINION) ||
+    } else if (
 
-        (gameState.phase === PHASES.NIGHT_SORCERER && myPlayer?.role === ROLE_IDS.SORCERER) ||
+      [
 
-        (gameState.phase === PHASES.NIGHT_DOCTOR && myPlayer?.role === ROLE_IDS.DOCTOR) ||
+        PHASES.NIGHT_INTRO,
 
-        (gameState.phase === PHASES.NIGHT_SEER && myPlayer?.role === ROLE_IDS.SEER) ||
+        PHASES.NIGHT_CUPID,
 
-        (gameState.phase === PHASES.NIGHT_MASON && myPlayer?.role === ROLE_IDS.MASON) ||
+        PHASES.NIGHT_WEREWOLF,
 
-        (gameState.phase === PHASES.NIGHT_VIGILANTE && myPlayer?.role === ROLE_IDS.VIGILANTE) ||
+        PHASES.NIGHT_MINION,
 
-        (gameState.phase === PHASES.NIGHT_DOPPELGANGER && myPlayer?.role === ROLE_IDS.DOPPELGANGER);
+        PHASES.NIGHT_SORCERER,
 
-  
+        PHASES.NIGHT_DOCTOR,
 
-      if (gameState.phase === PHASES.LOBBY) {
+        PHASES.NIGHT_SEER,
 
-        currentScreen = (
+        PHASES.NIGHT_MASON,
 
-          <LobbyScreen
+        PHASES.NIGHT_VIGILANTE,
 
-            gameState={gameState}
+        PHASES.NIGHT_DOPPELGANGER,
+
+      ].includes(gameState.phase)
+
+    ) {
+
+      if (gameState.phase === PHASES.NIGHT_INTRO) {
+
+        currentScreen = wrapGameContent(
+
+          <NightIntroScreen
 
             isHost={isHost}
 
-            players={players}
+            startNight={startNightPhase}
 
-            startGame={startGame}
-
-            showRoleInfo={showRoleInfo}
-
-            setShowRoleInfo={setShowRoleInfo}
-
-            user={user}
-
-            leaveRoom={leaveRoom}
+            nightIntroStars={nightIntroStars}
 
           />
 
         );
 
-      } else if (gameState.phase === PHASES.ROLE_REVEAL) {
-
-        currentScreen = wrapGameContent(
-
-          <RoleRevealScreen
-
-            myPlayer={myPlayer}
-
-            markReady={markReady}
-
-            players={players}
-
-            roleRevealParticles={roleRevealParticles}
-
-          />
-
-        );
-
-      } else if (
-
-        [
-
-          PHASES.NIGHT_INTRO,
-
-          PHASES.NIGHT_CUPID,
-
-          PHASES.NIGHT_WEREWOLF,
-
-          PHASES.NIGHT_MINION,
-
-          PHASES.NIGHT_SORCERER,
-
-          PHASES.NIGHT_DOCTOR,
-
-          PHASES.NIGHT_SEER,
-
-          PHASES.NIGHT_MASON,
-
-          PHASES.NIGHT_VIGILANTE,
-
-          PHASES.NIGHT_DOPPELGANGER,
-
-        ].includes(gameState.phase)
-
-      ) {
-
-        if (gameState.phase === PHASES.NIGHT_INTRO) {
-
-          currentScreen = wrapGameContent(
-
-            <NightIntroScreen
-
-              isHost={isHost}
-
-              startNight={startNightPhase}
-
-              nightIntroStars={nightIntroStars}
-
-            />
-
-          );
-
-        } else if (!amAlive) {
-
-          currentScreen = wrapGameContent(
-
-            <DeadScreen
-
-              winner={null}
-
-              winners={gameState?.winners || []}
-
-              isGameOver={false}
-
-              onReset={() => {}}
-
-              isHost={false}
-
-              dayLog={gameState.dayLog}
-
-              players={players}
-
-              lovers={gameState.lovers}
-
-              gameSettings={gameState.settings}
-
-            />
-
-          );
-
-        } else if (!isMyTurn) {
-
-          currentScreen = wrapGameContent(<NightWaitingScreen />);
-
-        } else if (gameState.phase === PHASES.NIGHT_CUPID) {
-
-          currentScreen = wrapGameContent(
-
-            <NightActionScreen
-
-              players={players.filter(
-
-                (p) => p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid)
-
-              )}
-
-              onAction={(ids) => advanceNightPhase('cupidLinks', ids)}
-
-              myPlayer={myPlayer}
-
-              multiSelect={true}
-
-              maxSelect={2}
-
-              phaseEndTime={gameState.phaseEndTime}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_DOPPELGANGER) {
-
-          currentScreen = wrapGameContent(
-
-            <NightActionScreen
-
-              title="Doppelgänger"
-
-              subtitle="Choose a player to copy if they die."
-
-              color="slate"
-
-              players={players.filter((p) => p.isAlive && p.id !== user.uid)}
-
-              onAction={(id) => advanceNightPhase('doppelgangerCopy', id)}
-
-              myPlayer={myPlayer}
-
-              phaseEndTime={gameState.phaseEndTime}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_WEREWOLF) {
-
-          currentScreen = wrapGameContent(
-
-            <WerewolfNightActionScreen
-
-              gameState={gameState}
-
-              players={players}
-
-              user={user}
-
-              myPlayer={myPlayer}
-
-              advanceNight={advanceNightPhase}
-
-              phaseEndTime={gameState.phaseEndTime}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_MINION) {
-
-          currentScreen = wrapGameContent(
-
-            <MinionNightActionScreen players={players} advanceNightPhase={advanceNightPhase} />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_SORCERER) {
-
-          currentScreen = wrapGameContent(
-
-            <SorcererNightActionScreen
-
-              players={players}
-
-              user={user}
-
-              advanceNightPhase={advanceNightPhase}
-
-              gameState={gameState}
-
-              seerMessage={seerMessage}
-
-              setSeerMessage={setSeerMessage}
-
-              sorcererTarget={sorcererTarget}
-
-              setSorcererTarget={setSorcererTarget}
-
-              now={now}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_DOCTOR) {
-
-          currentScreen = wrapGameContent(
-
-            <NightActionScreen
-
-              title="Doctor"
-
-              subtitle="Protect someone."
-
-              color="blue"
-
-              players={players.filter((p) => p.isAlive)}
-
-              onAction={(id) => advanceNightPhase('doctorProtect', id)}
-
-              myPlayer={myPlayer}
-
-              canSkip={true}
-
-              phaseEndTime={gameState.phaseEndTime}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_SEER) {
-
-          currentScreen = wrapGameContent(
-
-            <SeerNightActionScreen
-
-              players={players}
-
-              user={user}
-
-              advanceNightPhase={advanceNightPhase}
-
-              gameState={gameState}
-
-              seerMessage={seerMessage}
-
-              setSeerMessage={setSeerMessage}
-
-              now={now}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_MASON) {
-
-          currentScreen = wrapGameContent(
-
-            <MasonNightActionScreen
-
-              players={players}
-
-              user={user}
-
-              gameState={gameState}
-
-              advanceNightPhase={advanceNightPhase}
-
-            />
-
-          );
-
-        } else if (gameState.phase === PHASES.NIGHT_VIGILANTE) {
-
-          const ammo = gameState.vigilanteAmmo[user.uid] || 0;
-
-          currentScreen = wrapGameContent(
-
-            <NightActionScreen
-
-              title={`Vigilante (${ammo} ammo)`}
-
-              subtitle={ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo."}
-
-              color="yellow"
-
-              players={players.filter((p) => p.isAlive)}
-
-              onAction={(id) => {
-
-                if (ammo > 0 && id) {
-
-                  const newVigilanteAmmo = { ...gameState.vigilanteAmmo, [user.uid]: 0 };
-
-                  advanceNightPhase('vigilanteTarget', id, newVigilanteAmmo);
-
-                } else {
-
-                  advanceNightPhase('vigilanteTarget', null);
-
-                }
-
-              }}
-
-              myPlayer={myPlayer}
-
-              canSkip={true}
-
-              phaseEndTime={gameState.phaseEndTime}
-
-            />
-
-          );
-
-        }
-
-      } else if (gameState.phase === PHASES.HUNTER_ACTION) {
-
-        if (
-
-          myPlayer?.role === ROLE_IDS.HUNTER &&
-
-          !myPlayer?.isAlive &&
-
-          !gameState.dayLog.some(logEntry => logEntry.includes('shot'))
-
-        ) {
-
-          currentScreen = wrapGameContent(
-
-            <HunterActionScreen players={players} handleHunterShotAction={handleHunterShotAction} />
-
-          );
-
-        } else {
-
-          currentScreen = wrapGameContent(<WaitingForHunterScreen />);
-
-        }
-
-      } else if (gameState.phase === PHASES.DAY_REVEAL) {
-
-        currentScreen = wrapGameContent(<DayRevealScreen gameState={gameState} isHost={isHost} now={now} />);
-
-      } else if (gameState.phase === PHASES.DAY_VOTING) {
-
-        currentScreen = wrapGameContent(
-
-          <DayVoteScreen
-
-            gameState={gameState}
-
-            players={players}
-
-            amAlive={amAlive}
-
-            castVote={castVote}
-
-            lockVote={lockVote}
-
-            now={now}
-
-            user={user}
-
-          />
-
-        );
-
-      } else if (gameState.phase === PHASES.GAME_OVER) {
+      } else if (!amAlive) {
 
         currentScreen = wrapGameContent(
 
           <DeadScreen
 
-            winner={gameState.winner}
+            winner={null}
 
-            winners={gameState.winners}
+            winners={gameState?.winners || []}
 
-            isGameOver={gameState.phase === PHASES.GAME_OVER}
+            isGameOver={false}
 
-            onReset={() =>
+            onReset={() => { }}
 
-              gameState.update({
-
-                phase: PHASES.LOBBY,
-
-                players: gameState.players,
-
-                dayLog: [],
-
-                nightActions: {},
-
-                votes: {},
-
-                lockedVotes: [],
-
-                winners: [],
-
-              })
-
-            }
-
-            isHost={isHost}
+            isHost={false}
 
             dayLog={gameState.dayLog}
 
@@ -695,30 +372,496 @@ export default function App() {
 
         );
 
-      } else {
+      } else if (!isMyTurn) {
 
-        currentScreen = <div>Loading...</div>;
+        currentScreen = wrapGameContent(<NightWaitingScreen />);
+
+      } else if (gameState.phase === PHASES.NIGHT_CUPID) {
+
+        currentScreen = wrapGameContent(
+
+          <NightActionScreen
+
+            players={players.filter(
+
+              (p) => p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid)
+
+            )}
+
+            onAction={(ids) => advanceNightPhase('cupidLinks', ids)}
+
+            myPlayer={myPlayer}
+
+            multiSelect={true}
+
+            maxSelect={2}
+
+            phaseEndTime={gameState.phaseEndTime}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_DOPPELGANGER) {
+
+        currentScreen = wrapGameContent(
+
+          <NightActionScreen
+
+            title="Doppelgänger"
+
+            subtitle="Choose a player to copy if they die."
+
+            color="slate"
+
+            players={players.filter((p) => p.isAlive && p.id !== user.uid)}
+
+            onAction={(id) => advanceNightPhase('doppelgangerCopy', id)}
+
+            myPlayer={myPlayer}
+
+            phaseEndTime={gameState.phaseEndTime}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_WEREWOLF) {
+
+        currentScreen = wrapGameContent(
+
+          <WerewolfNightActionScreen
+
+            gameState={gameState}
+
+            players={players}
+
+            user={user}
+
+            myPlayer={myPlayer}
+
+            advanceNight={advanceNightPhase}
+
+            phaseEndTime={gameState.phaseEndTime}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_MINION) {
+
+        currentScreen = wrapGameContent(
+
+          <MinionNightActionScreen players={players} advanceNightPhase={advanceNightPhase} />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_SORCERER) {
+
+        currentScreen = wrapGameContent(
+
+          <SorcererNightActionScreen
+
+            players={players}
+
+            user={user}
+
+            advanceNightPhase={advanceNightPhase}
+
+            gameState={gameState}
+
+            seerMessage={seerMessage}
+
+            setSeerMessage={setSeerMessage}
+
+            sorcererTarget={sorcererTarget}
+
+            setSorcererTarget={setSorcererTarget}
+
+            now={now}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_DOCTOR) {
+
+        currentScreen = wrapGameContent(
+
+          <NightActionScreen
+
+            title="Doctor"
+
+            subtitle="Protect someone."
+
+            color="blue"
+
+            players={players.filter((p) => p.isAlive)}
+
+            onAction={(id) => advanceNightPhase('doctorProtect', id)}
+
+            myPlayer={myPlayer}
+
+            canSkip={true}
+
+            phaseEndTime={gameState.phaseEndTime}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_SEER) {
+
+        currentScreen = wrapGameContent(
+
+          <SeerNightActionScreen
+
+            players={players}
+
+            user={user}
+
+            advanceNightPhase={advanceNightPhase}
+
+            gameState={gameState}
+
+            seerMessage={seerMessage}
+
+            setSeerMessage={setSeerMessage}
+
+            now={now}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_MASON) {
+
+        currentScreen = wrapGameContent(
+
+          <MasonNightActionScreen
+
+            players={players}
+
+            user={user}
+
+            gameState={gameState}
+
+            advanceNightPhase={advanceNightPhase}
+
+          />
+
+        );
+
+      } else if (gameState.phase === PHASES.NIGHT_VIGILANTE) {
+
+        const ammo = gameState.vigilanteAmmo[user.uid] || 0;
+
+        currentScreen = wrapGameContent(
+
+          <NightActionScreen
+
+            title={`Vigilante (${ammo} ammo)`}
+
+            subtitle={ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo."}
+
+            color="yellow"
+
+            players={players.filter((p) => p.isAlive)}
+
+            onAction={(id) => {
+
+              if (ammo > 0 && id) {
+
+                const newVigilanteAmmo = { ...gameState.vigilanteAmmo, [user.uid]: 0 };
+
+                advanceNightPhase('vigilanteTarget', id, newVigilanteAmmo);
+
+              } else {
+
+                advanceNightPhase('vigilanteTarget', null);
+
+              }
+
+            }}
+
+            myPlayer={myPlayer}
+
+            canSkip={true}
+
+            phaseEndTime={gameState.phaseEndTime}
+
+          />
+
+        );
 
       }
 
+    } else if (gameState.phase === PHASES.HUNTER_ACTION) {
+
+      if (
+
+        myPlayer?.role === ROLE_IDS.HUNTER &&
+
+        !myPlayer?.isAlive &&
+
+        !gameState.dayLog.some(logEntry => logEntry.includes('shot'))
+
+      ) {
+
+        currentScreen = wrapGameContent(
+
+          <HunterActionScreen players={players} handleHunterShotAction={handleHunterShotAction} />
+
+        );
+
+      } else {
+
+        currentScreen = wrapGameContent(<WaitingForHunterScreen />);
+
+      }
+
+    } else if (gameState.phase === PHASES.DAY_REVEAL) {
+
+      currentScreen = wrapGameContent(<DayRevealScreen gameState={gameState} isHost={isHost} now={now} />);
+
+    } else if (gameState.phase === PHASES.DAY_VOTING) {
+
+      currentScreen = wrapGameContent(
+
+        <DayVoteScreen
+
+          gameState={gameState}
+
+          players={players}
+
+          amAlive={amAlive}
+
+          castVote={castVote}
+
+          lockVote={lockVote}
+
+          now={now}
+
+          user={user}
+
+        />
+
+      );
+
+    } else if (gameState.phase === PHASES.GAME_OVER) {
+
+      currentScreen = wrapGameContent(
+
+        <DeadScreen
+
+          winner={gameState.winner}
+
+          winners={gameState.winners}
+
+          isGameOver={gameState.phase === PHASES.GAME_OVER}
+
+          onReset={() =>
+
+            gameState.update({
+
+              phase: PHASES.LOBBY,
+
+              players: gameState.players,
+
+              dayLog: [],
+
+              nightActions: {},
+
+              votes: {},
+
+              lockedVotes: [],
+
+              winners: [],
+
+            })
+
+          }
+
+          isHost={isHost}
+
+          dayLog={gameState.dayLog}
+
+          players={players}
+
+          lovers={gameState.lovers}
+
+          gameSettings={gameState.settings}
+
+        />
+
+      );
+
+    } else {
+
+      currentScreen = <div>Loading...</div>;
+
     }
 
-  
-
-    return (
-
-      <>
-
-        {currentScreen}
-
-        {showHistoryModal && gameState && (
-
-          <GameHistoryModal dayLog={gameState.dayLog} onClose={() => setShowHistoryModal(false)} />
-
-        )}
-
-      </>
-
-    );
-
   }
+
+
+
+        const transitionVariants = useMemo(() => {
+
+
+
+          const variants = [
+
+
+
+            // Slide from bottom
+
+
+
+            { initial: { opacity: 0, y: 50 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -50 } },
+
+
+
+            // Slide from top
+
+
+
+            { initial: { opacity: 0, y: -50 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 50 } },
+
+
+
+            // Slide from left
+
+
+
+            { initial: { opacity: 0, x: -50 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 50 } },
+
+
+
+            // Slide from right
+
+
+
+            { initial: { opacity: 0, x: 50 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -50 } },
+
+
+
+            // Simple fade (no slide)
+
+
+
+            { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
+
+
+
+          ];
+
+
+
+          // Use a simple hash or cycle based on the phase to pick a variant
+
+
+
+          const phaseNames = Object.keys(PHASES);
+
+
+
+          const phaseIndex = phaseNames.indexOf(gameState?.phase);
+
+
+
+          // Use modulo to cycle through variants, ensuring a different variant for each distinct phase,
+
+
+
+          // but the same variant for the same phase if it re-occurs (e.g., DayVote -> NightIntro -> DayVote)
+
+
+
+          const variantIndex = phaseIndex !== -1 ? phaseIndex % variants.length : 0;
+
+
+
+          return variants[variantIndex];
+
+
+
+        }, [gameState?.phase]);
+
+
+
+      
+
+
+
+          return (
+
+
+
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+
+
+
+              <AnimatePresence mode="sync">
+
+
+
+                <motion.div
+
+
+
+                  key={gameState?.phase || 'auth'}
+
+
+
+                  {...transitionVariants} // Apply the selected variants
+
+
+
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+
+
+
+                  className="w-full h-full"
+
+
+
+                >
+
+
+
+                  {currentScreen}
+
+
+
+                </motion.div>
+
+
+
+              </AnimatePresence>
+
+
+
+      
+
+
+
+              {showHistoryModal && gameState && (
+
+
+
+                <GameHistoryModal dayLog={gameState.dayLog} onClose={() => setShowHistoryModal(false)} />
+
+
+
+              )}
+
+
+
+            </div>
+
+
+
+          );
+
+}
