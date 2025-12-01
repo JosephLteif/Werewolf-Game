@@ -6,6 +6,7 @@ function defaultSettings() {
     actionWaitTime: 60,
     votingWaitTime: 240,
     wolfCount: 1,
+    showActiveRolesPanel: true,
     cupidCanChooseSelf: false,
     cupidFateOption: 'third_wheel',
     tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,

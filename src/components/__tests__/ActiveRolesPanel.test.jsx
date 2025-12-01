@@ -9,63 +9,72 @@ vi.mock('lucide-react', () => ({
   ChevronDown: vi.fn(() => <svg data-testid="chevron-down-icon" />),
   Skull: vi.fn(() => <svg data-testid="skull-icon" />),
   Heart: vi.fn(() => <svg data-testid="heart-icon" />),
-  Shield: vi.fn(() => <svg data-testid="shield-icon" />), // Added Shield icon
-  Crosshair: vi.fn(() => <svg data-testid="crosshair-icon" />), // Corrected to Crosshair
-  Fingerprint: vi.fn(() => <svg data-testid="fingerprint-icon" />), // Added Fingerprint
+  Shield: vi.fn(() => <svg data-testid="shield-icon" />),
+  Crosshair: vi.fn(() => <svg data-testid="crosshair-icon" />),
+  Fingerprint: vi.fn(() => <svg data-testid="fingerprint-icon" />),
   Hammer: vi.fn(() => <svg data-testid="hammer-icon" />),
-  Crown: vi.fn(() => <svg data-testid="crown-icon" />), // Added Crown
-  Ghost: vi.fn(() => <svg data-testid="ghost-icon" />), // Added Ghost
+  Crown: vi.fn(() => <svg data-testid="crown-icon" />),
+  Ghost: vi.fn(() => <svg data-testid="ghost-icon" />),
   Eye: vi.fn(() => <svg data-testid="eye-icon" />),
   Sparkles: vi.fn(() => <svg data-testid="sparkles-icon" />),
-  UserX: vi.fn(() => <svg data-testid="userx-icon" />), // Added UserX
-  Zap: vi.fn(() => <svg data-testid="zap-icon" />), // Added Zap
+  UserX: vi.fn(() => <svg data-testid="userx-icon" />),
+  Zap: vi.fn(() => <svg data-testid="zap-icon" />),
+  Info: vi.fn(() => <svg data-testid="info-icon" />),
 }));
 
-// Define mock role objects
-const mockVillagerRole = {
-  id: ROLE_IDS.VILLAGER,
-  name: 'Villager',
-  description: 'A simple villager.',
-  team: 'villagers',
-  alignment: 'good',
-  icon: () => <svg data-testid="villager-icon" />,
-};
+// Mock the module that exports the singleton roleRegistry
+vi.mock('../roles/RoleRegistry', () => {
+  // Define mock role objects with necessary properties, including a mock icon
+  const MockVillagerIcon = vi.fn(() => <svg data-testid="villager-icon" />);
+  const MockWerewolfIcon = vi.fn(() => <svg data-testid="werewolf-icon" />);
+  const MockDoctorIcon = vi.fn(() => <svg data-testid="doctor-icon" />);
+  const MockMasonIcon = vi.fn(() => <svg data-testid="mason-icon" />);
 
-const mockWerewolfRole = {
-  id: ROLE_IDS.WEREWOLF,
-  name: 'Werewolf',
-  description: 'A hungry wolf.',
-  team: 'werewolves',
-  alignment: 'evil',
-  icon: () => <svg data-testid="werewolf-icon" />,
-};
+  const mockVillagerRole = {
+    id: ROLE_IDS.VILLAGER,
+    name: 'Villager',
+    description: 'A simple villager.',
+    team: 'villagers',
+    alignment: 'good',
+    icon: MockVillagerIcon,
+  };
 
-const mockDoctorRole = {
-  id: ROLE_IDS.DOCTOR,
-  name: 'Doctor',
-  description: 'Heals people.',
-  team: 'villagers',
-  alignment: 'good',
-  icon: () => <svg data-testid="doctor-icon" />,
-};
+  const mockWerewolfRole = {
+    id: ROLE_IDS.WEREWOLF,
+    name: 'Werewolf',
+    description: 'Hunts at night.',
+    team: 'werewolves',
+    alignment: 'evil',
+    icon: MockWerewolfIcon,
+  };
 
-const mockMasonRole = {
-  id: ROLE_IDS.MASON,
-  name: 'Mason',
-  description: 'A builder.',
-  team: 'villagers',
-  alignment: 'good',
-  icon: () => <svg data-testid="mason-icon" />,
-};
+  const mockDoctorRole = {
+    id: ROLE_IDS.DOCTOR,
+    name: 'Doctor',
+    description: 'Can save one person each night.',
+    team: 'villagers',
+    alignment: 'good',
+    icon: MockDoctorIcon,
+  };
 
-// Mock the roleRegistry using importOriginal for partial mocking
-vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
-  const actual = await importOriginal(); // This imports the actual module
+  const mockMasonRole = {
+    id: ROLE_IDS.MASON,
+    name: 'Mason',
+    description: 'Knows other Masons.',
+    team: 'villagers',
+    alignment: 'good',
+    icon: MockMasonIcon,
+  };
+
   const mockRoleRegistry = {
-    ...actual.roleRegistry, // Copy existing properties from the actual roleRegistry
-    getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole, mockMasonRole]),
-    getRole: vi.fn((roleId) => {
-      switch (roleId) {
+    getAllRoles: vi.fn(() => [
+      mockVillagerRole,
+      mockWerewolfRole,
+      mockDoctorRole,
+      mockMasonRole,
+    ]),
+    getRole: vi.fn((id) => {
+      switch (id) {
         case ROLE_IDS.VILLAGER:
           return mockVillagerRole;
         case ROLE_IDS.WEREWOLF:
@@ -79,9 +88,9 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
       }
     }),
   };
+
   return {
-    ...actual, // Export all original exports
-    roleRegistry: mockRoleRegistry, // Override the roleRegistry export with our mock
+    roleRegistry: mockRoleRegistry,
   };
 });
 

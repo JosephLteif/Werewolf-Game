@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { ROLE_IDS } from '../constants/roleIds';
-import { Users, ChevronDown } from 'lucide-react';
+import { Users, ChevronDown, Info } from 'lucide-react';
+import { RoleInfoModal } from './RoleInfoModal';
 import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function ActiveRolesPanel({ activeRoles, wolfCount, playerCount }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRoleId, setSelectedRoleId] = useState(null);
 
   if (!activeRoles) return null;
 
@@ -41,36 +44,51 @@ export default function ActiveRolesPanel({ activeRoles, wolfCount, playerCount }
   if (rolesInSession.length === 0) return null;
 
   return (
-    <div
-      className="fixed bottom-4 left-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 rounded-lg z-40 shadow-lg w-64"
-      data-testid="active-roles-panel"
-    >
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 text-left"
+    <>
+      <div
+        className="fixed bottom-4 left-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 rounded-lg z-40 shadow-lg w-64"
+        data-testid="active-roles-panel"
       >
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-indigo-400" />
-          <span className="text-sm font-bold text-indigo-200">Roles in Session</span>
-        </div>
-        <ChevronDown
-          className={`w-5 h-5 text-indigo-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {isOpen && (
-        <div className="p-3 border-t border-indigo-500/30">
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {rolesInSession.map((r) => (
-              <div key={r.id} className="bg-slate-800 p-2 rounded-lg flex items-center gap-2">
-                {React.createElement(r.icon, { className: 'w-6 h-6 text-indigo-400' })}
-                <div className="flex-1">
-                  <span className="text-sm font-bold text-slate-200">{r.name}</span>
-                </div>
-              </div>
-            ))}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-400" />
+            <span className="text-sm font-bold text-indigo-200">Roles in Session</span>
           </div>
-        </div>
+          <ChevronDown
+            className={`w-5 h-5 text-indigo-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {isOpen && (
+          <div className="p-3 border-t border-indigo-500/30">
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {rolesInSession.map((r) => (
+                <div key={r.id} className="bg-slate-800 p-2 rounded-lg flex items-center gap-2">
+                  {React.createElement(r.icon, { className: 'w-6 h-6 text-indigo-400' })}
+                  <div className="flex-1 flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-200">{r.name}</span>
+                    <button
+                      onClick={() => {
+                        setSelectedRoleId(r.id);
+                        setIsModalOpen(true);
+                      }}
+                      className="p-1 rounded-full hover:bg-slate-700 transition-colors"
+                      aria-label={`View info for ${r.name}`}
+                    >
+                      <Info className="w-4 h-4 text-indigo-400" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {isModalOpen && (
+        <RoleInfoModal showRoleInfo={selectedRoleId} onClose={() => setIsModalOpen(false)} />
       )}
-    </div>
+    </>
   );
 }
