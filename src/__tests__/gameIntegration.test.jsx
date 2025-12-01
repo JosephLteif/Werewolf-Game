@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TEAMS, CUPID_FATES, PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { roleRegistry } from '../roles/RoleRegistry.js';
-import { resolveNight } from '../services/nightActions';
+import { resolveNight, handleHunterShot } from '../services/nightActions';
 import { resolveDayVoting } from '../services/voting';
 
 // Helper function to create a player
@@ -703,5 +703,155 @@ describe('Game Integration Tests - Win Conditions', () => {
       expect(gameState.winner).toBe('WEREWOLVES');
       expect(gameState.winners).toContain('WEREWOLVES');
     });
+
+    it('Scenario: Werewolf day votes are counted correctly', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
+      const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+      const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState([wolf1, wolf2, villager1, villager2], { wolfCount: 2 }, PHASES.DAY_VOTING);
+      gameState.votes = {
+        [wolf1.id]: villager1.id, // Wolf votes villager
+        [wolf2.id]: villager2.id, // Wolf votes other villager
+        [villager1.id]: wolf1.id, // Villager votes wolf
+        [villager2.id]: villager1.id, // Villager votes other villager
+      };
+      // v1 gets 2 votes, v2 gets 1, w1 gets 1. v1 should be eliminated.
+      gameState.lockedVotes = [wolf1.id, wolf2.id, villager1.id, villager2.id];
+      gameState.update = MockUpdateGame;
+
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      expect(gameState.players[villager1.id].isAlive).toBe(false);
+      expect(gameState.players[villager2.id].isAlive).toBe(true);
+      expect(gameState.players[wolf1.id].isAlive).toBe(true);
+      expect(gameState.dayLog).toContain('Player 1 was lynched');
+    });
+  });
+});
+
+describe('Role-specific Mechanics', () => {
+  let gameState;
+  let MockUpdateGame;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+
+    MockUpdateGame = vi.fn(async (updates) => {
+      Object.keys(updates).forEach(key => {
+        if (key === 'players' && Array.isArray(updates.players)) {
+          const playersMap = {};
+          updates.players.forEach((p) => (playersMap[p.id] = p));
+          gameState.players = playersMap;
+        } else {
+          gameState[key] = updates[key];
+        }
+      });
+      return gameState;
+    });
+  });
+
+  it('Scenario: Vigilante cannot shoot without ammo', async () => {
+    const vigilante = createPlayer('v1', ROLE_IDS.VIGILANTE);
+    const target = createPlayer('t1', ROLE_IDS.VILLAGER);
+    const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
+
+    gameState = createInitialGameState([vigilante, target, wolf], {}, PHASES.NIGHT_VIGILANTE);
+    gameState.update = MockUpdateGame;
+    gameState.vigilanteAmmo = { [vigilante.id]: 0 };
+
+    let nightActions = { ...gameState.nightActions, vigilanteTarget: null };
+    
+    await resolveNight(gameState, Object.values(gameState.players), nightActions);
+
+    expect(gameState.players[target.id].isAlive).toBe(true);
+  });
+
+  it('Scenario: Hunter dies and kills another player', async () => {
+    const hunter = createPlayer('h1', ROLE_IDS.HUNTER);
+    const target = createPlayer('t2', ROLE_IDS.VILLAGER);
+    const wolf = createPlayer('w3', ROLE_IDS.WEREWOLF);
+
+    let players = [hunter, target, wolf];
+    gameState = createInitialGameState(players, {}, PHASES.DAY_VOTING);
+    gameState.update = MockUpdateGame;
+
+    gameState.votes = { [wolf.id]: hunter.id, [target.id]: hunter.id };
+    gameState.lockedVotes = [wolf.id, target.id];
+    await resolveDayVoting(gameState, players);
+    
+    expect(gameState.phase).toBe(PHASES.HUNTER_ACTION);
+    expect(gameState.players[hunter.id].isAlive).toBe(false);
+
+    await handleHunterShot(gameState, Object.values(gameState.players), target.id);
+
+    expect(gameState.players[target.id].isAlive).toBe(false);
+    expect(gameState.dayLog).toContain('The Hunter shot Player 2!');
+  });
+
+  it('Scenario: Doctor protects from Werewolf kill', async () => {
+    const doctor = createPlayer('d1', ROLE_IDS.DOCTOR);
+    const target = createPlayer('t1', ROLE_IDS.VILLAGER);
+    const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
+    
+    gameState = createInitialGameState([doctor, target, wolf], {}, PHASES.NIGHT_WEREWOLF);
+    gameState.update = MockUpdateGame;
+
+    let nightActions = {
+      ...gameState.nightActions,
+      werewolfVotes: { [wolf.id]: target.id },
+      doctorProtect: target.id,
+    };
+
+    await resolveNight(gameState, Object.values(gameState.players), nightActions);
+
+    expect(gameState.players[target.id].isAlive).toBe(true);
+  });
+
+  it('Scenario: Doctor protects from Vigilante shot', async () => {
+    const doctor = createPlayer('d1', ROLE_IDS.DOCTOR);
+    const vigilante = createPlayer('v1', ROLE_IDS.VIGILANTE);
+    const target = createPlayer('t1', ROLE_IDS.VILLAGER);
+
+    gameState = createInitialGameState([doctor, vigilante, target], {}, PHASES.NIGHT_VIGILANTE);
+    gameState.update = MockUpdateGame;
+    gameState.vigilanteAmmo = { [vigilante.id]: 1 };
+
+    let nightActions = {
+      ...gameState.nightActions,
+      vigilanteTarget: target.id,
+      doctorProtect: target.id,
+    };
+
+    await resolveNight(gameState, Object.values(gameState.players), nightActions);
+
+    expect(gameState.players[target.id].isAlive).toBe(true);
+  });
+
+  it('Scenario: Doctor protects from Hunter revenge shot', async () => {
+    const doctor = createPlayer('d1', ROLE_IDS.DOCTOR);
+    const hunter = createPlayer('h1', ROLE_IDS.HUNTER);
+    const target = createPlayer('t1', ROLE_IDS.VILLAGER);
+    const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
+
+    let players = [doctor, hunter, target, wolf];
+    gameState = createInitialGameState(players, {}, PHASES.NIGHT_WEREWOLF);
+    gameState.update = MockUpdateGame;
+    
+    let nightActions = {
+      werewolfVotes: { [wolf.id]: hunter.id },
+      doctorProtect: target.id,
+    };
+    await resolveNight(gameState, Object.values(gameState.players), nightActions);
+
+    expect(gameState.phase).toBe(PHASES.HUNTER_ACTION);
+    
+    gameState.nightActions = nightActions;
+    await handleHunterShot(gameState, Object.values(gameState.players), target.id);
+
+    expect(gameState.players[target.id].isAlive).toBe(true);
+    expect(gameState.dayLog).toContain('tried to shoot Player 1, but they were protected!');
   });
 });

@@ -448,9 +448,10 @@ export const handleHunterShot = async (gameState, players, targetId) => {
     gameState.winners,
     gameState.settings
   );
-  if (winResult) {
+  if (winResult && winResult.isGameOver) {
     await gameState.update({
       players: newPlayers,
+      dayLog: log,
       ...winResult,
       phase: PHASES.GAME_OVER,
     });
