@@ -5,7 +5,7 @@ export default function GameHistoryModal({ dayLog, onClose }) {
   if (!dayLog) return null;
 
   // Assuming dayLog is a string with entries separated by newlines
-  const entries = (dayLog).filter((entry) => entry.trim() !== '');
+  const entries = dayLog.filter((entry) => entry.trim() !== '');
 
   return (
     <div

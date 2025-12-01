@@ -28,7 +28,7 @@ export default function RoleRevealScreen({ myPlayer, markReady, players, roleRev
 
       // Tilt angles (adjust multipliers for desired effect)
       const rotateX = -offsetY * 10; // Max 10 degrees up/down
-      const rotateY = offsetX * 10;  // Max 10 degrees left/right
+      const rotateY = offsetX * 10; // Max 10 degrees left/right
       const scale = 1.03; // Slight scale up
 
       setTransformStyle({
@@ -113,7 +113,9 @@ export default function RoleRevealScreen({ myPlayer, markReady, players, roleRev
             <MyRole.icon className={`w-32 h-32 ${colors.text} drop-shadow-2xl`} />
           </div>
           <div className={`text-4xl font-black ${colors.text} relative z-30`}>{MyRole.name}</div>
-          <p className="text-slate-300 text-base leading-relaxed relative z-30">{MyRole.description}</p>
+          <p className="text-slate-300 text-base leading-relaxed relative z-30">
+            {MyRole.description}
+          </p>
 
           {/* Alignment badge */}
           <div
@@ -122,7 +124,6 @@ export default function RoleRevealScreen({ myPlayer, markReady, players, roleRev
             {MyRole.alignment}
           </div>
         </div>
-
 
         {!myPlayer.ready ? (
           <button

@@ -450,7 +450,7 @@ describe('Game Integration Tests', () => {
       // One should be dead, the other alive. Based on mock, A should die.
       expect(updatedVillagerA.isAlive).toBe(false);
       expect(updatedVillagerB.isAlive).toBe(true);
-      expect(gameState.dayLog.some(log => log.includes('died'))).toBe(true); // Either Player 1 or Player 2 died
+      expect(gameState.dayLog.some((log) => log.includes('died'))).toBe(true); // Either Player 1 or Player 2 died
     });
 
     it('Scenario: Single werewolf votes for a target', async () => {
@@ -529,7 +529,7 @@ describe('Game Integration Tests', () => {
       const deadPlayers = alivePlayers.filter((s) => !s);
 
       expect(deadPlayers.length).toBe(1);
-      expect(gameState.dayLog.some(log => log.includes('died'))).toBe(true);
+      expect(gameState.dayLog.some((log) => log.includes('died'))).toBe(true);
     });
 
     it('Scenario: Werewolf votes for another werewolf', async () => {
@@ -864,7 +864,11 @@ describe('Game Integration Tests', () => {
       await handleHunterShot(gameState, Object.values(gameState.players), target.id);
 
       expect(gameState.players[target.id].isAlive).toBe(true);
-      expect(gameState.dayLog.some(log => log.includes('tried to shoot Player 1, but they were protected!'))).toBe(true);
+      expect(
+        gameState.dayLog.some((log) =>
+          log.includes('tried to shoot Player 1, but they were protected!')
+        )
+      ).toBe(true);
     });
   });
 });

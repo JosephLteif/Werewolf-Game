@@ -10,7 +10,9 @@ import { ROLE_IDS } from '../constants/roleIds';
 const aggregateWerewolfVotes = (werewolfVotes) => {
   const voteCounts = {};
   // Filter out skipped votes (null targetIds) before counting
-  const validVotes = Object.values(werewolfVotes).filter(targetId => targetId !== null && targetId !== undefined);
+  const validVotes = Object.values(werewolfVotes).filter(
+    (targetId) => targetId !== null && targetId !== undefined
+  );
 
   validVotes.forEach((targetId) => {
     voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
@@ -148,7 +150,6 @@ export const advanceNight = async (
   extraPayload
 ) => {
   let newActions = { ...gameState.nightActions };
-
 
   if (extraPayload && actionType === ACTION_TYPES.VIGILANTE_TARGET) {
     newActions.vigilanteAmmo = extraPayload;

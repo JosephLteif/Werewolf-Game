@@ -126,7 +126,9 @@ export default function DeadScreen({
                 <h3 className="text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">
                   Latest News
                 </h3>
-                <p className="text-slate-200 font-medium leading-relaxed">{dayLog[dayLog.length - 1]}</p>
+                <p className="text-slate-200 font-medium leading-relaxed">
+                  {dayLog[dayLog.length - 1]}
+                </p>
               </div>
             )}
           </>
