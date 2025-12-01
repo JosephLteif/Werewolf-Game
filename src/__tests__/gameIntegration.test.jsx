@@ -61,7 +61,7 @@ beforeEach(() => {
   // Mock implementation for updateGame
   MockUpdateGame = vi.fn(async (updates) => {
     // Apply all updates to the gameState
-    Object.keys(updates).forEach(key => {
+    Object.keys(updates).forEach((key) => {
       if (key === 'players' && Array.isArray(updates.players)) {
         const playersMap = {};
         updates.players.forEach((p) => (playersMap[p.id] = p));
@@ -82,7 +82,6 @@ beforeEach(() => {
 });
 
 describe('Game Integration Tests', () => {
-
   describe('Win Conditions', () => {
     it('Scenario: Villagers win when all werewolves are eliminated', async () => {
       const p1 = createPlayer('p1', 'villager');
@@ -139,7 +138,10 @@ describe('Game Integration Tests', () => {
       const villagerLover = createPlayer('p2', 'villager', true, TEAMS.LOVERS);
 
       // All other players are dead
-      const deadPlayers = [createPlayer('p3', 'villager', false), createPlayer('p4', 'cupid', false)];
+      const deadPlayers = [
+        createPlayer('p3', 'villager', false),
+        createPlayer('p4', 'cupid', false),
+      ];
 
       gameState = createInitialGameState(
         [wolfLover, villagerLover, ...deadPlayers],
@@ -389,7 +391,11 @@ describe('Game Integration Tests', () => {
       const villager4 = createPlayer('v4', ROLE_IDS.VILLAGER);
       const villager5 = createPlayer('v5', ROLE_IDS.VILLAGER);
 
-      gameState = createInitialGameState([wolf1, wolf2, villager1, villager2, villager3, villager4, villager5], { wolfCount: 2 }, PHASES.NIGHT_WEREWOLF);
+      gameState = createInitialGameState(
+        [wolf1, wolf2, villager1, villager2, villager3, villager4, villager5],
+        { wolfCount: 2 },
+        PHASES.NIGHT_WEREWOLF
+      );
       gameState.nightActions.werewolfVotes = {
         [wolf1.id]: villager1.id,
         [wolf2.id]: villager1.id,
@@ -444,7 +450,11 @@ describe('Game Integration Tests', () => {
       const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
       const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
 
-      gameState = createInitialGameState([wolf1, villager1, villager2], { wolfCount: 1 }, PHASES.NIGHT_WEREWOLF);
+      gameState = createInitialGameState(
+        [wolf1, villager1, villager2],
+        { wolfCount: 1 },
+        PHASES.NIGHT_WEREWOLF
+      );
       gameState.nightActions.werewolfVotes = {
         [wolf1.id]: villager1.id,
       };
@@ -463,7 +473,11 @@ describe('Game Integration Tests', () => {
       const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
       const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
 
-      gameState = createInitialGameState([wolf1, wolf2, villager1], { wolfCount: 2 }, PHASES.NIGHT_WEREWOLF);
+      gameState = createInitialGameState(
+        [wolf1, wolf2, villager1],
+        { wolfCount: 2 },
+        PHASES.NIGHT_WEREWOLF
+      );
       gameState.nightActions.werewolfVotes = {};
       gameState.update = MockUpdateGame;
 
@@ -483,7 +497,11 @@ describe('Game Integration Tests', () => {
       const v2 = createPlayer('v2', ROLE_IDS.VILLAGER);
       const v3 = createPlayer('v3', ROLE_IDS.VILLAGER);
 
-      gameState = createInitialGameState([wolf1, wolf2, wolf3, v1, v2, v3], { wolfCount: 3 }, PHASES.NIGHT_WEREWOLF);
+      gameState = createInitialGameState(
+        [wolf1, wolf2, wolf3, v1, v2, v3],
+        { wolfCount: 3 },
+        PHASES.NIGHT_WEREWOLF
+      );
       gameState.nightActions.werewolfVotes = {
         [wolf1.id]: v1.id,
         [wolf2.id]: v2.id,
@@ -494,13 +512,13 @@ describe('Game Integration Tests', () => {
       await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
 
       expect(MockUpdateGame).toHaveBeenCalled();
-      
+
       const alivePlayers = [
         gameState.players[v1.id].isAlive,
         gameState.players[v2.id].isAlive,
-        gameState.players[v3.id].isAlive
+        gameState.players[v3.id].isAlive,
       ];
-      const deadPlayers = alivePlayers.filter(s => !s);
+      const deadPlayers = alivePlayers.filter((s) => !s);
 
       expect(deadPlayers.length).toBe(1);
       expect(gameState.dayLog).toContain('died');
@@ -511,7 +529,11 @@ describe('Game Integration Tests', () => {
       const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
       const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
 
-      gameState = createInitialGameState([wolf1, wolf2, villager1], { wolfCount: 2 }, PHASES.NIGHT_WEREWOLF);
+      gameState = createInitialGameState(
+        [wolf1, wolf2, villager1],
+        { wolfCount: 2 },
+        PHASES.NIGHT_WEREWOLF
+      );
       gameState.nightActions.werewolfVotes = {
         [wolf1.id]: wolf2.id,
       };
@@ -520,7 +542,7 @@ describe('Game Integration Tests', () => {
       await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
 
       expect(MockUpdateGame).toHaveBeenCalled();
-      
+
       const targetWolf = gameState.players[wolf2.id];
       expect(targetWolf.isAlive).toBe(true);
       expect(gameState.dayLog).toBe('No one died.');
@@ -644,7 +666,11 @@ describe('Game Integration Tests', () => {
       const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
       const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
 
-      gameState = createInitialGameState([wolf1, wolf2, villager1, villager2], { wolfCount: 2 }, PHASES.DAY_VOTING);
+      gameState = createInitialGameState(
+        [wolf1, wolf2, villager1, villager2],
+        { wolfCount: 2 },
+        PHASES.DAY_VOTING
+      );
       gameState.votes = {
         [wolf1.id]: villager1.id, // Wolf votes villager
         [wolf2.id]: villager2.id, // Wolf votes other villager
@@ -741,7 +767,7 @@ describe('Game Integration Tests', () => {
       gameState.vigilanteAmmo = { [vigilante.id]: 0 };
 
       let nightActions = { ...gameState.nightActions, vigilanteTarget: null };
-      
+
       await resolveNight(gameState, Object.values(gameState.players), nightActions);
 
       expect(gameState.players[target.id].isAlive).toBe(true);
@@ -759,7 +785,7 @@ describe('Game Integration Tests', () => {
       gameState.votes = { [wolf.id]: hunter.id, [target.id]: hunter.id };
       gameState.lockedVotes = [wolf.id, target.id];
       await resolveDayVoting(gameState, players);
-      
+
       expect(gameState.phase).toBe(PHASES.HUNTER_ACTION);
       expect(gameState.players[hunter.id].isAlive).toBe(false);
 
@@ -773,7 +799,7 @@ describe('Game Integration Tests', () => {
       const doctor = createPlayer('d1', ROLE_IDS.DOCTOR);
       const target = createPlayer('t1', ROLE_IDS.VILLAGER);
       const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
-      
+
       gameState = createInitialGameState([doctor, target, wolf], {}, PHASES.NIGHT_WEREWOLF);
       gameState.update = MockUpdateGame;
 
@@ -817,7 +843,7 @@ describe('Game Integration Tests', () => {
       let players = [doctor, hunter, target, wolf];
       gameState = createInitialGameState(players, {}, PHASES.NIGHT_WEREWOLF);
       gameState.update = MockUpdateGame;
-      
+
       let nightActions = {
         werewolfVotes: { [wolf.id]: hunter.id },
         doctorProtect: target.id,
@@ -825,7 +851,7 @@ describe('Game Integration Tests', () => {
       await resolveNight(gameState, Object.values(gameState.players), nightActions);
 
       expect(gameState.phase).toBe(PHASES.HUNTER_ACTION);
-      
+
       gameState.nightActions = nightActions;
       await handleHunterShot(gameState, Object.values(gameState.players), target.id);
 
@@ -834,5 +860,3 @@ describe('Game Integration Tests', () => {
     });
   });
 });
-
-

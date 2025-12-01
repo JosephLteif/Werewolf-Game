@@ -19,17 +19,16 @@ export default function RoleRulesModal({ onClose }) {
           <section>
             <h4 className="font-bold text-white mb-1">Objective</h4>
             <p>
-              Villagers must find and eliminate all Werewolves. Werewolves must eliminate
-              Villagers until they equal or outnumber them. The Tanner wins if they are voted
-              out by a vote.
+              Villagers must find and eliminate all Werewolves. Werewolves must eliminate Villagers
+              until they equal or outnumber them. The Tanner wins if they are voted out by a vote.
             </p>
           </section>
           <section>
             <h4 className="font-bold text-white mb-1">Game Flow</h4>
             <ul className="list-disc pl-4 space-y-1">
               <li>
-                <strong className="text-indigo-300">Night:</strong> Special roles wake up
-                secretly to perform actions (kill, heal, investigate).
+                <strong className="text-indigo-300">Night:</strong> Special roles wake up secretly
+                to perform actions (kill, heal, investigate).
               </li>
               <li>
                 <strong className="text-orange-300">Day:</strong> Everyone wakes up. Deaths are
@@ -52,8 +51,8 @@ export default function RoleRulesModal({ onClose }) {
               </li>
               <li>
                 <strong className="text-pink-400">Lovers:</strong> Win if they are the last two
-                players alive. Depending on the game settings, Cupid may also win if they are
-                alive and involved in a "Third Wheel" scenario.
+                players alive. Depending on the game settings, Cupid may also win if they are alive
+                and involved in a "Third Wheel" scenario.
               </li>
               <li>
                 <strong className="text-amber-400">Tanner:</strong> Wins if voted out.
@@ -64,15 +63,13 @@ export default function RoleRulesModal({ onClose }) {
             <h4 className="font-bold text-white mb-1">Tanner's Win Strategy</h4>
             <ul className="list-disc pl-4 space-y-1">
               <li>
-                <strong className="text-amber-300">Game Continues:</strong> If the Tanner is
-                voted out, they win, and the game continues for the remaining players to achieve
-                their win conditions. The Tanner is added to the list of winners at the end of
-                the game.
+                <strong className="text-amber-300">Game Continues:</strong> If the Tanner is voted
+                out, they win, and the game continues for the remaining players to achieve their win
+                conditions. The Tanner is added to the list of winners at the end of the game.
               </li>
               <li>
-                <strong className="text-amber-300">Game Ends:</strong> If the Tanner is voted
-                out, they win, and the game ends immediately. Only the Tanner is declared the
-                winner.
+                <strong className="text-amber-300">Game Ends:</strong> If the Tanner is voted out,
+                they win, and the game ends immediately. Only the Tanner is declared the winner.
               </li>
             </ul>
           </section>
@@ -87,15 +84,15 @@ export default function RoleRulesModal({ onClose }) {
                 <strong className="text-pink-400">Cupid Strategy:</strong>
                 <ul className="list-circle pl-4 space-y-1">
                   <li>
-                    <strong className="text-pink-400">Selfless:</strong> Lovers win only if they
-                    are the last two players alive. Cupid does not win unless they are one of
-                    the lovers.
+                    <strong className="text-pink-400">Selfless:</strong> Lovers win only if they are
+                    the last two players alive. Cupid does not win unless they are one of the
+                    lovers.
                   </li>
                   <li>
-                    <strong className="text-pink-400">Third Wheel:</strong> Lovers win if they
-                    are the last two players alive. Additionally, if Cupid is alive and not a
-                    lover, they win with the lovers if only three players (the two lovers and
-                    Cupid) are left.
+                    <strong className="text-pink-400">Third Wheel:</strong> Lovers win if they are
+                    the last two players alive. Additionally, if Cupid is alive and not a lover,
+                    they win with the lovers if only three players (the two lovers and Cupid) are
+                    left.
                   </li>
                 </ul>
               </li>

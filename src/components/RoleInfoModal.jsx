@@ -67,9 +67,13 @@ export default function RoleInfoModal({ selectedRoleId, showAllRoles, onClose })
         {!showAllRoles && role && (
           <>
             <div className="flex items-center gap-4 mb-4">
-              {React.createElement(role.icon, { className: `w-12 h-12 ${colors ? colors.text : 'text-white'}` })}
+              {React.createElement(role.icon, {
+                className: `w-12 h-12 ${colors ? colors.text : 'text-white'}`,
+              })}
               <div className="flex-1">
-                <h3 className={`text-2xl font-bold ${colors ? colors.text : 'text-white'}`}>{role.name}</h3>
+                <h3 className={`text-2xl font-bold ${colors ? colors.text : 'text-white'}`}>
+                  {role.name}
+                </h3>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-slate-500 uppercase font-bold">
                     {role.alignment}

@@ -64,11 +64,7 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
     ...actual,
     roleRegistry: {
       ...actual.roleRegistry,
-      getAllRoles: vi.fn(() => [
-        mockVillagerRole,
-        mockWerewolfRole,
-        mockDoctorRole,
-      ]),
+      getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole]),
       getRole: vi.fn((roleId) => {
         switch (roleId) {
           case ROLE_IDS.VILLAGER:
@@ -87,7 +83,9 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
 
 describe('RoleInfoModal', () => {
   it('does not render when no role is selected and not showing all roles', () => {
-    const { container } = render(<RoleInfoModal selectedRoleId={null} showAllRoles={false} onClose={vi.fn()} />);
+    const { container } = render(
+      <RoleInfoModal selectedRoleId={null} showAllRoles={false} onClose={vi.fn()} />
+    );
     expect(container.firstChild).toBeNull();
   });
 

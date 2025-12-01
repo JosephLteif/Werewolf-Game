@@ -67,12 +67,7 @@ vi.mock('../roles/RoleRegistry', () => {
   };
 
   const mockRoleRegistry = {
-    getAllRoles: vi.fn(() => [
-      mockVillagerRole,
-      mockWerewolfRole,
-      mockDoctorRole,
-      mockMasonRole,
-    ]),
+    getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole, mockMasonRole]),
     getRole: vi.fn((id) => {
       switch (id) {
         case ROLE_IDS.VILLAGER:

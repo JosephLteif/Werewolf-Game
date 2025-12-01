@@ -136,8 +136,19 @@ export const startNight = async (gameState, players, now) => {
   });
 };
 
-export const advanceNight = async (gameState, players, now, actionType, actionValue) => {
+export const advanceNight = async (
+  gameState,
+  players,
+  now,
+  actionType,
+  actionValue,
+  extraPayload
+) => {
   let newActions = { ...gameState.nightActions };
+
+  if (extraPayload && actionType === ACTION_TYPES.VIGILANTE_TARGET) {
+    newActions.vigilanteAmmo = extraPayload;
+  }
 
   switch (actionType) {
     case ACTION_TYPES.CUPID_LINK:

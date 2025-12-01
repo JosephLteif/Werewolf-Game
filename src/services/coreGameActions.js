@@ -15,8 +15,8 @@ export function coreGameActions(gameState, players, user, isHost, now) {
     await startNight(gameState, players, now);
   };
 
-  const advanceNightPhase = async (actionType, actionValue) => {
-    await advanceNight(gameState, players, now, actionType, actionValue);
+  const advanceNightPhase = async (actionType, actionValue, extraPayload) => {
+    await advanceNight(gameState, players, now, actionType, actionValue, extraPayload);
   };
 
   const resolveNightPhase = async (finalActions) => {

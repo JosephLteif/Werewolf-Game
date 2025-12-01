@@ -132,9 +132,7 @@ export default function ActiveRolesPanel({ activeRoles, wolfCount, playerCount }
       {isRoleInfoModalOpen && selectedRoleId && (
         <RoleInfoModal selectedRoleId={selectedRoleId} onClose={handleCloseModal} />
       )}
-      {showAllRolesModal && (
-        <RoleInfoModal showAllRoles={true} onClose={handleCloseModal} />
-      )}
+      {showAllRolesModal && <RoleInfoModal showAllRoles={true} onClose={handleCloseModal} />}
     </>
   );
 }
