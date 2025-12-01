@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import PlayerReadyChip from '../components/PlayerReadyChip';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 
 export default function RoleRevealScreen({ myPlayer, markReady, players, roleRevealParticles }) {
@@ -92,6 +93,13 @@ export default function RoleRevealScreen({ myPlayer, markReady, players, roleRev
         <div className="mt-8 text-sm text-slate-600">
           <span className="font-bold text-slate-400">{players.filter((p) => p.ready).length}</span>{' '}
           / {players.length} ready
+        </div>
+
+        {/* Player Ready State Chips */}
+        <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+          {players.map((player) => (
+            <PlayerReadyChip key={player.id} player={player} />
+          ))}
         </div>
       </div>
     </div>

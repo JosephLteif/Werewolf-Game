@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react'; // Import useState
 import { Info, Copy, ArrowLeft } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { Teams } from '../models/Team';
 import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
-import { RoleInfoModal } from '../components/RoleInfoModal';
+import RoleInfoModal from '../components/RoleInfoModal';
+import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
 import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function LobbyScreen({
@@ -16,6 +17,9 @@ export default function LobbyScreen({
   user,
   leaveRoom,
 }) {
+  const [showRulesModal, setShowRulesModal] = useState(false); // State for rules modal
+  const [showCopyNotification, setShowCopyNotification] = useState(false); // State for copy notification
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
       <header className="flex justify-between items-center mb-6">
@@ -30,6 +34,8 @@ export default function LobbyScreen({
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(gameState.code);
+                  setShowCopyNotification(true); // Show notification
+                  setTimeout(() => setShowCopyNotification(false), 2000); // Hide after 2 seconds
                 }}
               >
                 <Copy className="w-4 h-4 text-slate-600 hover:text-white" />
@@ -44,13 +50,19 @@ export default function LobbyScreen({
             </div>
           )}
           <button
-            onClick={() => setShowRoleInfo('RULES')}
+            onClick={() => setShowRulesModal(true)} // Open rules modal
             className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-xs font-bold"
           >
             <Info className="w-3 h-3" /> Rules
           </button>
         </div>
       </header>
+
+      {showCopyNotification && ( // Copy notification
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-4 py-2 rounded-full shadow-lg z-50">
+          Copied!
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto mb-6">
         <h3 className="text-slate-500 font-bold mb-3 flex justify-between">
@@ -569,6 +581,7 @@ export default function LobbyScreen({
       )}
 
       <RoleInfoModal showRoleInfo={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
+      {showRulesModal && <RoleRulesModal onClose={() => setShowRulesModal(false)} />}
     </div>
   );
 }

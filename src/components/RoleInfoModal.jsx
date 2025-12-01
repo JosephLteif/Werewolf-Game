@@ -2,13 +2,33 @@ import React from 'react';
 import { Info } from 'lucide-react';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 
-export function RoleInfoModal({ showRoleInfo, onClose }) {
-  if (!showRoleInfo) return null;
+const alignmentColors = {
+  good: {
+    bg: 'from-blue-500/20 to-cyan-500/20',
+    border: 'border-blue-400',
+    text: 'text-blue-400',
+    glow: 'shadow-blue-500/50',
+  },
+  evil: {
+    bg: 'from-red-500/20 to-rose-500/20',
+    border: 'border-red-400',
+    text: 'text-red-500',
+    glow: 'shadow-red-500/50',
+  },
+  neutral: {
+    bg: 'from-purple-500/20 to-pink-500/20',
+    border: 'border-purple-400',
+    text: 'text-purple-400',
+    glow: 'shadow-purple-500/50',
+  },
+};
 
-  const isRules = showRoleInfo === 'RULES';
-  const isAllRoles = showRoleInfo === 'ALL_ROLES';
-  const role =
-    isRules || isAllRoles ? null : roleRegistry.getAllRoles().find((r) => r.id === showRoleInfo);
+export default function RoleInfoModal({ selectedRoleId, showAllRoles, onClose }) {
+  if (!selectedRoleId && !showAllRoles) return null;
+
+  const role = selectedRoleId ? roleRegistry.getRole(selectedRoleId) : null;
+
+  const colors = role ? alignmentColors[role.alignment] : null;
 
   return (
     <div
@@ -20,101 +40,7 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
         className="bg-slate-800 p-6 rounded-2xl max-w-md w-full border border-slate-700 max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {isRules && (
-          <>
-            <h3 className="text-2xl font-black text-indigo-400 mb-4 flex items-center gap-2">
-              <Info className="w-6 h-6" /> Rule Book
-            </h3>
-            <div className="space-y-4 text-slate-300 text-sm">
-              <section>
-                <h4 className="font-bold text-white mb-1">Objective</h4>
-                <p>
-                  Villagers must find and eliminate all Werewolves. Werewolves must eliminate
-                  Villagers until they equal or outnumber them. The Tanner wins if they are voted
-                  out by a vote.
-                </p>
-              </section>
-              <section>
-                <h4 className="font-bold text-white mb-1">Game Flow</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong className="text-indigo-300">Night:</strong> Special roles wake up
-                    secretly to perform actions (kill, heal, investigate).
-                  </li>
-                  <li>
-                    <strong className="text-orange-300">Day:</strong> Everyone wakes up. Deaths are
-                    revealed. Players discuss and vote to eliminate a suspect.
-                  </li>
-                </ul>
-              </section>
-              <section>
-                <h4 className="font-bold text-white mb-1">Voting</h4>
-                <p>Majority vote eliminates a player. In case of a tie, no one dies.</p>
-              </section>
-              <section>
-                <h4 className="font-bold text-white mb-1">Winning</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong className="text-blue-400">Villagers:</strong> Kill all Wolves.
-                  </li>
-                  <li>
-                    <strong className="text-red-400">Werewolves:</strong> Equal/outnumber Villagers.
-                  </li>
-                  <li>
-                    <strong className="text-pink-400">Lovers:</strong> Win if they are the last two
-                    players alive. Depending on the game settings, Cupid may also win if they are
-                    alive and involved in a "Third Wheel" scenario.
-                  </li>
-                  <li>
-                    <strong className="text-amber-400">Tanner:</strong> Wins if voted out.
-                  </li>
-                </ul>
-              </section>
-              <section>
-                <h4 className="font-bold text-white mb-1">Tanner's Win Strategy</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong className="text-amber-300">Game Continues:</strong> If the Tanner is
-                    voted out, they win, and the game continues for the remaining players to achieve
-                    their win conditions. The Tanner is added to the list of winners at the end of
-                    the game.
-                  </li>
-                  <li>
-                    <strong className="text-amber-300">Game Ends:</strong> If the Tanner is voted
-                    out, they win, and the game ends immediately. Only the Tanner is declared the
-                    winner.
-                  </li>
-                </ul>
-              </section>
-              <section>
-                <h4 className="font-bold text-white mb-1">Cupid's Role & Settings</h4>
-                <ul className="list-disc pl-4 space-y-1">
-                  <li>
-                    <strong className="text-pink-400">Cupid Can Choose Self:</strong> A game setting
-                    that determines if Cupid is allowed to choose themselves as one of the lovers.
-                  </li>
-                  <li>
-                    <strong className="text-pink-400">Cupid Strategy:</strong>
-                    <ul className="list-circle pl-4 space-y-1">
-                      <li>
-                        <strong className="text-pink-400">Selfless:</strong> Lovers win only if they
-                        are the last two players alive. Cupid does not win unless they are one of
-                        the lovers.
-                      </li>
-                      <li>
-                        <strong className="text-pink-400">Third Wheel:</strong> Lovers win if they
-                        are the last two players alive. Additionally, if Cupid is alive and not a
-                        lover, they win with the lovers if only three players (the two lovers and
-                        Cupid) are left.
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
-              </section>
-            </div>
-          </>
-        )}
-        {isAllRoles && (
+        {showAllRoles && (
           <>
             <h3 className="text-2xl font-black text-indigo-400 mb-4 flex items-center gap-2">
               <Info className="w-6 h-6" /> All Available Roles
@@ -123,27 +49,27 @@ export function RoleInfoModal({ showRoleInfo, onClose }) {
               {roleRegistry
                 .getAllRoles()
                 .filter((r) => r.selectable !== false)
-                .map((role) => (
+                .map((r) => (
                   <div
-                    key={role.id}
+                    key={r.id}
                     className="bg-slate-900 p-3 rounded-xl flex items-center gap-3 border border-slate-700"
                   >
-                    {React.createElement(role.icon, { className: 'w-8 h-8 text-indigo-400' })}
+                    {React.createElement(r.icon, { className: 'w-8 h-8 text-indigo-400' })}
                     <div className="flex-1">
-                      <h4 className="text-lg font-bold">{role.name}</h4>
-                      <p className="text-xs text-slate-400">{role.description}</p>
+                      <h4 className="text-lg font-bold">{r.name}</h4>
+                      <p className="text-xs text-slate-400">{r.description}</p>
                     </div>
                   </div>
                 ))}
             </div>
           </>
         )}
-        {!isRules && !isAllRoles && role && (
+        {!showAllRoles && role && (
           <>
             <div className="flex items-center gap-4 mb-4">
-              {React.createElement(role.icon, { className: 'w-12 h-12 text-indigo-400' })}
+              {React.createElement(role.icon, { className: `w-12 h-12 ${colors ? colors.text : 'text-white'}` })}
               <div className="flex-1">
-                <h3 className="text-2xl font-bold">{role.name}</h3>
+                <h3 className={`text-2xl font-bold ${colors ? colors.text : 'text-white'}`}>{role.name}</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-slate-500 uppercase font-bold">
                     {role.alignment}
