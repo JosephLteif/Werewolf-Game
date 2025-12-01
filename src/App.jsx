@@ -603,7 +603,7 @@ export default function App() {
 
           !myPlayer?.isAlive &&
 
-          !gameState.dayLog.includes('shot')
+          !gameState.dayLog.some(logEntry => logEntry.includes('shot'))
 
         ) {
 
@@ -667,7 +667,7 @@ export default function App() {
 
                 players: gameState.players,
 
-                dayLog: '',
+                dayLog: [],
 
                 nightActions: {},
 

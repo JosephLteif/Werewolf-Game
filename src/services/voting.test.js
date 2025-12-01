@@ -16,17 +16,33 @@ class MockGameState {
     }
 
     this.update = vi.fn(async (updates) => {
-      const newUpdates = { ...updates };
-      if (newUpdates.players && Array.isArray(newUpdates.players)) {
+      // Deep merge updates into _state
+      this._state = {
+        ...this._state,
+        ...updates,
+      };
+
+      // Special handling for players array to map conversion
+      if (Array.isArray(this._state.players)) {
         const playersMap = {};
-        newUpdates.players.forEach((p) => {
+        this._state.players.forEach((p) => {
           playersMap[p.id] = p;
         });
-        newUpdates.players = playersMap;
+        this._state.players = playersMap;
       }
-      Object.assign(this._state, newUpdates);
     });
   }
+
+  // Add the addDayLog method here
+  addDayLog = vi.fn(async (log) => {
+    // Ensure _state.dayLog is an array before pushing
+    if (!Array.isArray(this._state.dayLog)) {
+      this._state.dayLog = [];
+    }
+    this._state.dayLog.push(log);
+    // Mimic the real GameState's behavior of calling update
+    await this.update({ dayLog: this._state.dayLog });
+  });
 
   // Mimic getters of the real GameState class
   get code() {
@@ -39,7 +55,7 @@ class MockGameState {
     return this._state.phase;
   }
   get dayLog() {
-    return this._state.dayLog;
+    return Array.isArray(this._state.dayLog) ? this._state.dayLog : [];
   }
   get updatedAt() {
     return this._state.updatedAt;
@@ -124,6 +140,7 @@ describe('Voting Service', () => {
       players: initialPlayersMap, // Use the map for initial state
       votes: {},
       lockedVotes: [],
+      dayLog: [], // Explicitly set dayLog as an empty array
     };
   });
 
@@ -259,7 +276,7 @@ describe('Voting Service', () => {
 
       // After resolveDayVoting, testGameState should reflect the changes
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
-      expect(testGameState._state.dayLog).toBe('Player 1 was lynched.');
+      expect(testGameState._state.dayLog).toContain('Player 1 was lynched.');
       expect(testGameState._state.players['p1'].isAlive).toBe(false);
     });
   });
@@ -317,7 +334,7 @@ describe('Voting Service', () => {
       await resolveDayVoting(testGameState, mockPlayersArray);
 
       expect(testGameState.update).toHaveBeenCalled();
-      expect(testGameState._state.dayLog).toBe('The vote was a tie!');
+      expect(testGameState._state.dayLog).toContain('The vote was a tie!');
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
     });
 
@@ -416,7 +433,7 @@ describe('Voting Service', () => {
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players[hunterPlayer.id].isAlive).toBe(false);
-      expect(testGameState._state.dayLog).toContain('Hunter) was voted out!');
+      expect(testGameState._state.dayLog).toContain('Player 1 (Hunter) was voted out!');
       expect(testGameState._state.phase).toBe(PHASES.HUNTER_ACTION);
     });
 

@@ -115,11 +115,11 @@ const handleLoverDeathOnVote = (victim, newPlayers, gameState) => {
 const handleHunterVoteDeath = async (victim, newPlayers, gameState) => {
   await gameState.update({
     players: newPlayers,
-    dayLog: `${victim.name} (Hunter) was voted out!`,
     phase: PHASES.HUNTER_ACTION,
     votes: {},
     lockedVotes: [],
   });
+  await gameState.addDayLog(`${victim.name} (Hunter) was voted out!`);
 
   return true;
 };
@@ -139,13 +139,13 @@ export const resolveDayVoting = async (gameState, players) => {
   const { type, victims } = determineVotingResult(voteCounts);
 
   if (type === 'no_elimination') {
-    const dayLog = victims.length > 1 ? 'The vote was a tie!' : 'No one was eliminated.';
+    const logMessage = victims.length > 1 ? 'The vote was a tie!' : 'No one was eliminated.';
     await gameState.update({
-      dayLog,
       phase: PHASES.NIGHT_INTRO,
       votes: {},
       lockedVotes: [],
     });
+    await gameState.addDayLog(logMessage);
     return;
   }
 
@@ -216,19 +216,19 @@ export const resolveDayVoting = async (gameState, players) => {
   if (winResult && winResult.isGameOver) {
     await gameState.update({
       players: newPlayers,
-      dayLog: `${victim.name} was lynched.`,
       ...winResult,
       phase: PHASES.GAME_OVER,
     });
+    await gameState.addDayLog(`${victim.name} was lynched.`);
 
     return;
   }
 
   await gameState.update({
     players: newPlayers,
-    dayLog: `${victim.name} was lynched.`,
     phase: PHASES.NIGHT_INTRO,
     votes: {},
     lockedVotes: [],
   });
+  await gameState.addDayLog(`${victim.name} was lynched.`);
 };

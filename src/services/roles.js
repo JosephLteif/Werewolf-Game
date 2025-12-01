@@ -19,8 +19,8 @@ export const assignRolesAndStartGame = async (gameState, players, isHost) => {
     vigilanteAmmo: vigAmmo,
     lovers: [],
     phase: PHASES.ROLE_REVEAL,
-    dayLog: 'Night is approaching...',
   });
+  await gameState.addDayLog('Night is approaching...');
 };
 
 export const markPlayerReady = async (players, user, gameState) => {

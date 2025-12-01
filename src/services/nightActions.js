@@ -146,6 +146,7 @@ export const advanceNight = async (
 ) => {
   let newActions = { ...gameState.nightActions };
 
+
   if (extraPayload && actionType === ACTION_TYPES.VIGILANTE_TARGET) {
     newActions.vigilanteAmmo = extraPayload;
   }
@@ -266,6 +267,7 @@ export const advanceNight = async (
   const nextPhase = getNextNightPhaseInternal(gameState.phase, players, gameState, newActions);
 
   if (nextPhase === 'RESOLVE') {
+    await gameState.update({ nightActions: newActions });
     await resolveNight(gameState, players, newActions);
   } else {
     let updates = { nightActions: newActions, phase: nextPhase };
@@ -382,31 +384,21 @@ export const resolveNight = async (gameState, players, finalActions) => {
     if (winResult && winResult.isGameOver) {
       await gameState.update({
         players: newPlayers,
-        dayLog: log,
         ...winResult,
         phase: PHASES.GAME_OVER,
       });
+      await gameState.addDayLog(log);
       return;
     }
   }
 
   await gameState.update({
     players: newPlayers,
-    dayLog: log,
     phase: nextPhase,
-    nightActions: {
-      ...finalActions,
-      werewolfVotes: {},
-      wolfTarget: null,
-    },
-    lovers:
-      finalActions.cupidLinks && finalActions.cupidLinks.length === 2
-        ? finalActions.cupidLinks
-        : gameState.lovers || [],
-    doppelgangerTarget: finalActions.doppelgangerCopy || gameState.doppelgangerTarget || null,
     doppelgangerPlayerId:
       finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId || null,
   });
+  await gameState.addDayLog(log);
 };
 
 export const handleHunterShot = async (gameState, players, targetId) => {
@@ -415,13 +407,11 @@ export const handleHunterShot = async (gameState, players, targetId) => {
 
   // Check if the victim was protected by the doctor
   if (victim && gameState.nightActions?.doctorProtect === victim.id) {
-    let log =
-      gameState.dayLog + ` The Hunter tried to shoot ${victim.name}, but they were protected!`;
     await gameState.update({
       players: newPlayers,
-      dayLog: log,
       phase: PHASES.NIGHT_INTRO,
     });
+    await gameState.addDayLog(`The Hunter tried to shoot ${victim.name}, but they were protected!`);
     return;
   }
 
@@ -451,7 +441,7 @@ export const handleHunterShot = async (gameState, players, targetId) => {
     victim.id
   );
 
-  let log = gameState.dayLog + ` The Hunter shot ${victim.name}!`;
+  await gameState.addDayLog(`The Hunter shot ${victim.name}!`); // Add this log BEFORE checking win condition
 
   const winResult = checkWinCondition(
     newPlayers,
@@ -462,18 +452,16 @@ export const handleHunterShot = async (gameState, players, targetId) => {
   if (winResult && winResult.isGameOver) {
     await gameState.update({
       players: newPlayers,
-      dayLog: log,
       ...winResult,
       phase: PHASES.GAME_OVER,
     });
     return;
   }
 
-  const wasNightDeath = gameState.dayLog.includes('died');
+  const wasNightDeath = gameState.dayLog[gameState.dayLog.length - 1].includes('died');
 
   await gameState.update({
     players: newPlayers,
-    dayLog: log,
     phase: wasNightDeath ? PHASES.DAY_REVEAL : PHASES.NIGHT_INTRO,
   });
 };

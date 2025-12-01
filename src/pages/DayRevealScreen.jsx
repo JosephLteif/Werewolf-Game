@@ -27,7 +27,7 @@ export default function DayRevealScreen({ gameState, isHost, now }) {
           Morning Breaks
         </h2>
         <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-2xl mb-10 max-w-md border-2 border-orange-200">
-          <p className="text-xl font-bold leading-relaxed text-slate-800">{gameState.dayLog}</p>
+          <p className="text-xl font-bold leading-relaxed text-slate-800">{gameState.dayLog[gameState.dayLog.length - 1]}</p>
         </div>
         {isHost ? (
           <button

@@ -27,20 +27,33 @@ class MockGameState {
     }
 
     this.update = vi.fn(async (updates) => {
-      // Handle updates to players specially: convert array to map for internal storage
-      if (updates.players && Array.isArray(updates.players)) {
+      // Deep merge updates into _state
+      this._state = {
+        ...this._state,
+        ...updates,
+      };
+
+      // Special handling for players array to map conversion
+      if (Array.isArray(this._state.players)) {
         const playersMap = {};
-        updates.players.forEach((p) => {
+        this._state.players.forEach((p) => {
           playersMap[p.id] = p;
         });
         this._state.players = playersMap;
-        const { _players, ...restUpdates } = updates; // Extract players to avoid double assignment
-        Object.assign(this._state, restUpdates); // Apply other updates
-      } else {
-        Object.assign(this._state, updates); // Apply all updates directly
       }
     });
   }
+
+  // Add the addDayLog method here
+  addDayLog = vi.fn(async (log) => {
+    // Ensure _state.dayLog is an array before pushing
+    if (!Array.isArray(this._state.dayLog)) {
+      this._state.dayLog = [];
+    }
+    this._state.dayLog.push(log);
+    // Mimic the real GameState's behavior of calling update
+    await this.update({ dayLog: this._state.dayLog });
+  });
 
   get code() {
     return this._state.code;
@@ -52,7 +65,7 @@ class MockGameState {
     return this._state.phase;
   }
   get dayLog() {
-    return this._state.dayLog;
+    return Array.isArray(this._state.dayLog) ? this._state.dayLog : [];
   }
   get updatedAt() {
     return this._state.updatedAt;

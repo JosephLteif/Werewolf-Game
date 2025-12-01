@@ -48,7 +48,7 @@ class GameState {
       code,
       hostId,
       phase: 'LOBBY',
-      dayLog: 'Waiting for game to start...',
+      dayLog: ['Waiting for game to start...'],
       updatedAt: serverTimestamp(),
       settings: defaultSettings(),
       players: {
@@ -143,8 +143,9 @@ class GameState {
     await this._updateGame({ phase: newPhase });
   }
 
-  async setDayLog(log) {
-    await this._updateGame({ dayLog: log });
+  async addDayLog(log) {
+    const currentDayLog = this._state.dayLog || [];
+    await this._updateGame({ dayLog: [...currentDayLog, log] });
   }
 
   async setPlayers(newPlayers) {
