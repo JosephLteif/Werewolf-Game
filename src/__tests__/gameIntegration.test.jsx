@@ -61,22 +61,13 @@ describe('Game Integration Tests - Win Conditions', () => {
 
     // Mock implementation for updateGame
     MockUpdateGame = vi.fn(async (updates) => {
-      console.log('mockUpdateGame: received updates', updates);
-
-      // Handle players specially: convert array to map for internal storage
-      if (updates.players !== undefined) {
-        if (Array.isArray(updates.players)) {
+      // Apply all updates to the gameState
+      Object.keys(updates).forEach(key => {
+        if (key === 'players' && Array.isArray(updates.players)) {
           const playersMap = {};
           updates.players.forEach((p) => (playersMap[p.id] = p));
           gameState.players = playersMap;
         } else {
-          gameState.players = updates.players;
-        }
-      }
-
-      // Apply all other updates directly
-      Object.keys(updates).forEach(key => {
-        if (key !== 'players') {
           gameState[key] = updates[key];
         }
       });
@@ -445,6 +436,97 @@ describe('Game Integration Tests - Win Conditions', () => {
       expect(gameState.dayLog).toContain('died'); // Either Player 1 or Player 2 died
     });
 
+    it('Scenario: Single werewolf votes for a target', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+      const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState([wolf1, villager1, villager2], { wolfCount: 1 }, PHASES.NIGHT_WEREWOLF);
+      gameState.nightActions.werewolfVotes = {
+        [wolf1.id]: villager1.id,
+      };
+      gameState.update = MockUpdateGame;
+
+      await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      const updatedVillager = gameState.players[villager1.id];
+      expect(updatedVillager.isAlive).toBe(false);
+      expect(gameState.dayLog).toContain('Player 1 died');
+    });
+
+    it('Scenario: No werewolf votes', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
+      const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState([wolf1, wolf2, villager1], { wolfCount: 2 }, PHASES.NIGHT_WEREWOLF);
+      gameState.nightActions.werewolfVotes = {};
+      gameState.update = MockUpdateGame;
+
+      await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      const updatedVillager = gameState.players[villager1.id];
+      expect(updatedVillager.isAlive).toBe(true);
+      expect(gameState.dayLog).toBe('No one died.');
+    });
+
+    it('Scenario: Three-way split vote among werewolves', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
+      const wolf3 = createPlayer('w3', ROLE_IDS.WEREWOLF);
+      const v1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+      const v2 = createPlayer('v2', ROLE_IDS.VILLAGER);
+      const v3 = createPlayer('v3', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState([wolf1, wolf2, wolf3, v1, v2, v3], { wolfCount: 3 }, PHASES.NIGHT_WEREWOLF);
+      gameState.nightActions.werewolfVotes = {
+        [wolf1.id]: v1.id,
+        [wolf2.id]: v2.id,
+        [wolf3.id]: v3.id,
+      };
+      gameState.update = MockUpdateGame;
+
+      await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      
+      const alivePlayers = [
+        gameState.players[v1.id].isAlive,
+        gameState.players[v2.id].isAlive,
+        gameState.players[v3.id].isAlive
+      ];
+      const deadPlayers = alivePlayers.filter(s => !s);
+
+      expect(deadPlayers.length).toBe(1);
+      expect(gameState.dayLog).toContain('died');
+    });
+
+    it('Scenario: Werewolf votes for another werewolf', async () => {
+      const wolf1 = createPlayer('w1', ROLE_IDS.WEREWOLF);
+      const wolf2 = createPlayer('w2', ROLE_IDS.WEREWOLF);
+      const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
+
+      gameState = createInitialGameState([wolf1, wolf2, villager1], { wolfCount: 2 }, PHASES.NIGHT_WEREWOLF);
+      gameState.nightActions.werewolfVotes = {
+        [wolf1.id]: wolf2.id,
+      };
+      gameState.update = MockUpdateGame;
+
+      await resolveNight(gameState, Object.values(gameState.players), gameState.nightActions);
+
+      expect(MockUpdateGame).toHaveBeenCalled();
+      
+      const targetWolf = gameState.players[wolf2.id];
+      expect(targetWolf.isAlive).toBe(true);
+      expect(gameState.dayLog).toBe('No one died.');
+    });
+
+
+
+
+
     it('Scenario: Tanner Win Strategy - END_GAME', async () => {
       const tanner = createPlayer('t1', ROLE_IDS.TANNER);
       const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
@@ -508,6 +590,118 @@ describe('Game Integration Tests - Win Conditions', () => {
       // Tanner should be dead
       const updatedTanner = gameState.players[tanner.id];
       expect(updatedTanner.isAlive).toBe(false);
+    });
+  });
+
+  describe('Day Vote Resolution', () => {
+    it('Scenario: Majority vote leads to player elimination', async () => {
+      const p1 = createPlayer('p1', ROLE_IDS.VILLAGER);
+      const p2 = createPlayer('p2', ROLE_IDS.VILLAGER);
+      const p3 = createPlayer('p3', ROLE_IDS.WEREWOLF);
+      const p4 = createPlayer('p4', ROLE_IDS.VILLAGER);
+      gameState = createInitialGameState([p1, p2, p3, p4], { wolfCount: 1 }, PHASES.DAY_VOTING);
+      gameState.votes = {
+        [p1.id]: p3.id,
+        [p2.id]: p3.id,
+        [p3.id]: p1.id,
+        [p4.id]: p3.id,
+      };
+      gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
+      gameState.update = MockUpdateGame;
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+      const updatedP3 = gameState.players[p3.id];
+      expect(updatedP3.isAlive).toBe(false);
+      expect(gameState.dayLog).toContain('Player 3 was lynched');
+      expect(gameState.phase).toBe(PHASES.GAME_OVER);
+      expect(gameState.winner).toBe('VILLAGERS');
+    });
+
+    it('Scenario: Tie vote with no mayor results in no elimination', async () => {
+      const p1 = createPlayer('p1', ROLE_IDS.VILLAGER);
+      const p2 = createPlayer('p2', ROLE_IDS.VILLAGER);
+      const p3 = createPlayer('p3', ROLE_IDS.WEREWOLF);
+      const p4 = createPlayer('p4', ROLE_IDS.VILLAGER);
+      gameState = createInitialGameState([p1, p2, p3, p4], { wolfCount: 1 }, PHASES.DAY_VOTING);
+      gameState.votes = {
+        [p1.id]: p3.id,
+        [p2.id]: p3.id,
+        [p3.id]: p1.id,
+        [p4.id]: p1.id,
+      };
+      gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
+      gameState.update = MockUpdateGame;
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+      expect(MockUpdateGame).toHaveBeenCalled();
+      const updatedP1 = gameState.players[p1.id];
+      const updatedP3 = gameState.players[p3.id];
+      expect(updatedP1.isAlive).toBe(true);
+      expect(updatedP3.isAlive).toBe(true);
+      expect(gameState.dayLog).toContain('The vote was a tie!');
+      expect(gameState.phase).toBe(PHASES.NIGHT_INTRO);
+    });
+
+    it("Scenario: Mayor's vote creates a majority", async () => {
+      const p1 = createPlayer('p1', ROLE_IDS.MAYOR, true, null, { isMayor: true });
+      const p2 = createPlayer('p2', ROLE_IDS.VILLAGER);
+      const p3 = createPlayer('p3', ROLE_IDS.WEREWOLF);
+      const p4 = createPlayer('p4', ROLE_IDS.VILLAGER);
+      gameState = createInitialGameState([p1, p2, p3, p4], { wolfCount: 1 }, PHASES.DAY_VOTING);
+      gameState.votes = {
+        [p1.id]: p3.id, // Mayor votes for p3 (2 votes)
+        [p2.id]: p4.id, // p4 gets 1 vote
+        [p3.id]: p2.id, // p2 gets 1 vote
+        [p4.id]: p3.id, // p3 gets 1 vote (total 3)
+      };
+      gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
+      gameState.update = MockUpdateGame;
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+      const updatedP3 = gameState.players[p3.id];
+      expect(updatedP3.isAlive).toBe(false);
+      expect(gameState.dayLog).toContain('Player 3 was lynched');
+      expect(gameState.phase).toBe(PHASES.GAME_OVER);
+    });
+
+    it('Scenario: Villagers win by voting out the last werewolf', async () => {
+      const p1 = createPlayer('p1', ROLE_IDS.VILLAGER);
+      const p2 = createPlayer('p2', ROLE_IDS.VILLAGER);
+      const p3 = createPlayer('p3', ROLE_IDS.WEREWOLF);
+      gameState = createInitialGameState([p1, p2, p3], { wolfCount: 1 }, PHASES.DAY_VOTING);
+      gameState.votes = {
+        [p1.id]: p3.id,
+        [p2.id]: p3.id,
+        [p3.id]: p1.id,
+      };
+      gameState.lockedVotes = [p1.id, p2.id, p3.id];
+      gameState.update = MockUpdateGame;
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+      expect(MockUpdateGame).toHaveBeenCalled();
+      expect(gameState.players[p3.id].isAlive).toBe(false);
+      expect(gameState.phase).toBe(PHASES.GAME_OVER);
+      expect(gameState.winner).toBe('VILLAGERS');
+      expect(gameState.winners).toContain('VILLAGERS');
+    });
+
+    it('Scenario: Werewolves win by achieving parity', async () => {
+      const p1 = createPlayer('p1', ROLE_IDS.WEREWOLF);
+      const p2 = createPlayer('p2', ROLE_IDS.WEREWOLF);
+      const p3 = createPlayer('p3', ROLE_IDS.VILLAGER);
+      const p4 = createPlayer('p4', ROLE_IDS.VILLAGER);
+      gameState = createInitialGameState([p1, p2, p3, p4], { wolfCount: 2 }, PHASES.DAY_VOTING);
+      gameState.votes = {
+        [p1.id]: p3.id,
+        [p2.id]: p3.id,
+        [p3.id]: p1.id,
+        [p4.id]: p3.id, // p3 gets 3 votes
+      };
+      gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
+      gameState.update = MockUpdateGame;
+      await resolveDayVoting(gameState, Object.values(gameState.players));
+      expect(MockUpdateGame).toHaveBeenCalled();
+      expect(gameState.players[p3.id].isAlive).toBe(false);
+      // Now it's 2 werewolves vs 1 villager. Parity is met.
+      expect(gameState.phase).toBe(PHASES.GAME_OVER);
+      expect(gameState.winner).toBe('WEREWOLVES');
+      expect(gameState.winners).toContain('WEREWOLVES');
     });
   });
 });

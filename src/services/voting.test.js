@@ -16,18 +16,15 @@ class MockGameState {
     }
 
     this.update = vi.fn(async (updates) => {
-      // Handle updates to players specially: convert array to map for internal storage
-      if (updates.players && Array.isArray(updates.players)) {
+      const newUpdates = { ...updates };
+      if (newUpdates.players && Array.isArray(newUpdates.players)) {
         const playersMap = {};
-        updates.players.forEach((p) => {
+        newUpdates.players.forEach((p) => {
           playersMap[p.id] = p;
         });
-        this._state.players = playersMap;
-        const { ...restUpdates } = updates; // Extract players to avoid double assignment
-        Object.assign(this._state, restUpdates); // Apply other updates
-      } else {
-        Object.assign(this._state, updates); // Apply all updates directly
+        newUpdates.players = playersMap;
       }
+      Object.assign(this._state, newUpdates);
     });
   }
 
@@ -262,7 +259,7 @@ describe('Voting Service', () => {
 
       // After resolveDayVoting, testGameState should reflect the changes
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
-      expect(testGameState._state.dayLog).toBe('Player 1 was voted out.');
+      expect(testGameState._state.dayLog).toBe('Player 1 was lynched.');
       expect(testGameState._state.players['p1'].isAlive).toBe(false);
     });
   });
@@ -279,7 +276,7 @@ describe('Voting Service', () => {
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p4'].isAlive).toBe(false);
-      expect(testGameState._state.dayLog).toContain('Player 4 was voted out.');
+      expect(testGameState._state.dayLog).toContain('Player 4 was lynched.');
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
     });
 
@@ -320,7 +317,7 @@ describe('Voting Service', () => {
       await resolveDayVoting(testGameState, mockPlayersArray);
 
       expect(testGameState.update).toHaveBeenCalled();
-      expect(testGameState._state.dayLog).toContain('No one was eliminated.');
+      expect(testGameState._state.dayLog).toBe('The vote was a tie!');
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
     });
 
@@ -435,7 +432,7 @@ describe('Voting Service', () => {
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p4'].isAlive).toBe(false);
-      expect(testGameState._state.dayLog).toContain('Player 4 was voted out.');
+      expect(testGameState._state.dayLog).toContain('Player 4 was lynched.');
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
     });
 
@@ -458,7 +455,7 @@ describe('Voting Service', () => {
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p4'].isAlive).toBe(false);
       expect(testGameState._state.players['p5'].isAlive).toBe(true);
-      expect(testGameState._state.dayLog).toContain('Player 4 was voted out.');
+      expect(testGameState._state.dayLog).toContain('Player 4 was lynched.');
     });
 
     it('handles Tanner win with END_GAME strategy', async () => {

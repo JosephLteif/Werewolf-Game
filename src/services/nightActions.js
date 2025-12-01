@@ -32,7 +32,7 @@ const aggregateWerewolfVotes = (werewolfVotes) => {
 const applyWerewolfKill = (newPlayers, determinedWolfTarget, doctorProtect, deaths) => {
   if (determinedWolfTarget && determinedWolfTarget !== doctorProtect) {
     const victim = findPlayerById(newPlayers, determinedWolfTarget);
-    if (victim) {
+    if (victim && victim.role !== ROLE_IDS.WEREWOLF) {
       victim.isAlive = false;
       deaths.push(victim);
     }
@@ -368,9 +368,10 @@ export const resolveNight = async (gameState, players, finalActions) => {
       gameState.winners,
       gameState.settings
     );
-    if (winResult) {
+    if (winResult && winResult.isGameOver) {
       await gameState.update({
         players: newPlayers,
+        dayLog: log,
         ...winResult,
         phase: PHASES.GAME_OVER,
       });

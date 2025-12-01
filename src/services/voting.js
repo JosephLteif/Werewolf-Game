@@ -41,7 +41,7 @@ export function determineVotingResult(voteCounts) {
 
   // Handle no votes, a tie, or a skip vote
   if (victims.length !== 1 || victims[0] === 'skip') {
-    return { type: 'no_elimination', victims: [] };
+    return { type: 'no_elimination', victims };
   }
 
   return { type: 'elimination', victims };
@@ -139,16 +139,13 @@ export const resolveDayVoting = async (gameState, players) => {
   const { type, victims } = determineVotingResult(voteCounts);
 
   if (type === 'no_elimination') {
+    const dayLog = victims.length > 1 ? 'The vote was a tie!' : 'No one was eliminated.';
     await gameState.update({
-      dayLog: 'No one was eliminated.',
-
+      dayLog,
       phase: PHASES.NIGHT_INTRO,
-
       votes: {},
-
       lockedVotes: [],
     });
-
     return;
   }
 
@@ -216,12 +213,11 @@ export const resolveDayVoting = async (gameState, players) => {
     gameState.settings
   );
 
-  if (winResult) {
+  if (winResult && winResult.isGameOver) {
     await gameState.update({
       players: newPlayers,
-
+      dayLog: `${victim.name} was lynched.`,
       ...winResult,
-
       phase: PHASES.GAME_OVER,
     });
 
@@ -230,7 +226,7 @@ export const resolveDayVoting = async (gameState, players) => {
 
   await gameState.update({
     players: newPlayers,
-    dayLog: `${victim.name} was voted out.`,
+    dayLog: `${victim.name} was lynched.`,
     phase: PHASES.NIGHT_INTRO,
     votes: {},
     lockedVotes: [],
