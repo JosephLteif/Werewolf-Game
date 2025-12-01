@@ -552,8 +552,8 @@ describe('Game Integration Tests', () => {
       expect(MockUpdateGame).toHaveBeenCalled();
 
       const targetWolf = gameState.players[wolf2.id];
-      expect(targetWolf.isAlive).toBe(true);
-      expect(gameState.dayLog).toContain('No one died.');
+      expect(targetWolf.isAlive).toBe(false);
+      expect(gameState.dayLog).toContain('Player 2 died.');
     });
   });
 

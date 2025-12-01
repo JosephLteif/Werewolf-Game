@@ -7,4 +7,5 @@ export const ACTION_TYPES = {
   VIGILANTE_TARGET: 'vigilanteTarget',
   SORCERER_CHECK: 'sorcererCheck',
   MASON_READY: 'masonReady',
+  WEREWOLF_SKIP: 'werewolfSkip',
 };

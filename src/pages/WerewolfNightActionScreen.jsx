@@ -1,3 +1,4 @@
+import { ACTION_TYPES } from '../constants/actions';
 import React, { useEffect, useState } from 'react';
 import { Check, Skull } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
@@ -63,13 +64,17 @@ export default function WerewolfNightActionScreen({
 
   const handleCastVote = (targetId) => {
     setSelectedTargetId(targetId);
-    advanceNight('werewolfProvisionalVote', { voterId: user.uid, targetId: targetId });
+    advanceNight(ACTION_TYPES.WEREWOLF_PROVISIONAL_VOTE, { voterId: user.uid, targetId: targetId });
   };
 
   const confirmVote = () => {
     if (selectedTargetId) {
-      advanceNight('werewolfVote', { voterId: user.uid, targetId: selectedTargetId });
+      advanceNight(ACTION_TYPES.WEREWOLF_VOTE, { voterId: user.uid, targetId: selectedTargetId });
     }
+  };
+
+  const handleSkip = () => {
+    advanceNight(ACTION_TYPES.WEREWOLF_SKIP, { voterId: user.uid });
   };
 
   if (myConfirmedVote) {
@@ -206,14 +211,23 @@ export default function WerewolfNightActionScreen({
         {/* Action Button */}
         <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800 space-y-3">
           {!myVote ? (
-            <button
-              disabled={!selectedTargetId} // Disable if no target selected
-              onClick={confirmVote}
-              className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
-            >
-              <Check className="w-5 h-5" />
-              {selectedTargetId ? 'Confirm Vote' : 'Select a player first'}
-            </button>
+            <>
+              <button
+                disabled={!selectedTargetId} // Disable if no target selected
+                onClick={confirmVote}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
+              >
+                <Check className="w-5 h-5" />
+                {selectedTargetId ? 'Confirm Vote' : 'Select a player first'}
+              </button>
+              <button
+                onClick={handleSkip}
+                disabled={!!myVote} // Disable if myVote is already cast
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
+              >
+                Skip Turn
+              </button>
+            </>
           ) : (
             <div className="text-center py-4">
               <div className="inline-flex items-center gap-2 bg-green-900/50 text-green-400 px-4 py-2 rounded-full font-bold">

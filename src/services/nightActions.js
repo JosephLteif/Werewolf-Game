@@ -9,7 +9,10 @@ import { ROLE_IDS } from '../constants/roleIds';
 // Helper functions for night actions
 const aggregateWerewolfVotes = (werewolfVotes) => {
   const voteCounts = {};
-  Object.values(werewolfVotes).forEach((targetId) => {
+  // Filter out skipped votes (null targetIds) before counting
+  const validVotes = Object.values(werewolfVotes).filter(targetId => targetId !== null && targetId !== undefined);
+
+  validVotes.forEach((targetId) => {
     voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
   });
 
@@ -32,7 +35,7 @@ const aggregateWerewolfVotes = (werewolfVotes) => {
 const applyWerewolfKill = (newPlayers, determinedWolfTarget, doctorProtect, deaths) => {
   if (determinedWolfTarget && determinedWolfTarget !== doctorProtect) {
     const victim = findPlayerById(newPlayers, determinedWolfTarget);
-    if (victim && victim.role !== ROLE_IDS.WEREWOLF) {
+    if (victim) {
       victim.isAlive = false;
       deaths.push(victim);
     }
@@ -180,6 +183,20 @@ export const advanceNight = async (
         [actionValue.voterId]: actionValue.targetId,
       };
       break;
+    case ACTION_TYPES.WEREWOLF_SKIP: {
+      newActions.werewolfVotes = {
+        ...(newActions.werewolfVotes || {}),
+        [actionValue.voterId]: null, // Record that the werewolf skipped
+      };
+      // Clear provisional vote for this werewolf if they skip
+      if (newActions.werewolfProvisionalVotes) {
+        delete newActions.werewolfProvisionalVotes[actionValue.voterId];
+        if (Object.keys(newActions.werewolfProvisionalVotes).length === 0) {
+          delete newActions.werewolfProvisionalVotes;
+        }
+      }
+      break;
+    }
     case ACTION_TYPES.DOPPELGANGER_COPY: {
       const doppelgangerPlayer = getPlayersByRole(players, ROLE_IDS.DOPPELGANGER).find(
         (p) => p.isAlive
