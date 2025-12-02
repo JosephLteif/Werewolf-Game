@@ -21,12 +21,16 @@ export default function DeadScreen({
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
     CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
     TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add Tanner
+    MULTIPLE: { bg: 'from-purple-600 to-indigo-600', text: 'text-purple-300', alignment: 'neutral' }, // For multiple winners
     WINNER: { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' }, // Generic winner
   };
 
   const colors = isGameOver
     ? winnerColors[winner] || winnerColors.WINNER // Use winner prop, fall back to generic
     : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
+
+  const winnerText = winner === 'MULTIPLE' ? 'MULTIPLE WINNERS!' : `${winner} WIN!`;
+
 
   // Filter winners
   const winningPlayers = players
@@ -80,7 +84,7 @@ export default function DeadScreen({
             <h2
               className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}
             >
-              {winner} WIN!
+              {winnerText}
             </h2>
             <p className="text-slate-400 mb-8 text-xl">Game Over</p>
 
