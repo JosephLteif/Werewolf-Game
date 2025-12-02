@@ -1,7 +1,7 @@
-import React, { useState } from 'react'; // Import useState
-import { Info, Copy, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react'; // Import useState and useEffect
+import { Info, Copy, ArrowLeft, XCircle } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
-import { Teams } from '../models/Team';
+import { kickPlayer } from '../services/rooms';
 import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
 import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
@@ -19,6 +19,27 @@ export default function LobbyScreen({
 }) {
   const [showRulesModal, setShowRulesModal] = useState(false); // State for rules modal
   const [showCopyNotification, setShowCopyNotification] = useState(false); // State for copy notification
+
+  const handleKick = async (playerId) => {
+    if (confirm("Are you sure you want to kick this player?")) {
+      await kickPlayer(gameState.code, playerId);
+    }
+  };
+
+  // Track if the user has ever been seen in the player list
+  const [hasJoined, setHasJoined] = useState(false);
+
+  // Auto self‑eject: if the current user is no longer in the room's player list, leave the lobby
+  useEffect(() => {
+    const stillInRoom = players.some(p => p.id === user.uid);
+    if (stillInRoom) {
+      // User is present – ensure we consider them joined
+      setHasJoined(true);
+    } else if (hasJoined) {
+      // User was previously present but now missing → host kicked them
+      leaveRoom();
+    }
+  }, [players, user.uid, hasJoined, leaveRoom]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
@@ -80,6 +101,14 @@ export default function LobbyScreen({
                 <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">
                   (You)
                 </span>
+              )}
+              {isHost && p.id !== user.uid && (
+                <button
+                  onClick={() => handleKick(p.id)}
+                  className="ml-auto text-xs text-slate-500 font-bold border border-slate-600 px-2 py-1 rounded"
+                >
+                  Kick
+                </button>
               )}
               {p.id === gameState.hostId && (
                 <span className="text-xs text-slate-500 font-bold ml-auto border border-slate-600 px-2 py-1 rounded">
@@ -371,14 +400,14 @@ export default function LobbyScreen({
                           onClick={() =>
                             isHost
                               ? gameState.update({
-                                  settings: {
-                                    ...gameState.settings,
-                                    activeRoles: {
-                                      ...gameState.settings.activeRoles,
-                                      [r.id]: !isActive,
-                                    },
+                                settings: {
+                                  ...gameState.settings,
+                                  activeRoles: {
+                                    ...gameState.settings.activeRoles,
+                                    [r.id]: !isActive,
                                   },
-                                })
+                                },
+                              })
                               : setShowRoleInfo(r.id)
                           }
                           className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group

@@ -1,4 +1,4 @@
-import { get, onValue, ref, serverTimestamp, set, update } from 'firebase/database';
+import { get, onValue, ref, serverTimestamp, set, update, remove } from 'firebase/database';
 import GameState from '../models/GameState';
 import { generateRoomCode } from '../utils/index';
 import { rtdb } from './firebase.js';
@@ -71,6 +71,20 @@ export async function updateRoom(roomCode, updates) {
 }
 
 /**
+ * Removes a player from a room's player list.
+ * Uses Firebase `remove` to delete the specific player node and updates the room timestamp.
+ */
+export async function kickPlayer(roomCode, playerId) {
+  if (!roomCode) throw new Error('roomCode is required');
+  if (!playerId) throw new Error('playerId is required');
+  const playerRef = ref(rtdb, `rooms/${roomCode}/players/${playerId}`);
+  await remove(playerRef);
+  // Update the room's updatedAt timestamp so listeners know something changed
+  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+  await update(roomRef, { updatedAt: serverTimestamp() });
+}
+
+/**
  * Subscribes to changes for a specific room and invokes `callback` with the room value.
  * Returns an unsubscribe function.
  */
@@ -84,9 +98,12 @@ export function subscribeToRoom(roomCode, callback) {
   });
 }
 
+
+
 export default {
   createRoom,
   joinRoom,
   subscribeToRoom,
   updateRoom,
+  kickPlayer,
 };
