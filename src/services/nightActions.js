@@ -399,14 +399,20 @@ export const resolveNight = async (gameState, players, finalActions) => {
       gameState.winners,
       gameState.settings
     );
-    if (winResult && winResult.isGameOver) {
-      await gameState.update({
-        players: newPlayers,
-        ...winResult,
-        phase: PHASES.GAME_OVER,
-      });
-      await gameState.addDayLog(log);
-      return;
+    if (winResult) {
+      if (winResult.isGameOver) {
+        await gameState.update({
+          players: newPlayers,
+          ...winResult,
+          phase: PHASES.GAME_OVER,
+        });
+        await gameState.addDayLog(log);
+        return;
+      } else if (winResult.winners) {
+        await gameState.update({
+          winners: winResult.winners,
+        });
+      }
     }
   }
 
@@ -467,13 +473,19 @@ export const handleHunterShot = async (gameState, players, targetId) => {
     gameState.winners,
     gameState.settings
   );
-  if (winResult && winResult.isGameOver) {
-    await gameState.update({
-      players: newPlayers,
-      ...winResult,
-      phase: PHASES.GAME_OVER,
-    });
-    return;
+  if (winResult) {
+    if (winResult.isGameOver) {
+      await gameState.update({
+        players: newPlayers,
+        ...winResult,
+        phase: PHASES.GAME_OVER,
+      });
+      return;
+    } else if (winResult.winners) {
+      await gameState.update({
+        winners: winResult.winners,
+      });
+    }
   }
 
   const wasNightDeath = gameState.dayLog[gameState.dayLog.length - 1].includes('died');

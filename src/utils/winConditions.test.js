@@ -73,7 +73,6 @@ describe('Win Conditions Service', () => {
 
       const result = checkWinCondition(playersAfterWolfDeath, [], [], mockGameSettings);
       expect(result).toEqual({
-        winner: 'VILLAGERS',
         winners: ['VILLAGERS'],
         isGameOver: true,
       });
@@ -90,7 +89,6 @@ describe('Win Conditions Service', () => {
 
       const result = checkWinCondition(playersAfterManyDeaths, [], [], mockGameSettings);
       expect(result).toEqual({
-        winner: 'WEREWOLVES',
         winners: ['WEREWOLVES'],
         isGameOver: true,
       });
@@ -107,7 +105,6 @@ describe('Win Conditions Service', () => {
 
       const result = checkWinCondition(playersAfterWolfDeath, [], []);
       expect(result).toEqual({
-        winner: 'VILLAGERS',
         winners: ['VILLAGERS'],
         isGameOver: true,
       });

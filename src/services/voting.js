@@ -163,29 +163,7 @@ export const resolveDayVoting = async (gameState, players) => {
     return;
   }
 
-  // Handle Tanner Win
-
-  if (victim.role === ROLE_IDS.TANNER) {
-    if (gameState.settings.tannerWinStrategy === TANNER_WIN_STRATEGIES.END_GAME) {
-      await gameState.update({
-        players: newPlayers,
-
-        winner: 'TANNER',
-
-        winners: [victim.id],
-
-        phase: PHASES.GAME_OVER,
-      });
-
-      return;
-    } else {
-      // Continue game, but Tanner has won
-
-      const winners = [...(gameState.winners || []), victim.id];
-
-      await gameState.update({ winners });
-    }
-  }
+  // Tanner Win logic is now handled in checkWinCondition via TannerWinStrategy
 
   // Doppelgänger Transformation (Voting Death)
 
@@ -210,18 +188,26 @@ export const resolveDayVoting = async (gameState, players) => {
     newPlayers,
     gameState.lovers,
     gameState.winners,
-    gameState.settings
+    gameState.settings,
+    { ...victim, cause: 'VOTE' }
   );
 
-  if (winResult && winResult.isGameOver) {
-    await gameState.update({
-      players: newPlayers,
-      ...winResult,
-      phase: PHASES.GAME_OVER,
-    });
-    await gameState.addDayLog(`${victim.name} was lynched.`);
+  if (winResult) {
+    if (winResult.isGameOver) {
+      await gameState.update({
+        players: newPlayers,
+        ...winResult,
+        phase: PHASES.GAME_OVER,
+      });
+      await gameState.addDayLog(`${victim.name} was lynched.`);
 
-    return;
+      return;
+    } else if (winResult.winners) {
+      // Game continues but we have new winners (e.g. Tanner)
+      await gameState.update({
+        winners: winResult.winners,
+      });
+    }
   }
 
   await gameState.update({

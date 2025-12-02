@@ -114,7 +114,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'VILLAGERS',
         winners: ['VILLAGERS'],
         isGameOver: true,
       });
@@ -135,7 +134,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'WEREWOLVES',
         winners: ['WEREWOLVES'],
         isGameOver: true,
       });
@@ -174,7 +172,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'LOVERS',
         winners: ['LOVERS'],
         isGameOver: true,
       });
@@ -211,7 +208,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'LOVERS',
         winners: ['LOVERS', 'CUPID'],
         isGameOver: true,
       });
@@ -238,7 +234,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'VILLAGERS',
         winners: ['VILLAGERS'],
         isGameOver: true,
       });
@@ -260,7 +255,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'WEREWOLVES',
         winners: ['WEREWOLVES'],
         isGameOver: true,
       });
@@ -304,7 +298,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'LOVERS',
         winners: ['LOVERS'],
         isGameOver: true,
       });
@@ -342,7 +335,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'LOVERS',
         winners: ['LOVERS'],
         isGameOver: true,
       });
@@ -383,7 +375,6 @@ describe('Game Integration Tests', () => {
       );
 
       expect(result).toEqual({
-        winner: 'LOVERS',
         winners: ['LOVERS', 'CUPID'],
         isGameOver: true,
       });
@@ -577,7 +568,7 @@ describe('Game Integration Tests', () => {
       expect(updatedP3.isAlive).toBe(false);
       expect(gameState.dayLog).toContain('Player 3 was lynched.');
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
-      expect(gameState.winner).toBe('VILLAGERS');
+      expect(gameState.winners).toContain('VILLAGERS');
     });
 
     it('Scenario: Tie vote with no mayor results in no elimination', async () => {
@@ -641,7 +632,6 @@ describe('Game Integration Tests', () => {
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.players[p3.id].isAlive).toBe(false);
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
-      expect(gameState.winner).toBe('VILLAGERS');
       expect(gameState.winners).toContain('VILLAGERS');
     });
 
@@ -664,7 +654,6 @@ describe('Game Integration Tests', () => {
       expect(gameState.players[p3.id].isAlive).toBe(false);
       // Now it's 2 werewolves vs 1 villager. Parity is met.
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
-      expect(gameState.winner).toBe('WEREWOLVES');
       expect(gameState.winners).toContain('WEREWOLVES');
     });
 
@@ -723,7 +712,6 @@ describe('Game Integration Tests', () => {
 
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
-      expect(gameState.winner).toBe('TANNER');
       expect(gameState.winners).toContain(tanner.id);
     });
 
