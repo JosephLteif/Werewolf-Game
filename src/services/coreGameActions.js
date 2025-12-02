@@ -2,48 +2,41 @@ import { assignRolesAndStartGame, markPlayerReady } from './roles';
 import { startNight, advanceNight, resolveNight, handleHunterShot } from './nightActions';
 import { castPlayerVote, lockPlayerVote, resolveDayVoting } from './voting';
 
-export function coreGameActions(
-  gameState,
-  updateGame,
-  players,
-  user,
-  isHost,
-  now
-) {
+export function coreGameActions(gameState, players, user, isHost, now) {
   const startGame = async () => {
-    await assignRolesAndStartGame(gameState, updateGame, players, isHost);
+    await assignRolesAndStartGame(gameState, players, isHost);
   };
 
   const markReady = async () => {
-    await markPlayerReady(players, user, gameState, updateGame);
+    await markPlayerReady(players, user, gameState);
   };
 
   const startNightPhase = async () => {
-    await startNight(gameState, updateGame, players, now);
+    await startNight(gameState, players, now);
   };
 
-  const advanceNightPhase = async (actionType, actionValue) => {
-    await advanceNight(gameState, updateGame, players, now, actionType, actionValue);
+  const advanceNightPhase = async (actionType, actionValue, extraPayload) => {
+    await advanceNight(gameState, players, now, actionType, actionValue, extraPayload);
   };
 
   const resolveNightPhase = async (finalActions) => {
-    await resolveNight(gameState, updateGame, players, finalActions);
+    await resolveNight(gameState, players, finalActions);
   };
 
   const handleHunterShotAction = async (targetId) => {
-    await handleHunterShot(gameState, updateGame, players, targetId);
+    await handleHunterShot(gameState, players, targetId);
   };
 
   const castVote = async (targetId) => {
-    await castPlayerVote(gameState, updateGame, user, targetId);
+    await castPlayerVote(gameState, user, targetId);
   };
 
   const lockVote = async () => {
-    await lockPlayerVote(gameState, updateGame, players, user);
+    await lockPlayerVote(gameState, players, user);
   };
 
   const resolveVoting = async () => {
-    await resolveDayVoting(gameState, updateGame, players);
+    await resolveDayVoting(gameState, players);
   };
 
   return {

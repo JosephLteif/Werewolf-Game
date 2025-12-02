@@ -1,3 +1,4 @@
+import { ACTION_TYPES } from '../constants/actions';
 import React, { useEffect, useState } from 'react';
 import { Check, Skull } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
@@ -20,14 +21,14 @@ export default function WerewolfNightActionScreen({
 
   const timeLeft = phaseEndTime ? Math.max(0, Math.ceil((phaseEndTime - now) / 1000)) : null;
 
-  const alivePlayers = players.filter(p => p.isAlive);
-  const votingWerewolves = alivePlayers.filter(p => p.role === ROLE_IDS.WEREWOLF);
+  const alivePlayers = players.filter((p) => p.isAlive);
+  const votingWerewolves = alivePlayers.filter((p) => p.role === ROLE_IDS.WEREWOLF);
   const totalVotingWerewolves = votingWerewolves.length;
   const confirmedVotesCount = Object.values(gameState.nightActions?.werewolfVotes || {}).length;
 
   // Combine confirmed and provisional votes, with confirmed taking precedence
   const effectiveWerewolfVotes = {};
-  votingWerewolves.forEach(ww => {
+  votingWerewolves.forEach((ww) => {
     // If a werewolf has a confirmed vote, use that
     if (gameState.nightActions?.werewolfVotes?.[ww.id]) {
       effectiveWerewolfVotes[ww.id] = gameState.nightActions.werewolfVotes[ww.id];
@@ -41,9 +42,9 @@ export default function WerewolfNightActionScreen({
 
   // Calculate werewolf vote counts from effective votes
   const werewolfVoteCounts = {};
-  alivePlayers.forEach(p => werewolfVoteCounts[p.id] = 0);
+  alivePlayers.forEach((p) => (werewolfVoteCounts[p.id] = 0));
 
-  Object.values(effectiveWerewolfVotes).forEach(targetId => {
+  Object.values(effectiveWerewolfVotes).forEach((targetId) => {
     if (targetId && werewolfVoteCounts[targetId] !== undefined) {
       werewolfVoteCounts[targetId]++;
     }
@@ -63,13 +64,17 @@ export default function WerewolfNightActionScreen({
 
   const handleCastVote = (targetId) => {
     setSelectedTargetId(targetId);
-    advanceNight('werewolfProvisionalVote', { voterId: user.uid, targetId: targetId });
+    advanceNight(ACTION_TYPES.WEREWOLF_PROVISIONAL_VOTE, { voterId: user.uid, targetId: targetId });
   };
 
   const confirmVote = () => {
     if (selectedTargetId) {
-      advanceNight('werewolfVote', { voterId: user.uid, targetId: selectedTargetId });
+      advanceNight(ACTION_TYPES.WEREWOLF_VOTE, { voterId: user.uid, targetId: selectedTargetId });
     }
+  };
+
+  const handleSkip = () => {
+    advanceNight(ACTION_TYPES.WEREWOLF_SKIP, { voterId: user.uid });
   };
 
   if (myConfirmedVote) {
@@ -81,11 +86,22 @@ export default function WerewolfNightActionScreen({
           </div>
         </div>
         <h2 className="text-2xl font-bold mb-3 text-red-200">Waiting for other Werewolves...</h2>
-        <p className="text-red-400/70 text-sm">Your vote has been cast. Waiting for others to confirm.</p>
+        <p className="text-red-400/70 text-sm">
+          Your vote has been cast. Waiting for others to confirm.
+        </p>
         <div className="mt-8 flex gap-2">
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          <div
+            className="w-2 h-2 bg-red-500 rounded-full animate-bounce"
+            style={{ animationDelay: '0s' }}
+          ></div>
+          <div
+            className="w-2 h-2 bg-red-500 rounded-full animate-bounce"
+            style={{ animationDelay: '0.2s' }}
+          ></div>
+          <div
+            className="w-2 h-2 bg-red-500 rounded-full animate-bounce"
+            style={{ animationDelay: '0.4s' }}
+          ></div>
         </div>
       </div>
     );
@@ -99,22 +115,22 @@ export default function WerewolfNightActionScreen({
           <h2 className="text-4xl font-black text-red-400 mb-2 drop-shadow-lg">Werewolf Hunt</h2>
           <p className="text-slate-400 text-base">Choose your victim. Coordinate with your pack.</p>
           {timeLeft !== null && (
-            <div className="text-3xl font-mono font-black text-red-400 mt-2">
-              {timeLeft}s
-            </div>
+            <div className="text-3xl font-mono font-black text-red-400 mt-2">{timeLeft}s</div>
           )}
           <div className="mt-3 inline-flex items-center gap-2 bg-white/10 text-red-100 px-4 py-2 rounded-full shadow-sm border border-red-700">
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
-            <span className="text-xs font-bold">{confirmedVotesCount} / {totalVotingWerewolves} Werewolves Voted</span>
+            <span className="text-xs font-bold">
+              {confirmedVotesCount} / {totalVotingWerewolves} Werewolves Voted
+            </span>
           </div>
         </div>
 
-
         <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-          {alivePlayers.map(p => {
+          {alivePlayers.map((p) => {
             const displayedVoteCount = werewolfVoteCounts[p.id] || 0;
 
-            const votePercentage = totalVotingWerewolves > 0 ? (displayedVoteCount / totalVotingWerewolves) * 100 : 0;
+            const votePercentage =
+              totalVotingWerewolves > 0 ? (displayedVoteCount / totalVotingWerewolves) * 100 : 0;
             const isSelectedByMe = selectedTargetId === p.id;
             const hasBeenVotedByMe = myVote === p.id;
 
@@ -123,11 +139,12 @@ export default function WerewolfNightActionScreen({
                 key={p.id}
                 onClick={() => handleCastVote(p.id)}
                 className={`w-full relative overflow-hidden rounded-2xl border-2 transition-all shadow-lg hover:shadow-xl
-                  ${isSelectedByMe
-                    ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
-                    : hasBeenVotedByMe
+                  ${
+                    isSelectedByMe
                       ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
-                      : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
+                      : hasBeenVotedByMe
+                        ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
+                        : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
                   }`}
                 disabled={!!myVote} // Disable selection if myVote is already cast
               >
@@ -149,23 +166,35 @@ export default function WerewolfNightActionScreen({
                   <div className="flex-1 text-left">
                     <div className="font-bold text-lg">
                       {p.name}
-                      {p.id === user.uid && <span className="text-sm text-red-400 ml-2">(You)</span>}
+                      {p.id === user.uid && (
+                        <span className="text-sm text-red-400 ml-2">(You)</span>
+                      )}
                     </div>
                     {displayedVoteCount > 0 && (
                       <div className="text-sm text-red-300 flex items-center gap-2">
-                        <span>{displayedVoteCount} {displayedVoteCount === 1 ? 'vote' : 'votes'}</span>
+                        <span>
+                          {displayedVoteCount} {displayedVoteCount === 1 ? 'vote' : 'votes'}
+                        </span>
 
                         {/* Show avatars of voters */}
                         <div className="ml-2">
-                          <VoterAvatars voterIds={votesByTarget[p.id]} players={players} size="6" borderColor="border-slate-900" />
+                          <VoterAvatars
+                            voterIds={votesByTarget[p.id]}
+                            players={players}
+                            size="6"
+                            borderColor="border-slate-900"
+                          />
                         </div>
                       </div>
                     )}
                   </div>
 
                   {/* Teammate Indicator (Red Skull) */}
-                  {((p.role === ROLE_IDS.WEREWOLF && p.id !== user.uid)) && (
-                    <div className="bg-red-950/50 p-1.5 rounded-full border border-red-900/50" title="Teammate">
+                  {p.role === ROLE_IDS.WEREWOLF && p.id !== user.uid && (
+                    <div
+                      className="bg-red-950/50 p-1.5 rounded-full border border-red-900/50"
+                      title="Teammate"
+                    >
                       <Skull className="w-5 h-5 text-red-500" />
                     </div>
                   )}
@@ -182,14 +211,23 @@ export default function WerewolfNightActionScreen({
         {/* Action Button */}
         <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800 space-y-3">
           {!myVote ? (
-            <button
-              disabled={!selectedTargetId} // Disable if no target selected
-              onClick={confirmVote}
-              className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
-            >
-              <Check className="w-5 h-5" />
-              {selectedTargetId ? 'Confirm Vote' : 'Select a player first'}
-            </button>
+            <>
+              <button
+                disabled={!selectedTargetId} // Disable if no target selected
+                onClick={confirmVote}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
+              >
+                <Check className="w-5 h-5" />
+                {selectedTargetId ? 'Confirm Vote' : 'Select a player first'}
+              </button>
+              <button
+                onClick={handleSkip}
+                disabled={!!myVote} // Disable if myVote is already cast
+                className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl shadow-md transition-all disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
+              >
+                Skip Turn
+              </button>
+            </>
           ) : (
             <div className="text-center py-4">
               <div className="inline-flex items-center gap-2 bg-green-900/50 text-green-400 px-4 py-2 rounded-full font-bold">

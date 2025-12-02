@@ -4,14 +4,14 @@
 
 /* Hide spin buttons for number input fields */
 /* For Webkit browsers (Chrome, Safari, Opera) */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
 /* For Firefox */
-input[type="number"] {
+input[type='number'] {
   -moz-appearance: textfield;
   border: none;
 }

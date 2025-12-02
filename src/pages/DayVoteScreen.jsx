@@ -1,18 +1,25 @@
-
 import { Check } from 'lucide-react';
 import VoterAvatars from '../components/VoterAvatars.jsx';
 
-export default function DayVoteScreen({ gameState, players, amAlive, castVote, lockVote, now, user }) {
+export default function DayVoteScreen({
+  gameState,
+  players,
+  amAlive,
+  castVote,
+  lockVote,
+  now,
+  user,
+}) {
   // Calculate vote counts
   const voteCounts = {};
-  const alivePlayers = players.filter(p => p.isAlive);
+  const alivePlayers = players.filter((p) => p.isAlive);
 
   // Initialize counts
-  alivePlayers.forEach(p => voteCounts[p.id] = 0);
+  alivePlayers.forEach((p) => (voteCounts[p.id] = 0));
   voteCounts['skip'] = 0;
 
   // Count votes
-  Object.values(gameState.votes || {}).forEach(targetId => {
+  Object.values(gameState.votes || {}).forEach((targetId) => {
     if (voteCounts[targetId] !== undefined) {
       voteCounts[targetId]++;
     }
@@ -46,7 +53,9 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
           <p className="text-slate-600 text-sm">Discuss and vote to eliminate a suspect</p>
           <div className="mt-3 inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-xs font-bold text-slate-700">{lockedCount} / {totalPlayers} Locked</span>
+            <span className="text-xs font-bold text-slate-700">
+              {lockedCount} / {totalPlayers} Locked
+            </span>
           </div>
           {gameState.phaseEndTime && (
             <div className="mt-2 text-2xl font-mono font-black text-orange-500">
@@ -57,7 +66,7 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
 
         {/* Player Cards */}
         <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-          {alivePlayers.map(p => {
+          {alivePlayers.map((p) => {
             const voteCount = voteCounts[p.id] || 0;
             const votePercentage = totalPlayers > 0 ? (voteCount / totalPlayers) * 100 : 0;
             const isMyVote = myVote === p.id;
@@ -89,7 +98,9 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
                   <div className="flex-1 text-left">
                     <div className="font-bold text-lg">
                       {p.name}
-                      {p.id === user.uid && <span className="text-sm text-orange-600 ml-2">(You)</span>}
+                      {p.id === user.uid && (
+                        <span className="text-sm text-orange-600 ml-2">(You)</span>
+                      )}
                     </div>
                     <div className="text-xs text-slate-500 flex items-center gap-2">
                       {voteCount > 0 && (
@@ -109,9 +120,7 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
                     </div>
                   </div>
 
-                  {isMyVote && (
-                    <Check className="w-6 h-6 text-orange-500" />
-                  )}
+                  {isMyVote && <Check className="w-6 h-6 text-orange-500" />}
                 </div>
               </button>
             );
@@ -161,7 +170,8 @@ export default function DayVoteScreen({ gameState, players, amAlive, castVote, l
                   Vote Locked
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  Waiting for {totalPlayers - lockedCount} {totalPlayers - lockedCount === 1 ? 'player' : 'players'}...
+                  Waiting for {totalPlayers - lockedCount}{' '}
+                  {totalPlayers - lockedCount === 1 ? 'player' : 'players'}...
                 </p>
               </div>
             )}

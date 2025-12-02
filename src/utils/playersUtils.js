@@ -1,6 +1,3 @@
-import { roleRegistry } from '../roles/RoleRegistry';
-import { ALIGNMENTS } from '../constants/alignments';
-
 export const getAlivePlayers = (players) => {
   return players.filter((p) => p.isAlive);
 };
