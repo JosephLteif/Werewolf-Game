@@ -426,7 +426,7 @@ export default function App() {
     } else if (gameState.phase === PHASES.GAME_OVER) {
       currentScreen = wrapGameContent(
         <DeadScreen
-          winner={gameState.winner}
+          winner={gameState.winners && gameState.winners.length > 0 ? gameState.winners[0] : null}
           winners={gameState.winners}
           isGameOver={gameState.phase === PHASES.GAME_OVER}
           onReset={() =>
