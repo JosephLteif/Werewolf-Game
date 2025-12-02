@@ -678,7 +678,7 @@ export default function LobbyScreen({
         </div>
       )}
 
-      <RoleInfoModal showRoleInfo={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
+      <RoleInfoModal selectedRoleId={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
       {showRulesModal && <RoleRulesModal onClose={() => setShowRulesModal(false)} />}
       <ConfirmationModal
         isOpen={showKickConfirm}
