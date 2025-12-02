@@ -159,7 +159,7 @@ export default function LobbyScreen({
               {isHost && p.id !== user.uid && (
                 <button
                   onClick={() => handleKick(p.id)}
-                  className="ml-auto text-xs text-slate-500 font-bold border border-slate-600 px-2 py-1 rounded"
+                  className="ml-auto text-xs font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 px-2 py-1 rounded transition-all"
                 >
                   Kick
                 </button>
