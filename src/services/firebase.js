@@ -3,13 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyB3C0iJUsTaLOuJBxiDwiiC4cdUMbYIeaM',
-  authDomain: 'nightfall-game.firebaseapp.com',
-  projectId: 'nightfall-game',
-  storageBucket: 'nightfall-game.firebasestorage.app',
-  databaseURL: 'https://nightfall-game-default-rtdb.europe-west1.firebasedatabase.app',
-  messagingSenderId: '1048654390624',
-  appId: '1:1048654390624:web:166c26acdadf35a32cea05',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 };
 
 const app = initializeApp(firebaseConfig);
