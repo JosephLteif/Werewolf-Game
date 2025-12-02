@@ -56,7 +56,7 @@ export default function RoleInfoModal({ selectedRoleId, showAllRoles, onClose })
                   >
                     {React.createElement(r.icon, { className: 'w-8 h-8 text-indigo-400' })}
                     <div className="flex-1">
-                      <h4 className="text-lg font-bold">{r.name}</h4>
+                      <h4 className="text-lg font-bold text-slate-200">{r.name}</h4>
                       <p className="text-xs text-slate-400">{r.description}</p>
                     </div>
                   </div>
