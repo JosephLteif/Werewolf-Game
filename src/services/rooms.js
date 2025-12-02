@@ -85,6 +85,22 @@ export async function kickPlayer(roomCode, playerId) {
 }
 
 /**
+ * Updates a player's name in a room.
+ */
+export async function renamePlayer(roomCode, playerId, newName) {
+  if (!roomCode) throw new Error('roomCode is required');
+  if (!playerId) throw new Error('playerId is required');
+  if (!newName || typeof newName !== 'string') throw new Error('newName is required');
+
+  const playerRef = ref(rtdb, `rooms/${roomCode}/players/${playerId}`);
+  await update(playerRef, { name: newName });
+
+  // Update the room's updatedAt timestamp so listeners know something changed
+  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+  await update(roomRef, { updatedAt: serverTimestamp() });
+}
+
+/**
  * Subscribes to changes for a specific room and invokes `callback` with the room value.
  * Returns an unsubscribe function.
  */
@@ -106,4 +122,5 @@ export default {
   subscribeToRoom,
   updateRoom,
   kickPlayer,
+  renamePlayer,
 };

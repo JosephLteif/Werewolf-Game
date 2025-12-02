@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'; // Import useState and useEffect
-import { Info, Copy, ArrowLeft, XCircle } from 'lucide-react';
+import { Info, Copy, ArrowLeft, XCircle, Pencil, Check, X } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
-import { kickPlayer } from '../services/rooms';
+import { kickPlayer, renamePlayer } from '../services/rooms';
 import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
 import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
@@ -23,6 +23,27 @@ export default function LobbyScreen({
   const handleKick = async (playerId) => {
     if (confirm("Are you sure you want to kick this player?")) {
       await kickPlayer(gameState.code, playerId);
+    }
+  };
+
+  const [editingPlayerId, setEditingPlayerId] = useState(null);
+  const [editName, setEditName] = useState('');
+
+  const startEditing = (player) => {
+    setEditingPlayerId(player.id);
+    setEditName(player.name);
+  };
+
+  const cancelEditing = () => {
+    setEditingPlayerId(null);
+    setEditName('');
+  };
+
+  const saveName = async (playerId) => {
+    if (editName.trim()) {
+      await renamePlayer(gameState.code, playerId, editName.trim());
+      setEditingPlayerId(null);
+      setEditName('');
     }
   };
 
@@ -96,11 +117,44 @@ export default function LobbyScreen({
               key={p.id}
               className="bg-slate-800 p-4 rounded-xl flex items-center gap-3 border border-slate-700"
             >
-              <span className="font-bold text-lg">{p.name}</span>
-              {p.id === user.uid && (
-                <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">
-                  (You)
-                </span>
+              {editingPlayerId === p.id ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white flex-1 focus:outline-none focus:border-indigo-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveName(p.id);
+                      if (e.key === 'Escape') cancelEditing();
+                    }}
+                  />
+                  <button onClick={() => saveName(p.id)} className="text-green-400 hover:text-green-300">
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button onClick={cancelEditing} className="text-red-400 hover:text-red-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span className="font-bold text-lg">{p.name}</span>
+                  {p.id === user.uid && (
+                    <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">
+                      (You)
+                    </span>
+                  )}
+                  {isHost && (
+                    <button
+                      onClick={() => startEditing(p)}
+                      className="text-slate-500 hover:text-indigo-400 ml-2 p-1 hover:bg-slate-700 rounded"
+                      title="Rename Player"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
+                </>
               )}
               {isHost && p.id !== user.uid && (
                 <button
