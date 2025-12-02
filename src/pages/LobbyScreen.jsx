@@ -1,10 +1,11 @@
-import React, { useState } from 'react'; // Import useState
-import { Info, Copy, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react'; // Import useState and useEffect
+import { Info, Copy, ArrowLeft, XCircle, Pencil, Check, X } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
-import { Teams } from '../models/Team';
+import { kickPlayer, renamePlayer } from '../services/rooms';
 import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
 import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
+import ConfirmationModal from '../components/modals/ConfirmationModal'; // Import ConfirmationModal
 import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function LobbyScreen({
@@ -19,6 +20,62 @@ export default function LobbyScreen({
 }) {
   const [showRulesModal, setShowRulesModal] = useState(false); // State for rules modal
   const [showCopyNotification, setShowCopyNotification] = useState(false); // State for copy notification
+  const [showKickConfirm, setShowKickConfirm] = useState(false); // State for kick confirmation modal
+  const [playerToKickId, setPlayerToKickId] = useState(null); // State to store the ID of the player to kick
+
+  const handleKick = (playerId) => {
+    setPlayerToKickId(playerId);
+    setShowKickConfirm(true);
+  };
+
+  const confirmKick = async () => {
+    if (playerToKickId) {
+      await kickPlayer(gameState.code, playerToKickId);
+    }
+    setShowKickConfirm(false);
+    setPlayerToKickId(null);
+  };
+
+  const cancelKick = () => {
+    setShowKickConfirm(false);
+    setPlayerToKickId(null);
+  };
+
+  const [editingPlayerId, setEditingPlayerId] = useState(null);
+  const [editName, setEditName] = useState('');
+
+  const startEditing = (player) => {
+    setEditingPlayerId(player.id);
+    setEditName(player.name);
+  };
+
+  const cancelEditing = () => {
+    setEditingPlayerId(null);
+    setEditName('');
+  };
+
+  const saveName = async (playerId) => {
+    if (editName.trim()) {
+      await renamePlayer(gameState.code, playerId, editName.trim());
+      setEditingPlayerId(null);
+      setEditName('');
+    }
+  };
+
+  // Track if the user has ever been seen in the player list
+  const [hasJoined, setHasJoined] = useState(false);
+
+  // Auto self‑eject: if the current user is no longer in the room's player list, leave the lobby
+  useEffect(() => {
+    const stillInRoom = players.some(p => p.id === user.uid);
+    if (stillInRoom) {
+      // User is present – ensure we consider them joined
+      setHasJoined(true);
+    } else if (hasJoined) {
+      // User was previously present but now missing → host kicked them
+      leaveRoom();
+    }
+  }, [players, user.uid, hasJoined, leaveRoom]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
@@ -75,11 +132,52 @@ export default function LobbyScreen({
               key={p.id}
               className="bg-slate-800 p-4 rounded-xl flex items-center gap-3 border border-slate-700"
             >
-              <span className="font-bold text-lg">{p.name}</span>
-              {p.id === user.uid && (
-                <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">
-                  (You)
-                </span>
+              {editingPlayerId === p.id ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white flex-1 focus:outline-none focus:border-indigo-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveName(p.id);
+                      if (e.key === 'Escape') cancelEditing();
+                    }}
+                  />
+                  <button onClick={() => saveName(p.id)} className="text-green-400 hover:text-green-300">
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button onClick={cancelEditing} className="text-red-400 hover:text-red-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span className="font-bold text-lg">{p.name}</span>
+                  {p.id === user.uid && (
+                    <span className="text-sm font-bold text-indigo-400 bg-indigo-900/30 px-2 py-0.5 rounded ml-2">
+                      (You)
+                    </span>
+                  )}
+                  {isHost && (
+                    <button
+                      onClick={() => startEditing(p)}
+                      className="text-slate-500 hover:text-indigo-400 ml-2 p-1 hover:bg-slate-700 rounded"
+                      title="Rename Player"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
+                </>
+              )}
+              {isHost && p.id !== user.uid && (
+                <button
+                  onClick={() => handleKick(p.id)}
+                  className="ml-auto text-xs font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 px-2 py-1 rounded transition-all"
+                >
+                  Kick
+                </button>
               )}
               {p.id === gameState.hostId && (
                 <span className="text-xs text-slate-500 font-bold ml-auto border border-slate-600 px-2 py-1 rounded">
@@ -371,14 +469,14 @@ export default function LobbyScreen({
                           onClick={() =>
                             isHost
                               ? gameState.update({
-                                  settings: {
-                                    ...gameState.settings,
-                                    activeRoles: {
-                                      ...gameState.settings.activeRoles,
-                                      [r.id]: !isActive,
-                                    },
+                                settings: {
+                                  ...gameState.settings,
+                                  activeRoles: {
+                                    ...gameState.settings.activeRoles,
+                                    [r.id]: !isActive,
                                   },
-                                })
+                                },
+                              })
                               : setShowRoleInfo(r.id)
                           }
                           className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
@@ -582,6 +680,12 @@ export default function LobbyScreen({
 
       <RoleInfoModal showRoleInfo={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
       {showRulesModal && <RoleRulesModal onClose={() => setShowRulesModal(false)} />}
+      <ConfirmationModal
+        isOpen={showKickConfirm}
+        message="Are you sure you want to kick this player?"
+        onConfirm={confirmKick}
+        onCancel={cancelKick}
+      />
     </div>
   );
 }
