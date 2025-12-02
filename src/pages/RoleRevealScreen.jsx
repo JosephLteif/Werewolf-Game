@@ -4,13 +4,12 @@ import PlayerReadyChip from '../components/PlayerReadyChip';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 
 export default function RoleRevealScreen({ myPlayer, markReady, players, roleRevealParticles }) {
-  if (!myPlayer) return <div>Loading...</div>;
-  const MyRole = roleRegistry.getRole(myPlayer.role);
-
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const cardRef = useRef(null);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [transformStyle, setTransformStyle] = useState({});
-  const [sheenStyle, setSheenStyle] = useState({ opacity: 0 });
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
@@ -52,6 +51,9 @@ export default function RoleRevealScreen({ myPlayer, markReady, players, roleRev
       card.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, []);
+
+  if (!myPlayer) return <div>Loading...</div>;
+  const MyRole = roleRegistry.getRole(myPlayer.role);
 
   const alignmentColors = {
     good: {

@@ -21,12 +21,12 @@ import HunterActionScreen from './pages/HunterActionScreen';
 import WaitingForHunterScreen from './pages/WaitingForHunterScreen';
 import PlayerRoleDisplay from './components/PlayerRoleDisplay';
 import ActiveRolesPanel from './components/ActiveRolesPanel';
-import GameHistoryModal from './components/GameHistoryModal'; // Import GameHistoryModal
+import GameHistoryPanel from './components/GameHistoryPanel'; // Import GameHistoryPanel
+
 import { ROLE_IDS } from './constants/roleIds';
 import TeammateList from './components/TeammateList';
 
 import AuthScreen from './pages/AuthScreen';
-import { History } from 'lucide-react'; // Import History icon
 import { motion, AnimatePresence } from 'framer-motion'; // Added Framer Motion imports
 
 export default function App() {
@@ -34,7 +34,6 @@ export default function App() {
   const [playerName, setPlayerName] = useState('');
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
-  const [showHistoryModal, setShowHistoryModal] = useState(false); // State for history modal
 
   const { user } = useAuth();
 
@@ -176,13 +175,7 @@ export default function App() {
 
       {gameState?.dayLog && gameState.dayLog.length > 0 && (
         <div className="absolute top-16 right-4 z-50">
-          <button
-            onClick={() => setShowHistoryModal(true)}
-            className="px-3 py-2 rounded-lg bg-slate-900/80 backdrop-blur border border-indigo-500/30 text-indigo-200 text-sm font-medium transition-colors flex items-center gap-2 hover:bg-slate-800"
-          >
-            <History className="w-4 h-4 text-indigo-400" />
-            History
-          </button>
+          <GameHistoryPanel dayLog={gameState.dayLog} />
         </div>
       )}
       <PlayerRoleDisplay myPlayer={myPlayer} />
@@ -280,7 +273,7 @@ export default function App() {
             winner={null}
             winners={gameState?.winners || []}
             isGameOver={false}
-            onReset={() => {}}
+            onReset={() => { }}
             isHost={false}
             dayLog={gameState.dayLog}
             players={players}
@@ -531,10 +524,6 @@ export default function App() {
           {currentScreen}
         </motion.div>
       </AnimatePresence>
-
-      {showHistoryModal && gameState && (
-        <GameHistoryModal dayLog={gameState.dayLog} onClose={() => setShowHistoryModal(false)} />
-      )}
     </div>
   );
 }
