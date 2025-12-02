@@ -194,9 +194,17 @@ export const resolveDayVoting = async (gameState, players) => {
 
   if (winResult) {
     if (winResult.isGameOver) {
+      const singularWinner =
+        winResult.winners && winResult.winners.length > 0
+          ? winResult.winners.length > 1
+            ? 'MULTIPLE'
+            : winResult.winners[0]
+          : 'WINNER'; // Default to generic WINNER if no specific winner is provided
+
       await gameState.update({
         players: newPlayers,
         ...winResult,
+        winner: singularWinner, // Explicitly set the singular winner for display
         phase: PHASES.GAME_OVER,
       });
       await gameState.addDayLog(`${victim.name} was lynched.`);

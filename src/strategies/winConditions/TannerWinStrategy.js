@@ -13,7 +13,7 @@ export const TannerWinStrategy = {
 
       return {
         winner: 'TANNER',
-        winners: [recentDeath.id],
+        winners: ['TANNER'],
         isGameOver,
       };
     }

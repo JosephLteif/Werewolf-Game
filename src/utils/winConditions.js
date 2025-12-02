@@ -88,12 +88,16 @@ export function checkWinCondition(
 export function isPlayerWinner(player, winners, lovers, gameSettings) {
   if (!winners || winners.length === 0) return false;
 
-  // Direct win by player ID (e.g., Tanner or custom winner IDs)
+  // Direct win by player ID (e.g., custom winner IDs)
   if (winners.includes(player.id)) return true;
 
   const playerRole = roleRegistry.getRole(player.role);
   const teamId = player.alignment || playerRole?.team?.id;
 
+  // Tanner win
+  if (winners.includes('TANNER') && player.role === ROLE_IDS.TANNER) {
+    return true;
+  }
   // Lovers win
   if (winners.includes('LOVERS')) {
     if (lovers && lovers.includes(player.id)) return true;

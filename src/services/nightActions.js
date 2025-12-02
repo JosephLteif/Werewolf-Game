@@ -400,13 +400,20 @@ export const resolveNight = async (gameState, players, finalActions) => {
       gameState.settings
     );
     if (winResult) {
-      if (winResult.isGameOver) {
-        await gameState.update({
-          players: newPlayers,
-          ...winResult,
-          phase: PHASES.GAME_OVER,
-        });
-        await gameState.addDayLog(log);
+          if (winResult.isGameOver) {
+            const singularWinner =
+              winResult.winners && winResult.winners.length > 0
+                ? winResult.winners.length > 1
+                  ? 'MULTIPLE'
+                  : winResult.winners[0]
+                : 'WINNER'; // Default to generic WINNER
+      
+            await gameState.update({
+              players: newPlayers,
+              ...winResult,
+              winner: singularWinner, // Explicitly set the singular winner
+              phase: PHASES.GAME_OVER,
+            });        await gameState.addDayLog(log);
         return;
       } else if (winResult.winners) {
         await gameState.update({
@@ -475,9 +482,17 @@ export const handleHunterShot = async (gameState, players, targetId) => {
   );
   if (winResult) {
     if (winResult.isGameOver) {
+      const singularWinner =
+        winResult.winners && winResult.winners.length > 0
+          ? winResult.winners.length > 1
+            ? 'MULTIPLE'
+            : winResult.winners[0]
+          : 'WINNER'; // Default to generic WINNER
+
       await gameState.update({
         players: newPlayers,
         ...winResult,
+        winner: singularWinner, // Explicitly set the singular winner
         phase: PHASES.GAME_OVER,
       });
       return;
