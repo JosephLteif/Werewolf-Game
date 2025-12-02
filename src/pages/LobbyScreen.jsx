@@ -5,6 +5,7 @@ import { kickPlayer, renamePlayer } from '../services/rooms';
 import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
 import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
+import ConfirmationModal from '../components/modals/ConfirmationModal'; // Import ConfirmationModal
 import { roleRegistry } from '../roles/RoleRegistry';
 
 export default function LobbyScreen({
@@ -19,11 +20,25 @@ export default function LobbyScreen({
 }) {
   const [showRulesModal, setShowRulesModal] = useState(false); // State for rules modal
   const [showCopyNotification, setShowCopyNotification] = useState(false); // State for copy notification
+  const [showKickConfirm, setShowKickConfirm] = useState(false); // State for kick confirmation modal
+  const [playerToKickId, setPlayerToKickId] = useState(null); // State to store the ID of the player to kick
 
-  const handleKick = async (playerId) => {
-    if (confirm("Are you sure you want to kick this player?")) {
-      await kickPlayer(gameState.code, playerId);
+  const handleKick = (playerId) => {
+    setPlayerToKickId(playerId);
+    setShowKickConfirm(true);
+  };
+
+  const confirmKick = async () => {
+    if (playerToKickId) {
+      await kickPlayer(gameState.code, playerToKickId);
     }
+    setShowKickConfirm(false);
+    setPlayerToKickId(null);
+  };
+
+  const cancelKick = () => {
+    setShowKickConfirm(false);
+    setPlayerToKickId(null);
   };
 
   const [editingPlayerId, setEditingPlayerId] = useState(null);
@@ -665,6 +680,12 @@ export default function LobbyScreen({
 
       <RoleInfoModal showRoleInfo={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
       {showRulesModal && <RoleRulesModal onClose={() => setShowRulesModal(false)} />}
+      <ConfirmationModal
+        isOpen={showKickConfirm}
+        message="Are you sure you want to kick this player?"
+        onConfirm={confirmKick}
+        onCancel={cancelKick}
+      />
     </div>
   );
 }
