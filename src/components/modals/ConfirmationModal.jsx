@@ -32,9 +32,7 @@ const ConfirmationModal = ({ message, onConfirm, onCancel, isOpen }) => {
         </div>
 
         {/* Message */}
-        <p className="text-slate-300 text-base mb-6 leading-relaxed pl-15">
-          {message}
-        </p>
+        <p className="text-slate-300 text-base mb-6 leading-relaxed pl-15">{message}</p>
 
         {/* Action Buttons */}
         <div className="flex gap-3">

@@ -501,7 +501,7 @@ describe('Voting Service', () => {
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.phase).toBe(PHASES.GAME_OVER);
-      expect(testGameState._state.winners).toEqual([tannerPlayer.id]);
+      expect(testGameState._state.winners).toEqual(['TANNER']);
     });
 
     it('handles Tanner win with CONTINUE_GAME strategy', async () => {
@@ -531,7 +531,7 @@ describe('Voting Service', () => {
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
-      expect(testGameState._state.winners).toEqual([tannerPlayer.id]);
+      expect(testGameState._state.winners).toEqual(['TANNER']);
       expect(testGameState._state.players[tannerPlayer.id].isAlive).toBe(false);
     });
   });

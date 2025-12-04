@@ -3,6 +3,7 @@ import { PHASES } from '../../constants/phases';
 import { Shield } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
+import { ACTION_TYPES } from '../../constants/actions'; // Import ACTION_TYPES
 
 export class Doctor extends Role {
   constructor() {
@@ -25,7 +26,7 @@ export class Doctor extends Role {
   }
 
   processNightAction(_gameState, _player, action) {
-    if (action.type === 'doctorProtect') {
+    if (action.type === ACTION_TYPES.DOCTOR_PROTECT) {
       return {
         doctorProtect: action.targetId,
       };

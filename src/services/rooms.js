@@ -114,8 +114,6 @@ export function subscribeToRoom(roomCode, callback) {
   });
 }
 
-
-
 export default {
   createRoom,
   joinRoom,

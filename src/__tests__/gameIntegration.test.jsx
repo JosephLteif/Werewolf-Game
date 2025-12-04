@@ -712,7 +712,7 @@ describe('Game Integration Tests', () => {
 
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
-      expect(gameState.winners).toContain(tanner.id);
+      expect(gameState.winners).toContain('TANNER');
     });
 
     it('Scenario: Tanner Win Strategy - CONTINUE_GAME', async () => {
@@ -745,7 +745,7 @@ describe('Game Integration Tests', () => {
       expect(gameState.phase).not.toBe(PHASES.GAME_OVER);
       expect(gameState.phase).toBe(PHASES.NIGHT_INTRO);
       // Tanner should be in winners list
-      expect(gameState.winners).toContain(tanner.id);
+      expect(gameState.winners).toContain('TANNER');
       // Tanner should be dead
       const updatedTanner = gameState.players[tanner.id];
       expect(updatedTanner.isAlive).toBe(false);

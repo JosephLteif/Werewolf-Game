@@ -6,6 +6,8 @@ export const ACTION_TYPES = {
   DOCTOR_PROTECT: 'doctorProtect',
   VIGILANTE_TARGET: 'vigilanteTarget',
   SORCERER_CHECK: 'sorcererCheck',
+  SEER_CHECK: 'seerCheck',
   MASON_READY: 'masonReady',
   WEREWOLF_SKIP: 'werewolfSkip',
+  NO_ACTION: 'noAction',
 };

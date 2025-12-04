@@ -21,6 +21,11 @@ export default function DeadScreen({
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
     CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
     TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add Tanner
+    MULTIPLE: {
+      bg: 'from-purple-600 to-indigo-600',
+      text: 'text-purple-300',
+      alignment: 'neutral',
+    }, // For multiple winners
     WINNER: { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' }, // Generic winner
   };
 
@@ -28,10 +33,13 @@ export default function DeadScreen({
     ? winnerColors[winner] || winnerColors.WINNER // Use winner prop, fall back to generic
     : { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' };
 
+  const winnerText = winner === 'MULTIPLE' ? 'MULTIPLE WINNERS!' : `${winner} WIN!`;
+
   // Filter winners
   const winningPlayers = players
     ? players.filter((p) => isPlayerWinner(p, winners, lovers, gameSettings))
     : [];
+  const losingPlayers = players ? players.filter((p) => !winningPlayers.includes(p)) : [];
   const [deadParticles, setDeadParticles] = useState(null);
   useEffect(() => {
     if (!isGameOver) return;
@@ -80,7 +88,7 @@ export default function DeadScreen({
             <h2
               className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}
             >
-              {winner} WIN!
+              {winnerText}
             </h2>
             <p className="text-slate-400 mb-8 text-xl">Game Over</p>
 
@@ -91,6 +99,32 @@ export default function DeadScreen({
                 </h3>
                 <div className="flex flex-wrap justify-center gap-3">
                   {winningPlayers.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-full"
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                        style={{ backgroundColor: p.avatarColor }}
+                      >
+                        {p.name[0]}
+                      </div>
+                      <span className="font-bold text-sm">{p.name}</span>
+                      <span className="text-xs text-slate-500">
+                        (
+                        {p.role === ROLE_IDS.TANNER && winners.includes(p.id)
+                          ? 'Tanner'
+                          : roleRegistry.getRole(p.role)?.name || p.role}
+                        )
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 mt-6">
+                  Fallen Players
+                </h3>
+                <div className="flex flex-wrap justify-center gap-3">
+                  {losingPlayers.map((p) => (
                     <div
                       key={p.id}
                       className="flex items-center gap-2 bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-full"

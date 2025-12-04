@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
+import { ACTION_TYPES } from '../constants/actions';
 
 export default function SorcererNightActionScreen({
   players,
@@ -69,7 +70,7 @@ export default function SorcererNightActionScreen({
                 : ''}
             </div>
             <button
-              onClick={() => advanceNightPhase(null, null)}
+              onClick={() => advanceNightPhase(ACTION_TYPES.NO_ACTION, null)}
               className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2"
             >
               Skip

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { assignRolesAndStartGame, markPlayerReady } from '../services/roles';
+import { assignRolesAndStartGame, markPlayerReady } from './roles.js';
 import { ROLE_IDS, PHASES } from '../constants';
 
 import { Role } from '../roles/Role'; // Import the base Role class
@@ -612,12 +612,12 @@ describe('Role Assignment and Readiness', () => {
       expect(seerRole.getNightPhase()).toBe(PHASES.NIGHT_SEER);
     });
 
-    it('processNightAction returns an empty object', () => {
+    it('processNightAction correctly records seerCheck target', () => {
       const gameState = { nightActions: {} };
       const player = { id: 'seer1', role: ROLE_IDS.SEER };
       const action = { type: 'seerCheck', targetId: 'p1' };
       const result = seerRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({}); // Seer action is immediate info retrieval, doesn't modify gameState here
+      expect(result).toEqual({ seerCheck: 'p1' });
     });
 
     it('processNightAction returns empty object for unknown action type', () => {
@@ -725,7 +725,7 @@ describe('Role Assignment and Readiness', () => {
       const player = { id: 'wolf1', role: ROLE_IDS.WEREWOLF };
       const action = { type: 'werewolfVote', targetId: 'p1' };
       const result = werewolfRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({ werewolfVotes: { wolf1: 'p1' } });
+      expect(result).toEqual({ werewolfVotes: { wolf1: 'p1' }, werewolfProvisionalVotes: {} });
     });
 
     it('processNightAction merges werewolfVote target with existing votes', () => {
@@ -733,7 +733,7 @@ describe('Role Assignment and Readiness', () => {
       const player = { id: 'wolf1', role: ROLE_IDS.WEREWOLF };
       const action = { type: 'werewolfVote', targetId: 'p1' };
       const result = werewolfRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({ werewolfVotes: { wolf2: 'p2', wolf1: 'p1' } });
+      expect(result).toEqual({ werewolfVotes: { wolf2: 'p2', wolf1: 'p1' }, werewolfProvisionalVotes: {} });
     });
 
     it('processNightAction returns empty object for unknown action type', () => {

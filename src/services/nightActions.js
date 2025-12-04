@@ -151,110 +151,85 @@ export const advanceNight = async (
 ) => {
   let newActions = { ...gameState.nightActions };
 
+  // Handle vigilante ammo
   if (extraPayload && actionType === ACTION_TYPES.VIGILANTE_TARGET) {
     newActions.vigilanteAmmo = extraPayload;
   }
 
+  // Determine the player initiating the action based on actionType
+  let actingPlayer = null;
   switch (actionType) {
-    case ACTION_TYPES.CUPID_LINK:
-      newActions.cupidLinks = actionValue;
-      break;
-    case ACTION_TYPES.WEREWOLF_VOTE: {
-      // This is specific to Werewolf role
-      const wwRole = roleRegistry.getRole(ROLE_IDS.WEREWOLF);
-      const wwUpdates = wwRole.processNightAction(
-        gameState,
-        { id: actionValue.voterId },
-        { type: actionType, ...actionValue }
-      );
-      newActions = { ...newActions, ...wwUpdates };
-
-      // Clear provisional vote for this werewolf
-      if (newActions.werewolfProvisionalVotes) {
-        delete newActions.werewolfProvisionalVotes[actionValue.voterId];
-        if (Object.keys(newActions.werewolfProvisionalVotes).length === 0) {
-          delete newActions.werewolfProvisionalVotes;
-        }
-      }
-      break;
-    }
+    case ACTION_TYPES.WEREWOLF_VOTE:
     case ACTION_TYPES.WEREWOLF_PROVISIONAL_VOTE:
-      newActions.werewolfProvisionalVotes = {
-        ...(newActions.werewolfProvisionalVotes || {}),
-        [actionValue.voterId]: actionValue.targetId,
-      };
+    case ACTION_TYPES.WEREWOLF_SKIP:
+      actingPlayer = players.find(p => p.id === (extraPayload?.voterId || actionValue?.voterId));
       break;
-    case ACTION_TYPES.WEREWOLF_SKIP: {
-      newActions.werewolfVotes = {
-        ...(newActions.werewolfVotes || {}),
-        [actionValue.voterId]: null, // Record that the werewolf skipped
-      };
-      // Clear provisional vote for this werewolf if they skip
-      if (newActions.werewolfProvisionalVotes) {
-        delete newActions.werewolfProvisionalVotes[actionValue.voterId];
-        if (Object.keys(newActions.werewolfProvisionalVotes).length === 0) {
-          delete newActions.werewolfProvisionalVotes;
-        }
+    case ACTION_TYPES.MASON_READY:
+      actingPlayer = players.find(p => p.id === (extraPayload?.playerId || actionValue));
+      break;
+    case ACTION_TYPES.DOPPELGANGER_COPY:
+      actingPlayer = players.find(p => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive);
+      break;
+    // For single-actor roles, find the player by their role based on the current phase
+    case ACTION_TYPES.DOCTOR_PROTECT:
+      actingPlayer = players.find(p => p.role === ROLE_IDS.DOCTOR && p.isAlive);
+      break;
+    case ACTION_TYPES.SEER_CHECK:
+      actingPlayer = players.find(p => p.role === ROLE_IDS.SEER && p.isAlive);
+      break;
+    case ACTION_TYPES.SORCERER_CHECK:
+      actingPlayer = players.find(p => p.role === ROLE_IDS.SORCERER && p.isAlive);
+      break;
+    case ACTION_TYPES.VIGILANTE_TARGET:
+      actingPlayer = players.find(p => p.role === ROLE_IDS.VIGILANTE && p.isAlive);
+      break;
+    case ACTION_TYPES.CUPID_LINK:
+      actingPlayer = players.find(p => p.role === ROLE_IDS.CUPID && p.isAlive);
+      break;
+    case ACTION_TYPES.NO_ACTION:
+      // For NO_ACTION, try to find the acting player based on the current phase
+      if (gameState.phase === PHASES.NIGHT_DOCTOR) {
+        actingPlayer = players.find(p => p.role === ROLE_IDS.DOCTOR && p.isAlive);
+      } else if (gameState.phase === PHASES.NIGHT_SEER) {
+        actingPlayer = players.find(p => p.role === ROLE_IDS.SEER && p.isAlive);
+      } else if (gameState.phase === PHASES.NIGHT_SORCERER) {
+        actingPlayer = players.find(p => p.role === ROLE_IDS.SORCERER && p.isAlive);
+      } else if (gameState.phase === PHASES.NIGHT_VIGILANTE) {
+        actingPlayer = players.find(p => p.role === ROLE_IDS.VIGILANTE && p.isAlive);
+      } else if (gameState.phase === PHASES.NIGHT_CUPID) {
+        actingPlayer = players.find(p => p.role === ROLE_IDS.CUPID && p.isAlive);
       }
       break;
-    }
-    case ACTION_TYPES.DOPPELGANGER_COPY: {
-      const doppelgangerPlayer = getPlayersByRole(players, ROLE_IDS.DOPPELGANGER).find(
-        (p) => p.isAlive
-      );
-      if (doppelgangerPlayer) {
-        const dpRole = roleRegistry.getRole(ROLE_IDS.DOPPELGANGER);
-        const dpUpdates = dpRole.processNightAction(gameState, doppelgangerPlayer, {
-          type: actionType,
-          targetId: actionValue,
-        });
-        newActions = { ...newActions, ...dpUpdates };
-      }
-      break;
-    }
-    case ACTION_TYPES.DOCTOR_PROTECT: {
-      const docRole = roleRegistry.getRole(ROLE_IDS.DOCTOR);
-      const docUpdates = docRole.processNightAction(gameState, null, {
-        type: actionType,
-        targetId: actionValue,
-      });
-      newActions = { ...newActions, ...docUpdates };
-      break;
-    }
-    case ACTION_TYPES.VIGILANTE_TARGET: {
-      const vigRole = roleRegistry.getRole(ROLE_IDS.VIGILANTE);
-      const vigUpdates = vigRole.processNightAction(gameState, null, {
-        type: actionType,
-        targetId: actionValue,
-      });
-      newActions = { ...newActions, ...vigUpdates };
-      break;
-    }
-    case ACTION_TYPES.SORCERER_CHECK: {
-      const sorcRole = roleRegistry.getRole(ROLE_IDS.SORCERER);
-      const sorcUpdates = sorcRole.processNightAction(gameState, null, {
-        type: actionType,
-        targetId: actionValue,
-      });
-      newActions = { ...newActions, ...sorcUpdates };
-      break;
-    }
-    case ACTION_TYPES.MASON_READY: {
-      const masonRole = roleRegistry.getRole(ROLE_IDS.MASON);
-      const masonUpdates = masonRole.processNightAction(
-        gameState,
-        { id: actionValue },
-        { type: actionType }
-      );
-      newActions = { ...newActions, ...masonUpdates };
-      break;
-    }
     default:
-      if (actionType) {
-        newActions[actionType] = actionValue;
-      }
       break;
   }
+
+  // Handle actions
+  if (actionType === ACTION_TYPES.CUPID_LINK) { // Special handling for Cupid due to its actionValue structure
+    newActions.cupidLinks = actionValue;
+  } else if (actionType) {
+    if (actingPlayer) {
+      const role = roleRegistry.getRole(actingPlayer.role);
+
+      if (role && typeof role.processNightAction === 'function') {
+        // Ensure action.targetId is the actual target ID string, not an object
+        const targetId = typeof actionValue === 'object' && actionValue !== null && 'targetId' in actionValue
+          ? actionValue.targetId
+          : actionValue;
+        const action = { type: actionType, targetId: targetId, ...extraPayload };
+        const roleUpdates = role.processNightAction(gameState, actingPlayer, action);
+        newActions = { ...newActions, ...roleUpdates };
+      } else {
+        console.warn(`No specific role.processNightAction found for actionType: ${actionType} or role not found for player: ${actingPlayer.id}.`);
+      }
+    } else {
+      console.warn(`ActionType: ${actionType} provided without an identified actingPlayer. Skipping processNightAction.`);
+    }
+  }
+
+  // ... (rest of the advanceNight function) ...
+
+
 
   // Special check for Werewolf Voting completion
   if (gameState.phase === PHASES.NIGHT_WEREWOLF && actionType !== null) {
@@ -269,9 +244,7 @@ export const advanceNight = async (
 
   // Special check for Mason acknowledgment
   if (gameState.phase === PHASES.NIGHT_MASON && actionType !== null) {
-    const playersToUse = players; // Use current players directly
-
-    const aliveMasons = playersToUse.filter((pl) => pl.role === ROLE_IDS.MASON && pl.isAlive);
+    const aliveMasons = players.filter((pl) => pl.role === ROLE_IDS.MASON && pl.isAlive);
     // If there's only one mason, they can proceed immediately.
     if (aliveMasons.length > 1) {
       const masonsReadyCount = Object.keys(newActions.masonsReady || {}).length;
@@ -401,9 +374,17 @@ export const resolveNight = async (gameState, players, finalActions) => {
     );
     if (winResult) {
       if (winResult.isGameOver) {
+        const singularWinner =
+          winResult.winners && winResult.winners.length > 0
+            ? winResult.winners.length > 1
+              ? 'MULTIPLE'
+              : winResult.winners[0]
+            : 'WINNER'; // Default to generic WINNER
+
         await gameState.update({
           players: newPlayers,
           ...winResult,
+          winner: singularWinner, // Explicitly set the singular winner
           phase: PHASES.GAME_OVER,
         });
         await gameState.addDayLog(log);
@@ -475,9 +456,17 @@ export const handleHunterShot = async (gameState, players, targetId) => {
   );
   if (winResult) {
     if (winResult.isGameOver) {
+      const singularWinner =
+        winResult.winners && winResult.winners.length > 0
+          ? winResult.winners.length > 1
+            ? 'MULTIPLE'
+            : winResult.winners[0]
+          : 'WINNER'; // Default to generic WINNER
+
       await gameState.update({
         players: newPlayers,
         ...winResult,
+        winner: singularWinner, // Explicitly set the singular winner
         phase: PHASES.GAME_OVER,
       });
       return;

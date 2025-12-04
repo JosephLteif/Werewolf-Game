@@ -67,7 +67,7 @@ export default function LobbyScreen({
 
   // Auto self‑eject: if the current user is no longer in the room's player list, leave the lobby
   useEffect(() => {
-    const stillInRoom = players.some(p => p.id === user.uid);
+    const stillInRoom = players.some((p) => p.id === user.uid);
     if (stillInRoom) {
       // User is present – ensure we consider them joined
       setHasJoined(true);
@@ -145,7 +145,10 @@ export default function LobbyScreen({
                       if (e.key === 'Escape') cancelEditing();
                     }}
                   />
-                  <button onClick={() => saveName(p.id)} className="text-green-400 hover:text-green-300">
+                  <button
+                    onClick={() => saveName(p.id)}
+                    className="text-green-400 hover:text-green-300"
+                  >
                     <Check className="w-4 h-4" />
                   </button>
                   <button onClick={cancelEditing} className="text-red-400 hover:text-red-300">
@@ -469,14 +472,14 @@ export default function LobbyScreen({
                           onClick={() =>
                             isHost
                               ? gameState.update({
-                                settings: {
-                                  ...gameState.settings,
-                                  activeRoles: {
-                                    ...gameState.settings.activeRoles,
-                                    [r.id]: !isActive,
+                                  settings: {
+                                    ...gameState.settings,
+                                    activeRoles: {
+                                      ...gameState.settings.activeRoles,
+                                      [r.id]: !isActive,
+                                    },
                                   },
-                                },
-                              })
+                                })
                               : setShowRoleInfo(r.id)
                           }
                           className={`px-3 py-2 rounded text-xs font-bold border transition-all flex items-center gap-2 relative group
@@ -678,7 +681,7 @@ export default function LobbyScreen({
         </div>
       )}
 
-      <RoleInfoModal showRoleInfo={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
+      <RoleInfoModal selectedRoleId={showRoleInfo} onClose={() => setShowRoleInfo(null)} />
       {showRulesModal && <RoleRulesModal onClose={() => setShowRulesModal(false)} />}
       <ConfirmationModal
         isOpen={showKickConfirm}
