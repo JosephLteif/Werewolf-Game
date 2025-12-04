@@ -40,4 +40,17 @@ export class Role {
   getNightPhase() {
     return null;
   }
+
+  /**
+   * Applies the outcome of the night action for this role.
+   * This is where effects like kills, saves, and checks are applied.
+   * @param {object} context - The context for applying the outcome.
+   * @param {object} context.gameState - The current game state.
+   * @param {object} context.nightActions - The resolved night actions.
+   * @param {object[]} context.players - The list of all players.
+   * @param {object[]} context.deaths - An array to accumulate deaths during the night.
+   */
+  applyNightOutcome(/*{ gameState, nightActions, players, deaths }*/) {
+    // Default: do nothing
+  }
 }

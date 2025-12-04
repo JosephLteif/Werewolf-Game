@@ -6,54 +6,6 @@ import { handleDoppelgangerTransformation, determineFirstNightPhase } from '../u
 import { roleRegistry } from '../roles/RoleRegistry';
 import { ROLE_IDS } from '../constants/roleIds';
 
-// Helper functions for night actions
-const aggregateWerewolfVotes = (werewolfVotes) => {
-  const voteCounts = {};
-  // Filter out skipped votes (null targetIds) before counting
-  const validVotes = Object.values(werewolfVotes).filter(
-    (targetId) => targetId !== null && targetId !== undefined
-  );
-
-  validVotes.forEach((targetId) => {
-    voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
-  });
-
-  let maxVotes = 0;
-  let wolfTargets = [];
-  Object.entries(voteCounts).forEach(([targetId, count]) => {
-    if (count > maxVotes) {
-      maxVotes = count;
-      wolfTargets = [targetId];
-    } else if (count === maxVotes) {
-      wolfTargets.push(targetId);
-    }
-  });
-
-  return wolfTargets.length > 0
-    ? wolfTargets[Math.floor(Math.random() * wolfTargets.length)]
-    : null;
-};
-
-const applyWerewolfKill = (newPlayers, determinedWolfTarget, doctorProtect, deaths) => {
-  if (determinedWolfTarget && determinedWolfTarget !== doctorProtect) {
-    const victim = findPlayerById(newPlayers, determinedWolfTarget);
-    if (victim) {
-      victim.isAlive = false;
-      deaths.push(victim);
-    }
-  }
-};
-
-const applyVigilanteShot = (newPlayers, vigilanteTarget, doctorProtect, deaths) => {
-  if (vigilanteTarget && vigilanteTarget !== doctorProtect) {
-    const victim = findPlayerById(newPlayers, vigilanteTarget);
-    if (victim && victim.isAlive) {
-      victim.isAlive = false;
-      deaths.push(victim);
-    }
-  }
-};
-
 const handleLoverDeaths = (newPlayers, gameState, doctorProtect, deaths) => {
   let loversDiedThisRound = true;
   while (loversDiedThisRound) {
@@ -322,18 +274,22 @@ const applyLoverTeamChanges = (players, loversIds) => {
 
 export const resolveNight = async (gameState, players, finalActions) => {
   let newPlayers = [...players];
-  let deaths = [];
+  const deaths = [];
 
   checkSorcererSuccess(newPlayers, finalActions.sorcererCheck);
 
-  // Aggregate Werewolf Votes and determine target
-  const determinedWolfTarget = aggregateWerewolfVotes(finalActions.werewolfVotes || {});
+  // Create a context for roles to apply their outcomes
+  const context = {
+    gameState,
+    nightActions: finalActions,
+    players: newPlayers,
+    deaths,
+  };
 
-  // Wolf Kill
-  applyWerewolfKill(newPlayers, determinedWolfTarget, finalActions.doctorProtect, deaths);
+  // Iterate through all roles and apply their night outcomes
+  const roles = roleRegistry.getAllRoles();
+  roles.forEach(role => role.applyNightOutcome(context));
 
-  // Vigilante Shot
-  applyVigilanteShot(newPlayers, finalActions.vigilanteTarget, finalActions.doctorProtect, deaths);
 
   // Handle Cupid Links (Lovers Pact)
   handleLoverDeaths(newPlayers, gameState, finalActions.doctorProtect, deaths);
