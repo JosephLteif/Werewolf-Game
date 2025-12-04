@@ -4,12 +4,8 @@ import PlayerReadyChip from '../components/PlayerReadyChip';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 
 export default function RoleRevealScreen({ myPlayer, markReady, players, roleRevealParticles }) {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const cardRef = useRef(null);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [transformStyle, setTransformStyle] = useState({});
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;

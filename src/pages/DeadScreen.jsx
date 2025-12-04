@@ -21,7 +21,11 @@ export default function DeadScreen({
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
     CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
     TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add Tanner
-    MULTIPLE: { bg: 'from-purple-600 to-indigo-600', text: 'text-purple-300', alignment: 'neutral' }, // For multiple winners
+    MULTIPLE: {
+      bg: 'from-purple-600 to-indigo-600',
+      text: 'text-purple-300',
+      alignment: 'neutral',
+    }, // For multiple winners
     WINNER: { bg: 'from-slate-700 to-slate-800', text: 'text-slate-400' }, // Generic winner
   };
 
@@ -31,14 +35,11 @@ export default function DeadScreen({
 
   const winnerText = winner === 'MULTIPLE' ? 'MULTIPLE WINNERS!' : `${winner} WIN!`;
 
-
   // Filter winners
   const winningPlayers = players
     ? players.filter((p) => isPlayerWinner(p, winners, lovers, gameSettings))
     : [];
-  const losingPlayers = players
-    ? players.filter((p) => !winningPlayers.includes(p))
-    : [];
+  const losingPlayers = players ? players.filter((p) => !winningPlayers.includes(p)) : [];
   const [deadParticles, setDeadParticles] = useState(null);
   useEffect(() => {
     if (!isGameOver) return;
