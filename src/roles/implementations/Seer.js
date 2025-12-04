@@ -3,6 +3,7 @@ import { PHASES } from '../../constants/phases';
 import { Eye } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
+import { ACTION_TYPES } from '../../constants/actions'; // Import ACTION_TYPES
 
 export class Seer extends Role {
   constructor() {
@@ -26,10 +27,10 @@ export class Seer extends Role {
 
   // Seer action is immediate info retrieval, usually handled in UI,
   // but we might want to store that they acted.
-  processNightAction() {
-    // Seer doesn't persist a state change that affects others directly at night,
-    // but we might want to track that they checked someone if we want history.
-    // For now, the UI handles the reveal.
+  processNightAction(gameState, player, action) {
+    if (action.type === ACTION_TYPES.SEER_CHECK) {
+      return { seerCheck: action.targetId };
+    }
     return {};
   }
 }

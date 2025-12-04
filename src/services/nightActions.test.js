@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as nightActions from './nightActions';
-import { ROLE_IDS, PHASES } from '../constants';
+import { ROLE_IDS, PHASES, ACTION_TYPES } from '../constants';
 import { TEAMS } from '../constants';
 import * as winConditions from '../utils/winConditions';
 
@@ -97,6 +97,9 @@ class MockGameState {
   get phaseEndTime() {
     return this._state.phaseEndTime;
   }
+  get currentSpeaker() {
+    return this._state.currentSpeaker;
+  }
   get doppelgangerPlayerId() {
     return this._state.doppelgangerPlayerId;
   }
@@ -111,9 +114,10 @@ class MockGameState {
 }
 
 describe('Night Actions Service', () => {
-  let _mockPlayersArray; // Renamed to avoid confusion with mockGameState.players
+  let _mockPlayersArray;
   let mockGameStateInstance; // Renamed to clearly indicate it's an instance
   let now;
+  let initialPlayersMap; // Declare initialPlayersMap here
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -125,7 +129,7 @@ describe('Night Actions Service', () => {
       { id: 'p5', name: 'Player 5', isAlive: true, ready: false, role: ROLE_IDS.VILLAGER },
     ];
     // Convert _mockPlayersArray to a map for initial state
-    const initialPlayersMap = {};
+    initialPlayersMap = {};
     _mockPlayersArray.forEach((p) => {
       initialPlayersMap[p.id] = p;
     });
@@ -374,15 +378,20 @@ describe('Night Actions Service', () => {
         nightActions: { werewolfVotes: {} },
       });
 
-      await nightActions.advanceNight(testGameState, players, now, 'werewolfVote', {
-        voterId: wolfPlayer.id,
-        targetId: 'p3',
-      });
+      await nightActions.advanceNight(
+        testGameState,
+        players,
+        now,
+        ACTION_TYPES.WEREWOLF_VOTE,
+        'p3', // targetId
+        { voterId: wolfPlayer.id } // extraPayload
+      );
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           nightActions: {
             werewolfVotes: { [wolfPlayer.id]: 'p3' },
+            werewolfProvisionalVotes: {}, // Added
           },
         })
       );
@@ -416,15 +425,20 @@ describe('Night Actions Service', () => {
         nightActions: {},
       });
 
-      await nightActions.advanceNight(testGameState, playersWithTwoWolves, now, 'werewolfVote', {
-        voterId: wolfPlayer1.id,
-        targetId: 'p2',
-      });
+      await nightActions.advanceNight(
+        testGameState,
+        playersWithTwoWolves,
+        now,
+        ACTION_TYPES.WEREWOLF_VOTE,
+        'p2', // targetId
+        { voterId: wolfPlayer1.id } // extraPayload
+      );
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           nightActions: {
             werewolfVotes: { [wolfPlayer1.id]: 'p2' },
+            werewolfProvisionalVotes: {}, // Added
           },
         })
       );
@@ -446,8 +460,9 @@ describe('Night Actions Service', () => {
         testGameState,
         _mockPlayersArray,
         now,
-        'werewolfProvisionalVote',
-        { voterId: wolfPlayer.id, targetId: targetPlayer.id }
+        ACTION_TYPES.WEREWOLF_PROVISIONAL_VOTE,
+        targetPlayer.id, // targetId
+        { voterId: wolfPlayer.id } // extraPayload
       );
 
       expect(testGameState.update).toHaveBeenCalledWith(
@@ -472,15 +487,20 @@ describe('Night Actions Service', () => {
         },
       });
 
-      await nightActions.advanceNight(testGameState, _mockPlayersArray, now, 'werewolfVote', {
-        voterId: wolfPlayer.id,
-        targetId: confirmedTarget.id,
-      });
+      await nightActions.advanceNight(
+        testGameState,
+        _mockPlayersArray,
+        now,
+        ACTION_TYPES.WEREWOLF_VOTE,
+        confirmedTarget.id, // targetId
+        { voterId: wolfPlayer.id } // extraPayload
+      );
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           nightActions: {
             werewolfVotes: { [wolfPlayer.id]: confirmedTarget.id },
+            werewolfProvisionalVotes: {}, // Added
           },
           phase: PHASES.NIGHT_DOCTOR,
           phaseEndTime: expect.any(Number),
@@ -856,9 +876,11 @@ describe('Night Actions Service', () => {
       const players = [seerPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
-        ...mockGameStateInstance._state,
+        settings: { ...mockGameStateInstance.settings },
         phase: PHASES.NIGHT_SEER,
+        players: initialPlayersMap, // Use the map for consistency
         nightActions: { seerCheck: null },
+        currentSpeaker: seerPlayer.id, // Set currentSpeaker for the acting player
       });
 
       await nightActions.advanceNight(testGameState, players, now, 'seerCheck', 'p2');
@@ -875,9 +897,11 @@ describe('Night Actions Service', () => {
       const players = [doctorPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
-        ...mockGameStateInstance._state,
+        settings: { ...mockGameStateInstance.settings },
         phase: PHASES.NIGHT_DOCTOR,
+        players: initialPlayersMap, // Use the map for consistency
         nightActions: { doctorProtect: null },
+        currentSpeaker: doctorPlayer.id, // Set currentSpeaker for the acting player
       });
 
       await nightActions.advanceNight(testGameState, players, now, 'doctorProtect', 'p1');

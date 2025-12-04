@@ -1,5 +1,5 @@
 import { serverTimestamp } from 'firebase/database';
-import { TANNER_WIN_STRATEGIES } from '../constants/tannerWinStrategies';
+import { TANNER_WIN_STRATEGIES } from '../constants/index.js';
 
 function defaultSettings() {
   return {
@@ -54,14 +54,7 @@ class GameState {
       players: {
         [hostId]: playerObj,
       },
-      nightActions: {
-        doctorProtect: null,
-        sorcererCheck: null,
-        vigilanteTarget: null,
-        werewolfVotes: {},
-        cupidLinks: [],
-        masonsReady: {},
-      },
+      nightActions: {},
       vigilanteAmmo: {},
       lockedVotes: [],
       lovers: [],

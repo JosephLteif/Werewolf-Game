@@ -1,6 +1,7 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
+import { ACTION_TYPES } from '../constants/actions';
 
 export default function SeerNightActionScreen({
   players,
@@ -28,7 +29,7 @@ export default function SeerNightActionScreen({
             <button
               onClick={() => {
                 setSeerMessage(null);
-                advanceNightPhase(null, null);
+                advanceNightPhase(ACTION_TYPES.NO_ACTION, null);
               }}
               className="w-full max-w-md bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
             >
@@ -65,7 +66,7 @@ export default function SeerNightActionScreen({
                 : ''}
             </div>
             <button
-              onClick={() => advanceNightPhase(null, null)}
+              onClick={() => advanceNightPhase(ACTION_TYPES.NO_ACTION, null)}
               className="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold py-3 rounded-xl mt-2"
             >
               Skip

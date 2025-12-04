@@ -1,6 +1,7 @@
 import React from 'react';
 import { Ghost } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
+import { ACTION_TYPES } from '../constants/actions';
 
 export default function MinionNightActionScreen({ players, advanceNightPhase }) {
   return (
@@ -32,7 +33,7 @@ export default function MinionNightActionScreen({ players, advanceNightPhase }) 
             ))}
         </div>
         <button
-          onClick={() => advanceNightPhase(null, null)}
+          onClick={() => advanceNightPhase(ACTION_TYPES.NO_ACTION, null)}
           className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 px-8 py-4 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
         >
           I Understand

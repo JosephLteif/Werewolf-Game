@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PHASES } from './constants';
+import { ACTION_TYPES } from './constants/actions';
 import { useGameEngine } from './hooks/useGameEngine';
 import { PhaseRouter } from './router/PhaseRouter';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
@@ -61,10 +62,10 @@ export default function App() {
 
     if (gameState.phaseEndTime && now > gameState.phaseEndTime) {
       if (isWerewolfVote) {
-        advanceNightPhase(null, null);
+        advanceNightPhase(ACTION_TYPES.NO_ACTION, null);
       } else if (isNightPhase) {
         // Timeout for any night action
-        advanceNightPhase(null, null);
+        advanceNightPhase(ACTION_TYPES.NO_ACTION, null);
       } else if (isDayVote) {
         // Timeout for day voting
         resolveVoting();
