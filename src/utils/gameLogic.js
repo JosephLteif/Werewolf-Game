@@ -1,45 +1,49 @@
 import { PHASES } from '../constants';
+import { roleRegistry } from '../roles/RoleRegistry';
+import { ROLE_IDS } from '../constants/roleIds';
 
 /**
- * Assigns roles to players at the start of the game
+ * Assigns roles to players at the start of the game by building a deck
+ * from the active roles in settings and dealing them out.
  */
 export function assignRoles(players, settings) {
   let deck = [];
 
-  // Add werewolves
+  // Use wolfCount for werewolves
   for (let i = 0; i < settings.wolfCount; i++) {
-    deck.push('werewolf');
+    deck.push(ROLE_IDS.WEREWOLF);
   }
 
-  // Add selected special roles
-  if (settings.activeRoles['doctor']) deck.push('doctor');
-  if (settings.activeRoles['seer']) deck.push('seer');
-  if (settings.activeRoles['hunter']) deck.push('hunter');
-  if (settings.activeRoles['vigilante']) deck.push('vigilante');
-  if (settings.activeRoles['sorcerer']) deck.push('sorcerer');
-  if (settings.activeRoles['minion']) deck.push('minion');
-  if (settings.activeRoles['lycan']) deck.push('lycan');
-  if (settings.activeRoles['cupid']) deck.push('cupid');
-  if (settings.activeRoles['doppelganger']) deck.push('doppelganger');
-  if (settings.activeRoles['tanner']) deck.push('tanner');
-  if (settings.activeRoles['mayor']) deck.push('mayor');
-  if (settings.activeRoles['mason']) {
-    deck.push('mason');
-    deck.push('mason');
-  }
+  // Iterate through all registered roles to add active ones to the deck
+  roleRegistry.getAllRoles().forEach((role) => {
+    // Werewolves are handled above, and Villagers are used as filler.
+    if (role.id === ROLE_IDS.WEREWOLF || role.id === ROLE_IDS.VILLAGER) {
+      return;
+    }
 
-  // Fill remaining slots with Villagers
+    if (settings.activeRoles[role.id]) {
+      if (role.id === ROLE_IDS.MASON) {
+        // Masons always come in pairs.
+        deck.push(ROLE_IDS.MASON);
+        deck.push(ROLE_IDS.MASON);
+      } else {
+        deck.push(role.id);
+      }
+    }
+  });
+
+  // Fill the rest of the deck with Villagers to match the player count.
   while (deck.length < players.length) {
-    deck.push('villager');
+    deck.push(ROLE_IDS.VILLAGER);
   }
 
-  // Shuffle
+  // Shuffle the deck to randomize role assignment.
   deck = deck.sort(() => Math.random() - 0.5);
 
-  // Assign
+  // Assign the shuffled roles to players.
   return players.map((p) => ({
     ...p,
-    role: deck.pop() || 'villager',
+    role: deck.pop() || ROLE_IDS.VILLAGER, // Fallback to Villager
     isAlive: true,
     ready: false,
   }));

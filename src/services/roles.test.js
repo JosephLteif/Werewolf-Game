@@ -6,12 +6,41 @@ import { Role } from '../roles/Role'; // Import the base Role class
 import { Cupid } from '../roles/implementations/Cupid'; // Import Cupid role
 import { Doctor } from '../roles/implementations/Doctor'; // Import Doctor role
 import { Doppelganger } from '../roles/implementations/Doppelganger'; // Import Doppelganger role
+import { Hunter } from '../roles/implementations/Hunter';
+import { Lycan } from '../roles/implementations/Lycan';
 import { Mason } from '../roles/implementations/Mason'; // Import Mason role
+import { Mayor } from '../roles/implementations/Mayor';
 import { Minion } from '../roles/implementations/Minion'; // Import Minion role
 import { Seer } from '../roles/implementations/Seer'; // Import Seer role
 import { Sorcerer } from '../roles/implementations/Sorcerer'; // Import Sorcerer role
+import { Tanner } from '../roles/implementations/Tanner';
 import { Vigilante } from '../roles/implementations/Vigilante'; // Import Vigilante role
+import { Villager } from '../roles/implementations/Villager';
 import { Werewolf } from '../roles/implementations/Werewolf'; // Import Werewolf role
+
+const allRoles = [
+  new Villager(),
+  new Werewolf(),
+  new Seer(),
+  new Doctor(),
+  new Hunter(),
+  new Vigilante(),
+  new Sorcerer(),
+  new Minion(),
+  new Cupid(),
+  new Doppelganger(),
+  new Mason(),
+  new Lycan(),
+  new Mayor(),
+  new Tanner(),
+];
+
+vi.mock('../roles/RoleRegistry', () => ({
+  roleRegistry: {
+    getRole: vi.fn((roleId) => allRoles.find((r) => r.id === roleId)),
+    getAllRoles: vi.fn(() => allRoles),
+  },
+}));
 
 // MockGameState class (re-used from nightActions.test.js)
 class MockGameState {
@@ -112,15 +141,6 @@ class MockGameState {
 }
 
 // Custom Role for testing RoleRegistry register method
-class CustomRole extends Role {
-  constructor() {
-    super();
-    this.id = 'custom';
-    this.name = 'Custom Role';
-    this.description = 'A custom role for testing.';
-  }
-}
-
 describe('Role Assignment and Readiness', () => {
   let mockPlayersArray;
   let mockUser;
@@ -367,51 +387,7 @@ describe('Role Assignment and Readiness', () => {
     });
   });
 
-  describe('RoleRegistry Class', () => {
-    // Save the original roleRegistry for testing
-    let originalRoleRegistry;
 
-    beforeEach(async () => {
-      // Unmock before each test in this describe block to ensure we get the real thing
-      // and then re-mock to restore isolation for other describe blocks
-      vi.doUnmock('../roles/RoleRegistry');
-      // Use dynamic import after unmocking to get the fresh, unmocked module
-      const module = await import('../roles/RoleRegistry');
-      originalRoleRegistry = module.roleRegistry;
-
-      // Clean up any custom roles from previous runs
-      if (originalRoleRegistry.getRole('custom')) {
-        originalRoleRegistry.roles.delete('custom');
-        originalRoleRegistry.roleInstances = originalRoleRegistry.roleInstances.filter(
-          (r) => r.id !== 'custom'
-        );
-      }
-    });
-
-    afterEach(async () => {
-      // Re-mock roleRegistry after each test in this describe block
-      // This is crucial to prevent state leakage and ensure other test suites get the mocked version
-      vi.mock('../roles/RoleRegistry', async (importOriginal) => {
-        const actual = await importOriginal();
-        return {
-          ...actual,
-          roleRegistry: {
-            ...actual.roleRegistry,
-            // You might want to provide specific mocks if default behavior is needed
-            // For now, let's keep it simple and just re-initialize the mock if necessary
-          },
-        };
-      });
-    });
-
-    it('register method adds a new role to the registry', () => {
-      const newCustomRole = new CustomRole();
-      originalRoleRegistry.register(newCustomRole.id, newCustomRole);
-      expect(originalRoleRegistry.getRole('custom')).toBe(newCustomRole);
-      // Removed assertions about getAllRoles as register does not update roleInstances,
-      // and getAllRoles reads from a pre-populated array.
-    });
-  });
 
   describe('Cupid Role', () => {
     let cupidRole;

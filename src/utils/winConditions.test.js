@@ -2,8 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { checkWinCondition, isPlayerWinner } from './winConditions';
 import { TEAMS, CUPID_FATES } from '../constants';
 import { ROLE_IDS } from '../constants/roleIds';
-import { ALIGNMENTS } from '../constants/alignments';
 import { roleRegistry } from '../roles/RoleRegistry'; // Import the real roleRegistry
+import { Seer } from '../roles/implementations/Seer';
+import { Doctor } from '../roles/implementations/Doctor';
+import { Werewolf } from '../roles/implementations/Werewolf';
+import { Villager } from '../roles/implementations/Villager';
+import { Cupid } from '../roles/implementations/Cupid';
+import { Sorcerer } from '../roles/implementations/Sorcerer';
 
 // Mock the roleRegistry at the top level, making getRole a mock function
 vi.mock('../roles/RoleRegistry', () => ({
@@ -24,25 +29,17 @@ describe('Win Conditions Service', () => {
     vi.mocked(roleRegistry.getRole).mockImplementation((roleId) => {
       switch (roleId) {
         case ROLE_IDS.SEER:
-          return { id: ROLE_IDS.SEER, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.GOOD }; // Corrected team structure
+          return new Seer();
         case ROLE_IDS.DOCTOR:
-          return { id: ROLE_IDS.DOCTOR, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.GOOD }; // Corrected team structure
+          return new Doctor();
         case ROLE_IDS.WEREWOLF:
-          return {
-            id: ROLE_IDS.WEREWOLF,
-            team: { id: TEAMS.WEREWOLF },
-            alignment: ALIGNMENTS.EVIL,
-          }; // Corrected team structure
+          return new Werewolf();
         case ROLE_IDS.VILLAGER:
-          return { id: ROLE_IDS.VILLAGER, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.GOOD }; // Corrected team structure
+          return new Villager();
         case ROLE_IDS.CUPID:
-          return { id: ROLE_IDS.CUPID, team: { id: TEAMS.VILLAGE }, alignment: ALIGNMENTS.NEUTRAL }; // Corrected team structure
-        case ROLE_IDS.SORCERER: // Added Sorcerer to mock
-          return {
-            id: ROLE_IDS.SORCERER,
-            team: { id: TEAMS.WEREWOLF },
-            alignment: ALIGNMENTS.EVIL,
-          }; // Corrected team structure
+          return new Cupid();
+        case ROLE_IDS.SORCERER:
+          return new Sorcerer();
         default:
           return null;
       }
@@ -114,7 +111,7 @@ describe('Win Conditions Service', () => {
   describe('isPlayerWinner', () => {
     it('returns true for Cupid if CUPID wins', () => {
       const player = { id: 'p5', role: ROLE_IDS.CUPID };
-      const winners = ['CUPID'];
+      const winners = [ROLE_IDS.CUPID];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
     });
@@ -135,42 +132,42 @@ describe('Win Conditions Service', () => {
 
     it('returns true for a good player if VILLAGERS win', () => {
       const player = { id: 'p1', role: ROLE_IDS.SEER };
-      const winners = ['VILLAGERS'];
+      const winners = [TEAMS.VILLAGE];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
     });
 
     it('returns false for an evil player if VILLAGERS win', () => {
       const player = { id: 'p3', role: ROLE_IDS.WEREWOLF };
-      const winners = ['VILLAGERS'];
+      const winners = [TEAMS.VILLAGE];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(false);
     });
 
     it('returns true for a werewolf if WEREWOLVES win', () => {
       const player = { id: 'p3', role: ROLE_IDS.WEREWOLF };
-      const winners = ['WEREWOLVES'];
+      const winners = [TEAMS.WEREWOLF];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
     });
 
     it('returns true for a sorcerer who found the seer if WEREWOLVES win', () => {
       const player = { id: 'p1', role: ROLE_IDS.SORCERER, foundSeer: true };
-      const winners = ['WEREWOLVES'];
+      const winners = [TEAMS.WEREWOLF];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
     });
 
     it('returns false for a sorcerer who did not find the seer if WEREWOLVES win', () => {
       const player = { id: 'p1', role: ROLE_IDS.SORCERER, foundSeer: false };
-      const winners = ['WEREWOLVES'];
+      const winners = [TEAMS.WEREWOLF];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(false);
     });
 
     it('returns false if player role does not match winner type', () => {
       const player = { id: 'p1', role: ROLE_IDS.SEER };
-      const winners = ['WEREWOLVES'];
+      const winners = [TEAMS.WEREWOLF];
       const lovers = [];
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(false);
     });

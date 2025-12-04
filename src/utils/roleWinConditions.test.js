@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { isPlayerWinner } from './winConditions';
 import { TEAMS, CUPID_FATES } from '../constants';
 import { ROLE_IDS } from '../constants/roleIds';
-import { ALIGNMENTS } from '../constants/alignments';
 import { roleRegistry } from '../roles/RoleRegistry';
+import { Minion } from '../roles/implementations/Minion';
+import { Sorcerer } from '../roles/implementations/Sorcerer';
 
 // Mock roleRegistry
 vi.mock('../roles/RoleRegistry', () => ({
@@ -22,13 +23,9 @@ describe('Role Win Conditions', () => {
     vi.mocked(roleRegistry.getRole).mockImplementation((roleId) => {
       switch (roleId) {
         case ROLE_IDS.SORCERER:
-          return {
-            id: ROLE_IDS.SORCERER,
-            team: { id: TEAMS.WEREWOLF },
-            alignment: ALIGNMENTS.EVIL,
-          };
+          return new Sorcerer();
         case ROLE_IDS.MINION:
-          return { id: ROLE_IDS.MINION, team: { id: TEAMS.WEREWOLF }, alignment: ALIGNMENTS.EVIL };
+          return new Minion();
         default:
           return null;
       }
@@ -37,13 +34,19 @@ describe('Role Win Conditions', () => {
 
   it('Minion wins with Werewolves', () => {
     const player = { id: 'p1', role: ROLE_IDS.MINION };
-    const winners = ['WEREWOLVES'];
+    const winners = [TEAMS.WEREWOLF];
     expect(isPlayerWinner(player, winners, [], mockGameSettings)).toBe(true);
   });
 
-  it('Sorcerer wins with Werewolves even if Seer not found', () => {
+  it('Sorcerer wins with Werewolves if Seer is found', () => {
+    const player = { id: 'p2', role: ROLE_IDS.SORCERER, foundSeer: true };
+    const winners = [TEAMS.WEREWOLF];
+    expect(isPlayerWinner(player, winners, [], mockGameSettings)).toBe(true);
+  });
+
+  it('Sorcerer does not win with Werewolves if Seer is not found', () => {
     const player = { id: 'p2', role: ROLE_IDS.SORCERER, foundSeer: false };
-    const winners = ['WEREWOLVES'];
+    const winners = [TEAMS.WEREWOLF];
     expect(isPlayerWinner(player, winners, [], mockGameSettings)).toBe(false);
   });
 });

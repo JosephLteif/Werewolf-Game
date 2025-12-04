@@ -53,4 +53,27 @@ export class Role {
   applyNightOutcome(/*{ gameState, nightActions, players, deaths }*/) {
     // Default: do nothing
   }
+
+  /**
+   * Gets the voting weight of a player with this role.
+   * @param {object} _gameState - The current game state.
+   * @returns {number} - The vote weight.
+   */
+  getVoteWeight(_gameState) {
+    return 1;
+  }
+
+  /**
+   * Checks if a player with this role is a winner based on the winning teams.
+   * Can be overridden by specific roles for more complex win conditions.
+   * @param {object} _player - The player instance.
+   * @param {string[]} _winningTeams - An array of winning team IDs (e.g., ['VILLAGERS', 'WEREWOLVES']).
+   * @param {object} _context - Additional game context (e.g., { lovers, settings }).
+   * @returns {boolean}
+   */
+  checkWin(_player, _winningTeams, _context) {
+    // Default: no special win conditions for the base role.
+    // Specific roles should override this for complex win conditions.
+    return false;
+  }
 }

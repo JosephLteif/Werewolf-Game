@@ -1,8 +1,6 @@
-import { TEAMS, CUPID_FATES } from '../constants';
+import { TEAMS } from '../constants';
 import { roleRegistry } from '../roles/RoleRegistry';
 import { ROLE_IDS } from '../constants/roleIds';
-import { Teams } from '../models/Team'; // Explicitly import Teams
-import { ALIGNMENTS } from '../constants/alignments';
 
 /**
  * Checks if the game has ended and determines the winner
@@ -83,53 +81,45 @@ export function checkWinCondition(
 
 /**
  * Determines if a player is a winner based on the winning teams.
- * Returns true if the player satisfies any win condition.
+ * Delegates the check to the player's role for polymorphic behavior.
  */
 export function isPlayerWinner(player, winners, lovers, gameSettings) {
   if (!winners || winners.length === 0) return false;
 
-  // Direct win by player ID (e.g., custom winner IDs)
+  // Direct win by player ID (e.g., for Tanner)
   if (winners.includes(player.id)) return true;
 
-  const playerRole = roleRegistry.getRole(player.role);
-  const teamId = player.alignment || playerRole?.team?.id;
-
-  // Tanner win
-  if (winners.includes('TANNER') && player.role === ROLE_IDS.TANNER) {
-    return true;
-  }
-  // Lovers win
-  if (winners.includes('LOVERS')) {
-    if (lovers && lovers.includes(player.id)) return true;
-    if (
-      gameSettings.cupidFateOption === CUPID_FATES.THIRD_WHEEL &&
-      player.role === ROLE_IDS.CUPID
-    ) {
-      return true;
-    }
-  }
-
-  // Villagers win
-  if (winners.includes('VILLAGERS') && teamId === Teams.VILLAGER.id) {
+  // The "Lovers" win is a global condition that can override normal team alignment.
+  if (winners.includes('LOVERS') && lovers?.includes(player.id)) {
     return true;
   }
 
-  // Werewolves win
-  if (winners.includes('WEREWOLVES')) {
-    // Sorcerer wins only if they have found the Seer
-    if (playerRole && playerRole.id === ROLE_IDS.SORCERER) {
-      return !!player.foundSeer;
-    }
-    // Any other werewolf team member wins
-    if (teamId === Teams.WEREWOLF.id) {
-      return true;
-    }
+  // Check if player's specific role ID is among the winners
+  if (winners.includes(player.role)) {
+    // Special condition for Sorcerer: only wins with Werewolves if they found the Seer
+    return !(player.role === ROLE_IDS.SORCERER && !player.foundSeer);
+
   }
 
-  // Cupid win (explicit)
-  if (winners.includes('CUPID') && player.role === ROLE_IDS.CUPID) {
-    return true;
+  const role = roleRegistry.getRole(player.role);
+  if (!role) {
+    // Fallback for unknown roles: check team alignment only.
+    // If player has a dynamic alignment (e.g., from Cupid) use that, otherwise use default team.
+    const teamId = player.alignment || player.team?.id;
+    return teamId ? winners.includes(teamId) : false;
   }
 
-  return false;
+  // If player has a dynamic alignment (e.g., from Cupid) use that, otherwise use role's default team ID.
+  const playerTeamId = player.alignment || role.team?.id;
+
+  // Check if the player's team or alignment is among the winners
+  if (playerTeamId && winners.includes(playerTeamId)) {
+    // Special condition for Sorcerer if Werewolves won as a team but Sorcerer didn't find the Seer
+    return !(player.role === ROLE_IDS.SORCERER && playerTeamId === TEAMS.WEREWOLF && !player.foundSeer);
+
+  }
+
+  // Delegate to role's checkWin for any specific, complex win conditions not covered above.
+  // This allows roles to override the default team-based win if necessary.
+  return role.checkWin(player, winners, { lovers, settings: gameSettings });
 }

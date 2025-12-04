@@ -15,4 +15,12 @@ export class Mayor extends Role {
     this.weight = 2;
   }
   // Mayor has no special night actions, its behavior is passive (voting power)
+
+  /**
+   * The Mayor's vote counts as two.
+   * @returns {number}
+   */
+  getVoteWeight() {
+    return 2;
+  }
 }

@@ -1,7 +1,8 @@
-import { PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
+import { PHASES, ROLE_IDS } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { findPlayerById } from '../utils/playersUtils';
 import { handleDoppelgangerTransformation } from '../utils/gameLogic';
+import { roleRegistry } from '../roles/RoleRegistry';
 
 /**
  * Voting Service
@@ -9,15 +10,18 @@ import { handleDoppelgangerTransformation } from '../utils/gameLogic';
  */
 
 /**
- * Count votes with Mayor's double vote weight
+ * Count votes with role-specific vote weights.
  */
-export function countVotes(votes, players) {
+export function countVotes(votes, players, gameState) {
   const voteCounts = {};
 
   Object.entries(votes || {}).forEach(([voterId, targetId]) => {
     const voter = players.find((p) => p.id === voterId);
-    const weight = voter && voter.role === ROLE_IDS.MAYOR && voter.isAlive ? 2 : 1;
-    voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
+    if (voter && voter.isAlive) {
+      const role = roleRegistry.getRole(voter.role);
+      const weight = role ? role.getVoteWeight(gameState) : 1;
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
+    }
   });
 
   return voteCounts;
@@ -134,7 +138,7 @@ export const resolveDayVoting = async (gameState, players) => {
     return acc;
   }, {});
 
-  const voteCounts = countVotes(votesToCount, players);
+  const voteCounts = countVotes(votesToCount, players, gameState);
 
   const { type, victims } = determineVotingResult(voteCounts);
 
