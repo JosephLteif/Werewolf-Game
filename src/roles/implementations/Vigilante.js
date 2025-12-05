@@ -4,6 +4,7 @@ import { Zap } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
 import { ACTION_TYPES } from '../../constants/actions';
+import { ROLE_IDS } from '../../constants/roleIds';
 import { findPlayerById } from '../../utils/playersUtils';
 
 export class Vigilante extends Role {
@@ -51,9 +52,14 @@ export class Vigilante extends Role {
       const victim = findPlayerById(players, targetId);
       if (victim && victim.isAlive) {
         victim.isAlive = false;
+        victim.killedBy = ROLE_IDS.VIGILANTE;
         deaths.push(victim);
       }
     }
+  }
+
+  getKillMessage(victimName) {
+    return `${victimName} was shot by a Vigilante.`;
   }
 }
 

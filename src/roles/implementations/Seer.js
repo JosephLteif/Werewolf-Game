@@ -45,4 +45,17 @@ export class Seer extends Role {
     }
     return {};
   }
+
+  isTargetValid(target, gameState, actor) {
+    // Cannot target self
+    if (target.id === actor.id) {
+      return false;
+    }
+    // Cannot check players already revealed
+    const revealedRoles = gameState.revealedRoles || [];
+    if (revealedRoles.includes(target.id)) {
+      return false;
+    }
+    return target.isAlive;
+  }
 }

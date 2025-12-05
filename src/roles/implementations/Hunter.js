@@ -19,6 +19,10 @@ export class Hunter extends Role {
   async onDeath(_context) {
     return PHASES.HUNTER_ACTION;
   }
+
+  getKillMessage(victimName) {
+    return `${victimName} was taken down by the Hunter's final shot.`;
+  }
   // Hunter has a passive effect (revenge kill) which is handled in resolution logic,
   // not a specific night phase action (unless we add a phase for them to choose, but usually it's immediate upon death).
   // For now, we keep it as is (handled in resolveNight/handleHunterShot).

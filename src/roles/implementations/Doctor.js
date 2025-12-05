@@ -45,4 +45,17 @@ export class Doctor extends Role {
     }
     return {};
   }
+
+  isTargetValid(target, gameState, actor) {
+    // Cannot target self
+    if (target.id === actor.id) {
+      return false;
+    }
+    // Cannot save the same person two nights in a row
+    const lastProtected = gameState.lastDoctorProtect;
+    if (lastProtected && lastProtected === target.id) {
+      return false;
+    }
+    return target.isAlive;
+  }
 }

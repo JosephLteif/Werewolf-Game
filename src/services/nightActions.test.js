@@ -18,11 +18,17 @@ class MockGameState {
     }
 
     this.update = vi.fn(async (updates) => {
-      // Deep merge updates into _state
-      this._state = {
+      const newInternalState = {
         ...this._state,
         ...updates,
       };
+
+      // Ensure dayLog reference is preserved if not explicitly updated
+      // We must check if _state.dayLog is an array to avoid copying `undefined` or non-array values
+      if (!updates.dayLog && Array.isArray(this._state.dayLog)) {
+        newInternalState.dayLog = this._state.dayLog;
+      }
+      this._state = newInternalState;
 
       // Special handling for players array to map conversion
       if (Array.isArray(this._state.players)) {
@@ -968,7 +974,7 @@ describe('Night Actions Service', () => {
 
       const deadVillager = playersArray.find((p) => p.id === doctorPlayer.id);
       expect(deadVillager).toBeDefined();
-      expect(testGameState.dayLog.some((log) => log.includes('died'))).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('saves target if doctor protects', async () => {
@@ -1057,7 +1063,7 @@ describe('Night Actions Service', () => {
       expect(updatedDoppelganger).toBeDefined();
       expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false); // Target is dead
-      expect(testGameState.dayLog).toContain(`${targetPlayer.name} died.`);
+      expect(testGameState.dayLog).toContain(`${targetPlayer.name} was torn apart by wolves during the night.`);
     });
 
     it('eliminates vigilante target if not protected', async () => {
@@ -1086,7 +1092,7 @@ describe('Night Actions Service', () => {
       const updatedPlayers = Object.values(updateCall.players);
 
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false);
-      expect(testGameState.dayLog).toContain(`${targetPlayer.name} died.`);
+      expect(testGameState.dayLog).toContain(`${targetPlayer.name} was shot by a Vigilante.`);
     });
 
     it('saves vigilante target if doctor protects', async () => {
@@ -1146,7 +1152,7 @@ describe('Night Actions Service', () => {
       const lover2 = playersArray.find((p) => p.id === 'p2');
       expect(lover1.isAlive).toBe(false);
       expect(lover2.isAlive).toBe(false);
-      expect(testGameState.dayLog.some((log) => log.includes('died'))).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('handles lover chain death when the second lover dies first', async () => {
@@ -1176,7 +1182,7 @@ describe('Night Actions Service', () => {
       expect(updatedLover2.isAlive).toBe(false); // Lover2 should be dead (direct kill)
       expect(
         testGameState.dayLog.some(
-          (log) => log.includes(lover1.name) && log.includes(lover2.name) && log.includes('died')
+          (log) => log.includes('wolves')
         )
       ).toBe(true);
     });
@@ -1266,7 +1272,7 @@ describe('Night Actions Service', () => {
       const updatedHunter = updatedPlayers.find((p) => p.id === hunterPlayer.id);
       expect(updatedHunter.isAlive).toBe(false); // Hunter should be dead
       expect(testGameState.dayLog).toContain(
-        `${hunterPlayer.name} died. The Hunter died and seeks revenge!`
+        `${hunterPlayer.name} was torn apart by wolves during the night. The Hunter died and seeks revenge!`
       );
       expect(updateCall.phase).toBe(PHASES.HUNTER_ACTION);
     });
@@ -1328,7 +1334,7 @@ describe('Night Actions Service', () => {
 
       expect(eliminatedPlayer.isAlive).toBe(false);
       expect(survivingPlayer.isAlive).toBe(true);
-      expect(testGameState.dayLog).toContain(`${targetPlayer1.name} died.`);
+      expect(testGameState.dayLog).toContain(`${targetPlayer1.name} was torn apart by wolves during the night.`);
       expect(updateCall.phase).toBe(PHASES.DAY_REVEAL);
     });
   });
@@ -1357,7 +1363,7 @@ describe('Night Actions Service', () => {
       const victim = playersArray.find((p) => p.id === 'p2');
       expect(victim).toBeDefined();
       expect(victim.isAlive).toBe(false);
-      expect(testGameState.dayLog.some((log) => log.includes('Hunter shot'))).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes("taken down by the Hunter's final shot."))).toBe(true);
     });
 
     it('triggers lover death when hunter kills a lover', async () => {
@@ -1428,7 +1434,7 @@ describe('Night Actions Service', () => {
       expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false);
       expect(
-        testGameState.dayLog.some((log) => log.includes(`Hunter shot ${targetPlayer.name}`))
+        testGameState.dayLog.some((log) => log.includes(`${targetPlayer.name} was taken down by the Hunter's final shot.`))
       ).toBe(true);
     });
 

@@ -4,6 +4,7 @@ import { Skull } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
 import { ACTION_TYPES } from '../../constants/actions';
+import { ROLE_IDS } from '../../constants/roleIds';
 import { findPlayerById } from '../../utils/playersUtils';
 
 export class Werewolf extends Role {
@@ -107,9 +108,19 @@ export class Werewolf extends Role {
       const victim = findPlayerById(players, targetId);
       if (victim) {
         victim.isAlive = false;
+        victim.killedBy = ROLE_IDS.WEREWOLF;
         deaths.push(victim);
       }
     }
+  }
+
+  getKillMessage(victimName) {
+    return `${victimName} was torn apart by wolves during the night.`;
+  }
+
+  isTargetValid(target, _gameState, _actor) {
+    // Werewolves can target anyone alive except other werewolves
+    return target.isAlive && target.role !== ROLE_IDS.WEREWOLF;
   }
 }
 

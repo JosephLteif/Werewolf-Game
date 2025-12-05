@@ -120,4 +120,26 @@ export class Role {
     // Specific roles should override this for complex win conditions.
     return false;
   }
+
+  /**
+   * Returns the kill message when this role kills a victim.
+   * Override in roles that can kill for thematic flavor text.
+   * @param {string} victimName - The name of the victim.
+   * @returns {string} - The kill message.
+   */
+  getKillMessage(victimName) {
+    return `${victimName} died.`;
+  }
+
+  /**
+   * Validates whether a target is a valid selection for this role's action.
+   * @param {object} target - The target player object.
+   * @param {object} _gameState - The current game state.
+   * @param {object} actor - The player performing the action.
+   * @returns {boolean} - True if the target is valid.
+   */
+  isTargetValid(target, _gameState, actor) {
+    // Default: cannot target self, must be alive
+    return target.id !== actor.id && target.isAlive;
+  }
 }
