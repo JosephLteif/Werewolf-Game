@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react';
 import VoterAvatars from '../components/VoterAvatars.jsx';
+import ChatBox from '../components/ChatBox';
 
 export default function DayVoteScreen({
   gameState,
@@ -39,9 +40,11 @@ export default function DayVoteScreen({
   const lockedCount = gameState.lockedVotes?.length || 0;
   const totalPlayers = alivePlayers.length;
 
+  const myPlayer = players.find((p) => p.id === user.uid);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex flex-col relative">
-      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex">
+      <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col pr-4">
         {/* Header */}
         <div className="text-center mb-6">
           {!amAlive && (
@@ -177,6 +180,16 @@ export default function DayVoteScreen({
             )}
           </div>
         )}
+      </div>
+
+      <div className="w-1/3 flex flex-col justify-between pl-4">
+        <ChatBox
+          roomCode={gameState.code}
+          myPlayer={myPlayer}
+          playerRole={myPlayer?.role}
+          isAlive={amAlive}
+          gameState={gameState}
+        />
       </div>
     </div>
   );

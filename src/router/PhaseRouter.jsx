@@ -130,6 +130,9 @@ export function PhaseRouter({
           players={players}
           lovers={gameState.lovers}
           gameSettings={gameState.settings}
+          user={user}
+          myPlayer={myPlayer}
+          roomCode={gameState.code}
         />
       );
     } else if (!isMyTurn) {
@@ -321,6 +324,9 @@ export function PhaseRouter({
         players={players}
         lovers={gameState.lovers}
         gameSettings={gameState.settings}
+        user={user}
+        myPlayer={myPlayer}
+        roomCode={gameState.code}
       />
     );
   } else if (CurrentComponent) {

@@ -3,6 +3,7 @@ import { ROLE_IDS } from '../constants/roleIds';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 import { isPlayerWinner } from '../utils/winConditions';
 import { Skull, RotateCcw } from 'lucide-react';
+import ChatBox from '../components/ChatBox';
 
 export default function DeadScreen({
   winner,
@@ -13,7 +14,9 @@ export default function DeadScreen({
   dayLog,
   players,
   lovers,
-  gameSettings, // Add gameSettings to props
+  gameSettings,
+  myPlayer,
+  roomCode,
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
@@ -57,7 +60,7 @@ export default function DeadScreen({
   }, [isGameOver]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex p-6 relative overflow-hidden">
       {/* Ambient background */}
       {isGameOver && (
         <div className="absolute inset-0 opacity-10">
@@ -77,7 +80,7 @@ export default function DeadScreen({
         </div>
       )}
 
-      <div className="relative z-10 max-w-md w-full">
+      <div className="relative z-10 flex-1 max-w-2xl mx-auto">
         {isGameOver ? (
           <>
             <div
@@ -177,6 +180,15 @@ export default function DeadScreen({
             Play Again
           </button>
         )}
+      </div>
+
+      <div className="w-1/3 pl-6">
+        <ChatBox
+          roomCode={roomCode}
+          myPlayer={myPlayer}
+          playerRole={myPlayer?.role}
+          isAlive={myPlayer?.isAlive}
+        />
       </div>
     </div>
   );

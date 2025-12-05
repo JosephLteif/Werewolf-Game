@@ -7,6 +7,7 @@ import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/r
 import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth'; // Import useAuth
 import { usePresenceNotifications } from './hooks/usePresenceNotifications';
+import { useAudioController } from './hooks/useAudioController';
 import { coreGameActions } from './services/coreGameActions';
 import AuthScreen from './pages/AuthScreen';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,9 @@ export default function App() {
 
   // Enable presence notifications
   usePresenceNotifications(gameState, user?.uid);
+
+  // Enable audio controller
+  useAudioController(gameState);
 
   const players = useMemo(() => (gameState ? gameState.players : []), [gameState]);
 

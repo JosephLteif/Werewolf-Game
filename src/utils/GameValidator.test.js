@@ -27,7 +27,9 @@ describe('GameValidator', () => {
     // Slots: 2 wolves + 2 masons + 1 seer = 5 slots
     const result = GameValidator.validate(players, settings);
     expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('Not enough players for selected roles. Required: 5, Available: 4');
+    expect(result.errors).toContain(
+      'Not enough players for selected roles. Required: 5, Available: 4'
+    );
     expect(result.errors).toContain('Too many wolves! (Must be less than 2)');
     expect(result.errors.length).toBe(2); // Ensure exactly two errors
   });

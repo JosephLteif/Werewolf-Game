@@ -31,7 +31,10 @@ export function useGameState(user, roomCode, joined) {
     const hostExistsInPlayersList = players.some((p) => p.id === hostId);
 
     // If the host is no longer in the players list OR is explicitly offline, try to claim host
-    if (!hostExistsInPlayersList || (hostExistsInPlayersList && players.find((p) => p.id === hostId).isOnline === false)) {
+    if (
+      !hostExistsInPlayersList ||
+      (hostExistsInPlayersList && players.find((p) => p.id === hostId).isOnline === false)
+    ) {
       const uid = user.id || user.uid;
       // The claimHostIfAvailable function will now automatically assign the oldest online player as host.
       // It's safe to call by any online player.

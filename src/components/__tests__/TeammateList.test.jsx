@@ -50,17 +50,20 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
             return new Cupid();
           case ROLE_IDS.VILLAGER:
             return new Villager();
-          case 'ALLY_ROLE': // Custom role for testing 'Ally' branch
+          case 'ALLY_ROLE': {
+            // Custom role for testing 'Ally' branch
             const allyRole = new Role();
             allyRole.id = 'ALLY_ROLE';
             allyRole.name = 'Ally Role';
             allyRole.getVisibleTeammates = () => []; // Provide a mock implementation
             return allyRole;
-          default:
+          }
+          default: {
             const baseRole = new Role();
             baseRole.id = roleId;
             baseRole.name = 'Unknown';
             return baseRole;
+          }
         }
       }),
     },
