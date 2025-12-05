@@ -14,6 +14,24 @@ export class Role {
   }
 
   /**
+   * Returns the role ID that this player appears as to a viewer.
+   * @param {Role} _viewerRole - The role of the player viewing this role.
+   * @returns {string} - The apparent role ID.
+   */
+  getSeenRole(_viewerRole) {
+    return this.id;
+  }
+
+  /**
+   * Returns the alignment that this player appears as to a viewer.
+   * @param {Role} _viewerRole - The role of the player viewing this role.
+   * @returns {string} - The apparent alignment.
+   */
+  getSeenAlignment(_viewerRole) {
+    return this.alignment;
+  }
+
+  /**
    * Process a night action for this role.
    * @param {Object} _gameState - The current game state.
    * @param {Object} _player - The player performing the action.

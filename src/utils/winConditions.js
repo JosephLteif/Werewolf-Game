@@ -8,14 +8,11 @@ import { ROLE_IDS } from '../constants/roleIds';
  */
 import { TannerWinStrategy } from '../strategies/winConditions/TannerWinStrategy';
 import { LoversWinStrategy } from '../strategies/winConditions/LoversWinStrategy';
-import { VillageWinStrategy } from '../strategies/winConditions/VillageWinStrategy';
-import { WerewolfWinStrategy } from '../strategies/winConditions/WerewolfWinStrategy';
+import { Teams } from '../models/Team';
 
 const STRATEGIES = [
   TannerWinStrategy,
   LoversWinStrategy,
-  VillageWinStrategy,
-  WerewolfWinStrategy,
 ].sort((a, b) => a.priority - b.priority);
 
 /**
@@ -40,7 +37,9 @@ export function checkWinCondition(
     lovers,
     gameSettings,
     currentWinners: accumulatedWinners,
+    currentWinners: accumulatedWinners,
     recentDeath: recentDeathContext,
+    roleRegistry: roleRegistry,
   };
 
   for (const strategy of STRATEGIES) {
@@ -58,6 +57,56 @@ export function checkWinCondition(
 
       if (result.isGameOver) {
         gameOverTriggered = true;
+      }
+    }
+  }
+
+  // Polymorphic Team Checks
+  // Identify active teams from alive players
+  const activeTeams = new Set();
+  alivePlayers.forEach(p => {
+    const role = roleRegistry.getRole(p.role);
+    if (role && role.team) {
+      // role.team is a Team object
+      activeTeams.add(role.team);
+    }
+    // Also check if player has a specific team override (though usually handled by role)
+    // If p.team is stored as ID, we might need to map it back to Team object if possible,
+    // but for now we rely on Role's team which is the standard.
+  });
+
+  // Also include teams that might not have alive players but could still win?
+  // Usually win conditions depend on alive players.
+  // We should definitely check VILLAGER and WEREWOLF teams if they are present in the game.
+  // Since we moved logic to Teams.VILLAGER and Teams.WEREWOLF, we can just check them explicitly
+  // or iterate through all defined Teams if we want to be fully generic.
+  // For now, let's check the standard teams + any active ones.
+
+  const teamsToCheck = [Teams.VILLAGER, Teams.WEREWOLF];
+  // Add any other teams found on players that are not in the default list?
+  activeTeams.forEach(t => {
+    if (!teamsToCheck.includes(t)) {
+      teamsToCheck.push(t);
+    }
+  });
+
+  for (const team of teamsToCheck) {
+    if (team.checkWin(context)) {
+      // Map Team object back to string ID expected by the game
+      // The game uses 'VILLAGERS' and 'WEREWOLVES' as winner strings in some places, 
+      // but 'village' and 'werewolf' as IDs.
+      // The strategies returned 'VILLAGERS' and 'WEREWOLVES'.
+      // We should probably standardize this.
+      // Existing code expects 'VILLAGERS' and 'WEREWOLVES'.
+
+      let winnerId = team.id;
+      if (team.id === TEAMS.VILLAGE) winnerId = 'VILLAGERS';
+      if (team.id === TEAMS.WEREWOLF) winnerId = 'WEREWOLVES';
+
+      if (!accumulatedWinners.includes(winnerId)) {
+        accumulatedWinners.push(winnerId);
+        hasNewWinners = true;
+        gameOverTriggered = true; // Most team wins end the game
       }
     }
   }

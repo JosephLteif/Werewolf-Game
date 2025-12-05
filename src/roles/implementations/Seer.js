@@ -46,6 +46,20 @@ export class Seer extends Role {
     return {};
   }
 
+  /**
+   * Investigates a target player to reveal their role/alignment.
+   * @param {object} targetPlayer - The player to investigate.
+   * @param {object} roleRegistry - The role registry instance.
+   * @returns {object} - The investigation result.
+   */
+  investigate(targetPlayer, roleRegistry) {
+    const targetRole = roleRegistry.getRole(targetPlayer.role);
+    return {
+      role: targetRole.getSeenRole(this),
+      alignment: targetRole.getSeenAlignment(this),
+    };
+  }
+
   isTargetValid(target, gameState, actor) {
     // Cannot target self
     if (target.id === actor.id) {
