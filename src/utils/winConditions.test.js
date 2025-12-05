@@ -137,6 +137,20 @@ describe('Win Conditions Service', () => {
       expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
     });
 
+    it('returns true for a good player if winners contains VILLAGERS display string', () => {
+      const player = { id: 'p1', role: ROLE_IDS.SEER };
+      const winners = ['VILLAGERS']; // Display string as used in actual game
+      const lovers = [];
+      expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
+    });
+
+    it('returns true for a werewolf if winners contains WEREWOLVES display string', () => {
+      const player = { id: 'p3', role: ROLE_IDS.WEREWOLF };
+      const winners = ['WEREWOLVES']; // Display string as used in actual game
+      const lovers = [];
+      expect(isPlayerWinner(player, winners, lovers, mockGameSettings)).toBe(true);
+    });
+
     it('returns false for an evil player if VILLAGERS win', () => {
       const player = { id: 'p3', role: ROLE_IDS.WEREWOLF };
       const winners = [TEAMS.VILLAGE];

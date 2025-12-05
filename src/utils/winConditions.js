@@ -86,16 +86,29 @@ export function checkWinCondition(
 export function isPlayerWinner(player, winners, lovers, gameSettings) {
   if (!winners || winners.length === 0) return false;
 
+  // Map display winner strings to team IDs for comparison
+  const winnerToTeamMapping = {
+    'VILLAGERS': TEAMS.VILLAGE,
+    'WEREWOLVES': TEAMS.WEREWOLF,
+    'LOVERS': TEAMS.LOVERS,
+  };
+
+  // Normalize winners to include both display strings and team IDs
+  const normalizedWinners = winners.flatMap(w => {
+    const teamId = winnerToTeamMapping[w];
+    return teamId ? [w, teamId] : [w];
+  });
+
   // Direct win by player ID (e.g., for Tanner)
-  if (winners.includes(player.id)) return true;
+  if (normalizedWinners.includes(player.id)) return true;
 
   // The "Lovers" win is a global condition that can override normal team alignment.
-  if (winners.includes('LOVERS') && lovers?.includes(player.id)) {
+  if (normalizedWinners.includes('LOVERS') && lovers?.includes(player.id)) {
     return true;
   }
 
   // Check if player's specific role ID is among the winners
-  if (winners.includes(player.role)) {
+  if (normalizedWinners.includes(player.role)) {
     // Special condition for Sorcerer: only wins with Werewolves if they found the Seer
     return !(player.role === ROLE_IDS.SORCERER && !player.foundSeer);
 
@@ -104,16 +117,17 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
   const role = roleRegistry.getRole(player.role);
   if (!role) {
     // Fallback for unknown roles: check team alignment only.
-    // If player has a dynamic alignment (e.g., from Cupid) use that, otherwise use default team.
-    const teamId = player.alignment || player.team?.id;
-    return teamId ? winners.includes(teamId) : false;
+    // player.team could be a Team object or a string ID
+    const teamId = player.team?.id || player.team;
+    return teamId ? normalizedWinners.includes(teamId) : false;
   }
 
-  // If player has a dynamic alignment (e.g., from Cupid) use that, otherwise use role's default team ID.
-  const playerTeamId = player.alignment || role.team?.id;
+  // Get the player's team ID - it could be stored directly on player (after transformation)
+  // or we get it from the role definition. player.team might be a Team object with .id
+  const playerTeamId = player.team?.id || player.team || role.team?.id;
 
-  // Check if the player's team or alignment is among the winners
-  if (playerTeamId && winners.includes(playerTeamId)) {
+  // Check if the player's team is among the winners
+  if (playerTeamId && normalizedWinners.includes(playerTeamId)) {
     // Special condition for Sorcerer if Werewolves won as a team but Sorcerer didn't find the Seer
     return !(player.role === ROLE_IDS.SORCERER && playerTeamId === TEAMS.WEREWOLF && !player.foundSeer);
 
@@ -121,5 +135,5 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
 
   // Delegate to role's checkWin for any specific, complex win conditions not covered above.
   // This allows roles to override the default team-based win if necessary.
-  return role.checkWin(player, winners, { lovers, settings: gameSettings });
+  return role.checkWin(player, normalizedWinners, { lovers, settings: gameSettings });
 }
