@@ -20,6 +20,13 @@ export class Werewolf extends Role {
     this.nightPriority = 20;
   }
 
+  getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
+    // Werewolves see other Werewolves
+    return allPlayers.filter(
+      (p) => p.role === 'werewolf' && p.id !== _currentPlayer.id
+    );
+  }
+
   getNightScreenConfig() {
     return {
       title: 'Werewolf Attack',

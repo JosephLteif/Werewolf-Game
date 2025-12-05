@@ -7,6 +7,7 @@ import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
 import ConfirmationModal from '../components/modals/ConfirmationModal'; // Import ConfirmationModal
 import { roleRegistry } from '../roles/RoleRegistry';
+import { GameValidator } from '../utils/GameValidator';
 
 export default function LobbyScreen({
   gameState,
@@ -396,10 +397,10 @@ export default function LobbyScreen({
                   })
                 }
                 disabled={!isHost}
-              />
-              <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
-          </div>
+            />
+            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
         )}
 
         {gameState.settings.activeRoles[ROLE_IDS.CUPID] && (
@@ -517,13 +518,9 @@ export default function LobbyScreen({
 
         {/* Game Balance - Visible to All Players */}
         {(() => {
-          const activeSpecialRolesCount = Object.entries(gameState.settings.activeRoles).filter(
-            ([id, isActive]) => isActive && id !== ROLE_IDS.MASON
-          ).length;
-          const masonCount = gameState.settings.activeRoles[ROLE_IDS.MASON] ? 2 : 0;
-          const totalRolesNeeded =
-            gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
-          const playersCount = players.length;
+          // Use GameValidator to get validation results
+          const validationResult = GameValidator.validate(players, gameState.settings);
+          const { isValid, errors } = validationResult;
 
           // Calculate balance weight
           let balanceWeight = 0;
@@ -547,8 +544,16 @@ export default function LobbyScreen({
             }
           });
 
-          // Add villager weights for remaining slots
+          // Calculate villagers count
+          const activeSpecialRolesCount = Object.entries(gameState.settings.activeRoles).filter(
+            ([id, isActive]) => isActive && id !== ROLE_IDS.MASON
+          ).length;
+          const masonCount = gameState.settings.activeRoles[ROLE_IDS.MASON] ? 2 : 0;
+          const totalRolesNeeded =
+            gameState.settings.wolfCount + activeSpecialRolesCount + masonCount;
+          const playersCount = players.length;
           const villagersCount = Math.max(0, playersCount - totalRolesNeeded);
+
           balanceWeight += villagersCount * roleRegistry.getRole(ROLE_IDS.VILLAGER).weight;
 
           // Balance assessment
@@ -567,11 +572,6 @@ export default function LobbyScreen({
             balanceColor = 'text-orange-400';
             balanceText = 'Slight Wolf Advantage';
           }
-
-          // Validation Checks (for host)
-          const hasEnoughPlayers = playersCount >= totalRolesNeeded && playersCount >= 3;
-          const isBalanced = gameState.settings.wolfCount < playersCount / 2;
-          const isValid = hasEnoughPlayers && isBalanced;
 
           return (
             <div className="space-y-2">
@@ -651,16 +651,11 @@ export default function LobbyScreen({
               {/* Host-Only Controls */}
               {isHost && (
                 <>
-                  {!hasEnoughPlayers && (
-                    <div className="text-red-400 text-xs text-center font-bold">
-                      Need {Math.max(3, totalRolesNeeded)} players (Have {playersCount})
+                  {errors.map((error, index) => (
+                    <div key={index} className="text-red-400 text-xs text-center font-bold">
+                      {error}
                     </div>
-                  )}
-                  {!isBalanced && (
-                    <div className="text-red-400 text-xs text-center font-bold">
-                      Too many wolves! (Must be &lt; {Math.ceil(playersCount / 2)})
-                    </div>
-                  )}
+                  ))}
                   <button
                     onClick={startGame}
                     disabled={!isValid}
@@ -692,3 +687,4 @@ export default function LobbyScreen({
     </div>
   );
 }
+

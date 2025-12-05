@@ -1,9 +1,14 @@
 import { assignRolesAndStartGame, markPlayerReady } from './roles';
+import { GameValidator } from '../utils/GameValidator';
 import { startNight, advanceNight, resolveNight, handleHunterShot } from './nightActions';
 import { castPlayerVote, lockPlayerVote, resolveDayVoting } from './voting';
 
 export function coreGameActions(gameState, players, user, isHost, now) {
   const startGame = async () => {
+    const { isValid, errors } = GameValidator.validate(players, gameState.settings);
+    if (!isValid) {
+      throw new Error(errors.join('\n'));
+    }
     await assignRolesAndStartGame(gameState, players, isHost);
   };
 

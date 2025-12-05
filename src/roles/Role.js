@@ -32,6 +32,17 @@ export class Role {
   }
 
   /**
+   * Returns a list of teammates that this player can see.
+   * @param {object} _currentPlayer - The player holding this role.
+   * @param {object[]} _allPlayers - List of all players in the game.
+   * @param {object} _gameState - The current game state (optional, for things like Lovers).
+   * @returns {object[]} - Array of visible teammates.
+   */
+  getVisibleTeammates(_currentPlayer, _allPlayers, _gameState) {
+    return [];
+  }
+
+  /**
    * Process a night action for this role.
    * @param {Object} _gameState - The current game state.
    * @param {Object} _player - The player performing the action.

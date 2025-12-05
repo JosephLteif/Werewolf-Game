@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ROLE_IDS } from '../constants/roleIds';
+import { roleRegistry } from '../roles/RoleRegistry';
 import { ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 export default function TeammateList({ players, myPlayer, gameState }) {
@@ -7,37 +8,29 @@ export default function TeammateList({ players, myPlayer, gameState }) {
 
   if (!myPlayer || !players) return null;
 
-  let title = '';
-  let relevantPlayers = [];
+  if (!myPlayer || !players) return null;
 
-  // 1. Werewolf Logic (See Werewolves + Minions)
-  if (myPlayer.role === ROLE_IDS.WEREWOLF) {
-    title = 'Pack & Allies';
-    relevantPlayers = players.filter((p) => p.role === ROLE_IDS.WEREWOLF && p.id !== myPlayer.id);
-  }
-  // 2. Minion Logic (See Werewolves)
-  else if (myPlayer.role === ROLE_IDS.MINION) {
-    title = 'My Masters';
-    relevantPlayers = players.filter((p) => p.role === ROLE_IDS.WEREWOLF);
-  }
-  // 3. Mason Logic (See Masons)
-  else if (myPlayer.role === ROLE_IDS.MASON) {
-    title = 'Fellow Masons';
-    relevantPlayers = players.filter((p) => p.role === ROLE_IDS.MASON && p.id !== myPlayer.id);
-  }
-  // 4. Cupid Logic (See Lovers)
-  else if (myPlayer.role === ROLE_IDS.CUPID) {
-    title = 'Lovers';
-    if (gameState.lovers) {
-      relevantPlayers = players.filter((p) => gameState.lovers.includes(p.id));
-    }
-  }
+  const currentRole = roleRegistry.getRole(myPlayer.role);
+  const relevantPlayers = currentRole ? currentRole.getVisibleTeammates(myPlayer, players, gameState) : [];
 
-  // 5. Lover Logic (See Partner) - Can overlap with roles above, so we append if needed or handle separately.
-  // Actually, if I am a lover, I should ALWAYS see my partner, regardless of my role.
-  // But the prompt implies "Cupid list of lovers and lovers list of the other lover".
-  // Let's handle the "Lover" case as an addition or override.
-  // If I am a lover, I definitely want to see my partner.
+  // Title Logic - Keeping it simple based on role or fallback
+  let title = 'Allies';
+  if (myPlayer.role === ROLE_IDS.WEREWOLF) title = 'Pack & Allies';
+  else if (myPlayer.role === ROLE_IDS.MINION) title = 'My Masters';
+  else if (myPlayer.role === ROLE_IDS.MASON) title = 'Fellow Masons';
+  else if (myPlayer.role === ROLE_IDS.CUPID) title = 'Lovers'; // Cupid Logic handling below
+
+  // 4. Cupid Logic (See Lovers) - Keeping this here as Cupid might not have getVisibleTeammates implemented perfectly or as a safeguard
+  // Actually, let's append Cupid logic to relevantPlayers if not already handled by Role.js logic (which we assume isn't strictly yet for Cupid)
+  if (myPlayer.role === ROLE_IDS.CUPID && gameState.lovers) {
+    const lovers = players.filter((p) => gameState.lovers.includes(p.id));
+    // Avoid duplicates if Cupid role implementation eventually handles this
+    lovers.forEach(l => {
+      if (!relevantPlayers.find(rp => rp.id === l.id)) {
+        relevantPlayers.push(l);
+      }
+    });
+  }
 
   const amILover = gameState.lovers?.includes(myPlayer.id);
   let partner = null;
