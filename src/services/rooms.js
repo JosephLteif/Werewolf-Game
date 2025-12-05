@@ -150,6 +150,7 @@ export default {
   renamePlayer,
   claimHostIfAvailable,
   performGameAction,
+  transferHost,
 };
 
 /**
@@ -225,9 +226,37 @@ export async function claimHostIfAvailable(roomCode, currentUserId) {
       return room;
     }
 
-    // Alternatively, we could auto-migrate regardless of who called it.
     // But to avoid conflicts/churn, maybe only migrate if specific user asks?
     // Let's stick to "claim" logic requested: "If the currentUserId matches that player's ID".
-    return;
+    // If the newHost is the currentUserId, or if we want to force migration to the oldest online player
+    // regardless of who called it, the logic is simpler:
+    if (newHost) {
+      room.hostId = newHost.id;
+      room.updatedAt = serverTimestamp();
+      return room;
+    }
+  });
+}
+
+/**
+ * Transfers host privileges to another player.
+ */
+export async function transferHost(roomCode, newHostId) {
+  if (!roomCode) throw new Error('roomCode is required');
+  if (!newHostId) throw new Error('newHostId is required');
+
+  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+
+  await runTransaction(roomRef, (room) => {
+    if (!room || !room.players) return; // Room or players don't exist
+
+    // Ensure the new host is a valid player in the room
+    if (!room.players[newHostId]) {
+      throw new Error(`Player with ID ${newHostId} not found in room ${roomCode}.`);
+    }
+
+    room.hostId = newHostId;
+    room.updatedAt = serverTimestamp(); // Always update timestamp on any change
+    return room;
   });
 }

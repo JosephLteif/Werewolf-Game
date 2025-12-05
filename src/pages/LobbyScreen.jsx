@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'; // Import useState, useEffect, and useRef
 import { Info, Copy, ArrowLeft, XCircle, Pencil, Check, X } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
-import { kickPlayer, renamePlayer } from '../services/rooms';
+import { kickPlayer, renamePlayer, transferHost } from '../services/rooms';
 import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
 import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
@@ -182,12 +182,20 @@ export default function LobbyScreen({
                 </>
               )}
               {isHost && p.id !== user.uid && (
-                <button
-                  onClick={() => handleKick(p.id)}
-                  className="ml-auto text-xs font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 px-2 py-1 rounded transition-all"
-                >
-                  Kick
-                </button>
+                <>
+                  <button
+                    onClick={() => handleKick(p.id)}
+                    className="ml-auto text-xs font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 px-2 py-1 rounded transition-all"
+                  >
+                    Kick
+                  </button>
+                  <button
+                    onClick={() => transferHost(gameState.code, p.id)}
+                    className="ml-2 text-xs font-bold text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/10 hover:border-indigo-500/50 px-2 py-1 rounded transition-all"
+                  >
+                    Make Host
+                  </button>
+                </>
               )}
               {p.id === gameState.hostId && (
                 <span className="text-xs text-slate-500 font-bold ml-auto border border-slate-600 px-2 py-1 rounded">

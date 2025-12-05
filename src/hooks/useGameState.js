@@ -28,13 +28,13 @@ export function useGameState(user, roomCode, joined) {
 
     const hostId = gameState.hostId;
     const players = gameState.players; // uses the getter which is an array
-    const host = players.find((p) => p.id === hostId);
+    const hostExistsInPlayersList = players.some((p) => p.id === hostId);
 
-    // If host is explicitly offline, try to claim host
-    if (host && host.isOnline === false) {
+    // If the host is no longer in the players list OR is explicitly offline, try to claim host
+    if (!hostExistsInPlayersList || (hostExistsInPlayersList && players.find((p) => p.id === hostId).isOnline === false)) {
       const uid = user.id || user.uid;
-      // Only one person needs to succeed, but multiple might try.
-      // This is safe because claimHostIfAvailable uses a transaction.
+      // The claimHostIfAvailable function will now automatically assign the oldest online player as host.
+      // It's safe to call by any online player.
       claimHostIfAvailable(roomCode, uid);
     }
   }, [gameState, user, roomCode]);
