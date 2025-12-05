@@ -10,10 +10,7 @@ import { TannerWinStrategy } from '../strategies/winConditions/TannerWinStrategy
 import { LoversWinStrategy } from '../strategies/winConditions/LoversWinStrategy';
 import { Teams } from '../models/Team';
 
-const STRATEGIES = [
-  TannerWinStrategy,
-  LoversWinStrategy,
-].sort((a, b) => a.priority - b.priority);
+const STRATEGIES = [TannerWinStrategy, LoversWinStrategy].sort((a, b) => a.priority - b.priority);
 
 /**
  * Checks if the game has ended and determines the winner
@@ -36,7 +33,6 @@ export function checkWinCondition(
     alivePlayers,
     lovers,
     gameSettings,
-    currentWinners: accumulatedWinners,
     currentWinners: accumulatedWinners,
     recentDeath: recentDeathContext,
     roleRegistry: roleRegistry,
@@ -64,7 +60,7 @@ export function checkWinCondition(
   // Polymorphic Team Checks
   // Identify active teams from alive players
   const activeTeams = new Set();
-  alivePlayers.forEach(p => {
+  alivePlayers.forEach((p) => {
     const role = roleRegistry.getRole(p.role);
     if (role && role.team) {
       // role.team is a Team object
@@ -84,7 +80,7 @@ export function checkWinCondition(
 
   const teamsToCheck = [Teams.VILLAGER, Teams.WEREWOLF];
   // Add any other teams found on players that are not in the default list?
-  activeTeams.forEach(t => {
+  activeTeams.forEach((t) => {
     if (!teamsToCheck.includes(t)) {
       teamsToCheck.push(t);
     }
@@ -93,7 +89,7 @@ export function checkWinCondition(
   for (const team of teamsToCheck) {
     if (team.checkWin(context)) {
       // Map Team object back to string ID expected by the game
-      // The game uses 'VILLAGERS' and 'WEREWOLVES' as winner strings in some places, 
+      // The game uses 'VILLAGERS' and 'WEREWOLVES' as winner strings in some places,
       // but 'village' and 'werewolf' as IDs.
       // The strategies returned 'VILLAGERS' and 'WEREWOLVES'.
       // We should probably standardize this.
@@ -137,13 +133,13 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
 
   // Map display winner strings to team IDs for comparison
   const winnerToTeamMapping = {
-    'VILLAGERS': TEAMS.VILLAGE,
-    'WEREWOLVES': TEAMS.WEREWOLF,
-    'LOVERS': TEAMS.LOVERS,
+    VILLAGERS: TEAMS.VILLAGE,
+    WEREWOLVES: TEAMS.WEREWOLF,
+    LOVERS: TEAMS.LOVERS,
   };
 
   // Normalize winners to include both display strings and team IDs
-  const normalizedWinners = winners.flatMap(w => {
+  const normalizedWinners = winners.flatMap((w) => {
     const teamId = winnerToTeamMapping[w];
     return teamId ? [w, teamId] : [w];
   });
@@ -160,7 +156,6 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
   if (normalizedWinners.includes(player.role)) {
     // Special condition for Sorcerer: only wins with Werewolves if they found the Seer
     return !(player.role === ROLE_IDS.SORCERER && !player.foundSeer);
-
   }
 
   const role = roleRegistry.getRole(player.role);
@@ -178,8 +173,11 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
   // Check if the player's team is among the winners
   if (playerTeamId && normalizedWinners.includes(playerTeamId)) {
     // Special condition for Sorcerer if Werewolves won as a team but Sorcerer didn't find the Seer
-    return !(player.role === ROLE_IDS.SORCERER && playerTeamId === TEAMS.WEREWOLF && !player.foundSeer);
-
+    return !(
+      player.role === ROLE_IDS.SORCERER &&
+      playerTeamId === TEAMS.WEREWOLF &&
+      !player.foundSeer
+    );
   }
 
   // Delegate to role's checkWin for any specific, complex win conditions not covered above.

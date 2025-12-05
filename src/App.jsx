@@ -21,13 +21,16 @@ export default function App() {
   const { user } = useAuth();
   const toast = useToast(); // Initialize useToast
 
-  const leaveRoom = useCallback((kickedByHost = false) => {
-    setJoined(false);
-    setRoomCode('');
-    if (kickedByHost) {
-      toast.error('You have been kicked from the room by the host.');
-    }
-  }, [toast]);
+  const leaveRoom = useCallback(
+    (kickedByHost = false) => {
+      setJoined(false);
+      setRoomCode('');
+      if (kickedByHost) {
+        toast.error('You have been kicked from the room by the host.');
+      }
+    },
+    [toast]
+  );
 
   const { gameState, isHost } = useGameState(user, roomCode, joined);
 

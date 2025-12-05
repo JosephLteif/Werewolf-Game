@@ -559,7 +559,7 @@ describe('Night Actions Service', () => {
       const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
       const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
       const playersMap = {};
-      players.forEach(p => playersMap[p.id] = p);
+      players.forEach((p) => (playersMap[p.id] = p));
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -1063,7 +1063,9 @@ describe('Night Actions Service', () => {
       expect(updatedDoppelganger).toBeDefined();
       expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false); // Target is dead
-      expect(testGameState.dayLog).toContain(`${targetPlayer.name} was torn apart by wolves during the night.`);
+      expect(testGameState.dayLog).toContain(
+        `${targetPlayer.name} was torn apart by wolves during the night.`
+      );
     });
 
     it('eliminates vigilante target if not protected', async () => {
@@ -1180,11 +1182,7 @@ describe('Night Actions Service', () => {
       const updatedLover2 = playersArray.find((p) => p.id === lover2.id);
       expect(updatedLover1.isAlive).toBe(false);
       expect(updatedLover2.isAlive).toBe(false); // Lover2 should be dead (direct kill)
-      expect(
-        testGameState.dayLog.some(
-          (log) => log.includes('wolves')
-        )
-      ).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('sets lovers alignment to LOVERS_TEAM for Forbidden Love (Wolf + Villager)', async () => {
@@ -1334,7 +1332,9 @@ describe('Night Actions Service', () => {
 
       expect(eliminatedPlayer.isAlive).toBe(false);
       expect(survivingPlayer.isAlive).toBe(true);
-      expect(testGameState.dayLog).toContain(`${targetPlayer1.name} was torn apart by wolves during the night.`);
+      expect(testGameState.dayLog).toContain(
+        `${targetPlayer1.name} was torn apart by wolves during the night.`
+      );
       expect(updateCall.phase).toBe(PHASES.DAY_REVEAL);
     });
   });
@@ -1363,7 +1363,9 @@ describe('Night Actions Service', () => {
       const victim = playersArray.find((p) => p.id === 'p2');
       expect(victim).toBeDefined();
       expect(victim.isAlive).toBe(false);
-      expect(testGameState.dayLog.some((log) => log.includes("taken down by the Hunter's final shot."))).toBe(true);
+      expect(
+        testGameState.dayLog.some((log) => log.includes("taken down by the Hunter's final shot."))
+      ).toBe(true);
     });
 
     it('triggers lover death when hunter kills a lover', async () => {
@@ -1434,7 +1436,9 @@ describe('Night Actions Service', () => {
       expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false);
       expect(
-        testGameState.dayLog.some((log) => log.includes(`${targetPlayer.name} was taken down by the Hunter's final shot.`))
+        testGameState.dayLog.some((log) =>
+          log.includes(`${targetPlayer.name} was taken down by the Hunter's final shot.`)
+        )
       ).toBe(true);
     });
 

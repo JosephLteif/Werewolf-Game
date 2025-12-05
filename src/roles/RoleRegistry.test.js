@@ -41,7 +41,9 @@ describe('RoleRegistry Class', () => {
         roleRegistry: {
           ...actual.roleRegistry,
           // Re-initialize with original behavior or specific mocks if needed
-          getRole: vi.fn((roleId) => actual.roleRegistry.getAllRoles().find((r) => r.id === roleId)),
+          getRole: vi.fn((roleId) =>
+            actual.roleRegistry.getAllRoles().find((r) => r.id === roleId)
+          ),
           getAllRoles: vi.fn(() => actual.roleRegistry.getAllRoles()),
         },
       };

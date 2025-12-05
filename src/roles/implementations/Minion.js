@@ -19,9 +19,7 @@ export class Minion extends Role {
 
   getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
     // Minions see Werewolves
-    return allPlayers.filter(
-      (p) => p.role === 'werewolf'
-    );
+    return allPlayers.filter((p) => p.role === 'werewolf');
   }
 
   isWakeUpPhase(phase) {

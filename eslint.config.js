@@ -30,7 +30,7 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|motion', argsIgnorePattern: '^_' }],
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
@@ -42,7 +42,7 @@ export default defineConfig([
     files: ['**/*.test.js', '**/*.test.jsx'],
     rules: {
       // Allow 'vi' to be unused in test files
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|vi' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|vi', argsIgnorePattern: '^_' }],
     },
   },
   prettierConfig,

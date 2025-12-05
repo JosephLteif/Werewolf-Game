@@ -387,8 +387,6 @@ describe('Role Assignment and Readiness', () => {
     });
   });
 
-
-
   describe('Cupid Role', () => {
     let cupidRole;
     beforeEach(() => {
@@ -709,7 +707,10 @@ describe('Role Assignment and Readiness', () => {
       const player = { id: 'wolf1', role: ROLE_IDS.WEREWOLF };
       const action = { type: 'werewolfVote', targetId: 'p1' };
       const result = werewolfRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({ werewolfVotes: { wolf2: 'p2', wolf1: 'p1' }, werewolfProvisionalVotes: {} });
+      expect(result).toEqual({
+        werewolfVotes: { wolf2: 'p2', wolf1: 'p1' },
+        werewolfProvisionalVotes: {},
+      });
     });
 
     it('processNightAction returns empty object for unknown action type', () => {

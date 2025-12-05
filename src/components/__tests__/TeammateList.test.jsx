@@ -26,6 +26,14 @@ vi.mock('lucide-react', () => ({
 // Mock roleRegistry (simplified for this component's needs)
 vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
   const actual = await importOriginal();
+  // Import actual role implementations for mocking
+  const { Villager } = await import('../../roles/implementations/Villager');
+  const { Werewolf } = await import('../../roles/implementations/Werewolf');
+  const { Minion } = await import('../../roles/implementations/Minion');
+  const { Mason } = await import('../../roles/implementations/Mason');
+  const { Cupid } = await import('../../roles/implementations/Cupid');
+  const { Role } = await import('../../roles/Role'); // Base Role
+
   return {
     ...actual,
     roleRegistry: {
@@ -33,19 +41,26 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
       getRole: vi.fn((roleId) => {
         switch (roleId) {
           case ROLE_IDS.WEREWOLF:
-            return { id: ROLE_IDS.WEREWOLF, name: 'Werewolf' };
+            return new Werewolf();
           case ROLE_IDS.MINION:
-            return { id: ROLE_IDS.MINION, name: 'Minion' };
+            return new Minion();
           case ROLE_IDS.MASON:
-            return { id: ROLE_IDS.MASON, name: 'Mason' };
+            return new Mason();
           case ROLE_IDS.CUPID:
-            return { id: ROLE_IDS.CUPID, name: 'Cupid' };
+            return new Cupid();
           case ROLE_IDS.VILLAGER:
-            return { id: ROLE_IDS.VILLAGER, name: 'Villager' };
+            return new Villager();
           case 'ALLY_ROLE': // Custom role for testing 'Ally' branch
-            return { id: 'ALLY_ROLE', name: 'Ally Role' };
+            const allyRole = new Role();
+            allyRole.id = 'ALLY_ROLE';
+            allyRole.name = 'Ally Role';
+            allyRole.getVisibleTeammates = () => []; // Provide a mock implementation
+            return allyRole;
           default:
-            return { id: roleId, name: 'Unknown' };
+            const baseRole = new Role();
+            baseRole.id = roleId;
+            baseRole.name = 'Unknown';
+            return baseRole;
         }
       }),
     },

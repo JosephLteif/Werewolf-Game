@@ -22,9 +22,7 @@ export class Werewolf extends Role {
 
   getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
     // Werewolves see other Werewolves
-    return allPlayers.filter(
-      (p) => p.role === 'werewolf' && p.id !== _currentPlayer.id
-    );
+    return allPlayers.filter((p) => p.role === 'werewolf' && p.id !== _currentPlayer.id);
   }
 
   getNightScreenConfig() {
@@ -130,4 +128,3 @@ export class Werewolf extends Role {
     return target.isAlive && target.role !== ROLE_IDS.WEREWOLF;
   }
 }
-

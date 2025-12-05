@@ -1,7 +1,7 @@
 import { PHASES, TEAMS, ACTION_TYPES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { getPlayersByRole, findPlayerById } from '../utils/playersUtils';
-import { handleDoppelgangerTransformation, determineFirstNightPhase } from '../utils/gameLogic';
+import { determineFirstNightPhase } from '../utils/gameLogic';
 import { roleRegistry } from '../roles/RoleRegistry';
 import { ROLE_IDS } from '../constants/roleIds';
 
@@ -9,14 +9,11 @@ export const determineNightSequence = (alivePlayers) => {
   // Get all unique active roles from alive players
   const activeRoleIds = [...new Set(alivePlayers.map((p) => p.role))];
 
-
   // Get the role objects from the registry
   const activeRoles = activeRoleIds.map((id) => roleRegistry.getRole(id)).filter(Boolean);
 
-
   // Filter for roles that have a night phase
   const nightRoles = activeRoles.filter((role) => role.getNightPhase());
-
 
   // Sort roles by their nightPriority
   nightRoles.sort((a, b) => a.nightPriority - b.nightPriority);
@@ -61,18 +58,13 @@ const checkSorcererSuccess = (newPlayers, sorcererCheck) => {
   }
 };
 
-const getNextNightPhaseInternal = (currentPhase, players, gameState, nightActions) => {
+const getNextNightPhaseInternal = (currentPhase, players, gameState, _nightActions) => {
   const alivePlayers = players.filter((p) => p.isAlive);
   const sequence = determineNightSequence(alivePlayers);
 
   let currentIdx = sequence.indexOf(currentPhase);
   let startIndex = currentIdx === -1 ? 0 : currentIdx + 1;
   let nextPhase = 'RESOLVE'; // Default to resolve if no next phase is found
-
-
-
-
-
 
   for (let i = startIndex; i < sequence.length; i++) {
     const p = sequence[i]; // p is a PHASE string, e.g., 'NIGHT_WEREWOLF'
@@ -81,13 +73,11 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, nightAction
     if (p === PHASES.NIGHT_DOPPELGANGER) {
       // Only advance to Doppelganger phase if no target has been chosen yet
       if (!gameState.doppelgangerTarget) {
-
         return p;
       }
     } else if (p === PHASES.NIGHT_CUPID) {
       // Only advance to Cupid phase if lovers are not yet set
       if (!gameState.lovers || gameState.lovers.length === 0) {
-
         return p;
       }
     } else {
@@ -142,42 +132,42 @@ export const advanceNight = async (
     case ACTION_TYPES.WEREWOLF_VOTE:
     case ACTION_TYPES.WEREWOLF_PROVISIONAL_VOTE:
     case ACTION_TYPES.WEREWOLF_SKIP:
-      actingPlayer = players.find(p => p.id === (extraPayload?.voterId || actionValue?.voterId));
+      actingPlayer = players.find((p) => p.id === (extraPayload?.voterId || actionValue?.voterId));
       break;
     case ACTION_TYPES.MASON_READY:
-      actingPlayer = players.find(p => p.id === (extraPayload?.playerId || actionValue));
+      actingPlayer = players.find((p) => p.id === (extraPayload?.playerId || actionValue));
       break;
     case ACTION_TYPES.DOPPELGANGER_COPY:
-      actingPlayer = players.find(p => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive);
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive);
       break;
     // For single-actor roles, find the player by their role based on the current phase
     case ACTION_TYPES.DOCTOR_PROTECT:
-      actingPlayer = players.find(p => p.role === ROLE_IDS.DOCTOR && p.isAlive);
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.DOCTOR && p.isAlive);
       break;
     case ACTION_TYPES.SEER_CHECK:
-      actingPlayer = players.find(p => p.role === ROLE_IDS.SEER && p.isAlive);
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.SEER && p.isAlive);
       break;
     case ACTION_TYPES.SORCERER_CHECK:
-      actingPlayer = players.find(p => p.role === ROLE_IDS.SORCERER && p.isAlive);
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.SORCERER && p.isAlive);
       break;
     case ACTION_TYPES.VIGILANTE_TARGET:
-      actingPlayer = players.find(p => p.role === ROLE_IDS.VIGILANTE && p.isAlive);
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.VIGILANTE && p.isAlive);
       break;
     case ACTION_TYPES.CUPID_LINK:
-      actingPlayer = players.find(p => p.role === ROLE_IDS.CUPID && p.isAlive);
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.CUPID && p.isAlive);
       break;
     case ACTION_TYPES.NO_ACTION:
       // For NO_ACTION, try to find the acting player based on the current phase
       if (gameState.phase === PHASES.NIGHT_DOCTOR) {
-        actingPlayer = players.find(p => p.role === ROLE_IDS.DOCTOR && p.isAlive);
+        actingPlayer = players.find((p) => p.role === ROLE_IDS.DOCTOR && p.isAlive);
       } else if (gameState.phase === PHASES.NIGHT_SEER) {
-        actingPlayer = players.find(p => p.role === ROLE_IDS.SEER && p.isAlive);
+        actingPlayer = players.find((p) => p.role === ROLE_IDS.SEER && p.isAlive);
       } else if (gameState.phase === PHASES.NIGHT_SORCERER) {
-        actingPlayer = players.find(p => p.role === ROLE_IDS.SORCERER && p.isAlive);
+        actingPlayer = players.find((p) => p.role === ROLE_IDS.SORCERER && p.isAlive);
       } else if (gameState.phase === PHASES.NIGHT_VIGILANTE) {
-        actingPlayer = players.find(p => p.role === ROLE_IDS.VIGILANTE && p.isAlive);
+        actingPlayer = players.find((p) => p.role === ROLE_IDS.VIGILANTE && p.isAlive);
       } else if (gameState.phase === PHASES.NIGHT_CUPID) {
-        actingPlayer = players.find(p => p.role === ROLE_IDS.CUPID && p.isAlive);
+        actingPlayer = players.find((p) => p.role === ROLE_IDS.CUPID && p.isAlive);
       }
       break;
     default:
@@ -185,7 +175,8 @@ export const advanceNight = async (
   }
 
   // Handle actions
-  if (actionType === ACTION_TYPES.CUPID_LINK) { // Special handling for Cupid due to its actionValue structure
+  if (actionType === ACTION_TYPES.CUPID_LINK) {
+    // Special handling for Cupid due to its actionValue structure
     newActions.cupidLinks = actionValue;
   } else if (actionType) {
     if (actingPlayer) {
@@ -193,17 +184,22 @@ export const advanceNight = async (
 
       if (role && typeof role.processNightAction === 'function') {
         // Ensure action.targetId is the actual target ID string, not an object
-        const targetId = typeof actionValue === 'object' && actionValue !== null && 'targetId' in actionValue
-          ? actionValue.targetId
-          : actionValue;
+        const targetId =
+          typeof actionValue === 'object' && actionValue !== null && 'targetId' in actionValue
+            ? actionValue.targetId
+            : actionValue;
         const action = { type: actionType, targetId: targetId, ...extraPayload };
         const roleUpdates = role.processNightAction(gameState, actingPlayer, action);
         newActions = { ...newActions, ...roleUpdates };
       } else {
-        console.warn(`No specific role.processNightAction found for actionType: ${actionType} or role not found for player: ${actingPlayer.id}.`);
+        console.warn(
+          `No specific role.processNightAction found for actionType: ${actionType} or role not found for player: ${actingPlayer.id}.`
+        );
       }
     } else {
-      console.warn(`ActionType: ${actionType} provided without an identified actingPlayer. Skipping processNightAction.`);
+      console.warn(
+        `ActionType: ${actionType} provided without an identified actingPlayer. Skipping processNightAction.`
+      );
     }
   }
 
@@ -252,7 +248,7 @@ export const advanceNight = async (
 
     if (nextPhase === PHASES.NIGHT_MASON) {
       updates.nightActions = { ...updates.nightActions, masonsReady: {} };
-    }      // Set timer for next phase if it's an action phase
+    } // Set timer for next phase if it's an action phase
     const isTimedPhase = [
       PHASES.NIGHT_WEREWOLF,
       PHASES.NIGHT_DOCTOR,
@@ -398,7 +394,12 @@ export const resolveNight = async (gameState, players, finalActions) => {
 
   // Only check for win conditions if the game is proceeding to the next day
   if (nextPhase === PHASES.DAY_REVEAL) {
-    const winResult = checkWinCondition(newPlayers, currentLovers, gameState.winners, gameState.settings);
+    const winResult = checkWinCondition(
+      newPlayers,
+      currentLovers,
+      gameState.winners,
+      gameState.settings
+    );
     if (winResult) {
       if (winResult.isGameOver) {
         await gameState.update({
@@ -419,7 +420,8 @@ export const resolveNight = async (gameState, players, finalActions) => {
   await gameState.update({
     players: newPlayers,
     phase: nextPhase,
-    doppelgangerPlayerId: finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId || null,
+    doppelgangerPlayerId:
+      finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId || null,
   });
   await gameState.addDayLog(log);
 };
@@ -477,17 +479,11 @@ export const handleHunterShot = async (gameState, players, targetId) => {
 
   // Doppelgänger Transformation (Hunter Shot)
   // Find the Doppelganger and their target
-  const doppelgangerPlayer = newPlayers.find(
-    (p) => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive
-  );
+  const doppelgangerPlayer = newPlayers.find((p) => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive);
   const doppelgangerTargetId = gameState.nightActions?.doppelgangerCopy; // Get the target from game state
 
   // If the doppelganger exists, is alive, and their target is the victim
-  if (
-    doppelgangerPlayer &&
-    doppelgangerPlayer.isAlive &&
-    doppelgangerTargetId === victim.id
-  ) {
+  if (doppelgangerPlayer && doppelgangerPlayer.isAlive && doppelgangerTargetId === victim.id) {
     const doppelgangerRole = roleRegistry.getRole(doppelgangerPlayer.role);
     if (doppelgangerRole && typeof doppelgangerRole.onAnyPlayerDeath === 'function') {
       const updatedPlayers = doppelgangerRole.onAnyPlayerDeath({
@@ -503,7 +499,9 @@ export const handleHunterShot = async (gameState, players, targetId) => {
 
   // Use Hunter's getKillMessage for thematic flavor text
   const hunterRole = roleRegistry.getRole(ROLE_IDS.HUNTER);
-  const hunterMessage = hunterRole ? hunterRole.getKillMessage(victim.name) : `The Hunter shot ${victim.name}!`;
+  const hunterMessage = hunterRole
+    ? hunterRole.getKillMessage(victim.name)
+    : `The Hunter shot ${victim.name}!`;
   await gameState.addDayLog(hunterMessage); // Add this log BEFORE checking win condition
 
   const winResult = checkWinCondition(

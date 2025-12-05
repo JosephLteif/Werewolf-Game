@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
 
-export function usePresenceNotifications(gameState, currentUserId) {
+export function usePresenceNotifications(gameState) {
   const { info, warning, error, success } = useToast();
 
   // Store previous values to detect changes

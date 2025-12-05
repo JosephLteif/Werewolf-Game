@@ -11,7 +11,9 @@ export default function TeammateList({ players, myPlayer, gameState }) {
   if (!myPlayer || !players) return null;
 
   const currentRole = roleRegistry.getRole(myPlayer.role);
-  const relevantPlayers = currentRole ? currentRole.getVisibleTeammates(myPlayer, players, gameState) : [];
+  const relevantPlayers = currentRole
+    ? currentRole.getVisibleTeammates(myPlayer, players, gameState)
+    : [];
 
   // Title Logic - Keeping it simple based on role or fallback
   let title = 'Allies';
@@ -25,8 +27,8 @@ export default function TeammateList({ players, myPlayer, gameState }) {
   if (myPlayer.role === ROLE_IDS.CUPID && gameState.lovers) {
     const lovers = players.filter((p) => gameState.lovers.includes(p.id));
     // Avoid duplicates if Cupid role implementation eventually handles this
-    lovers.forEach(l => {
-      if (!relevantPlayers.find(rp => rp.id === l.id)) {
+    lovers.forEach((l) => {
+      if (!relevantPlayers.find((rp) => rp.id === l.id)) {
         relevantPlayers.push(l);
       }
     });

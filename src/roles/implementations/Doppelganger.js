@@ -20,7 +20,7 @@ export class Doppelganger extends Role {
 
   getNightScreenConfig() {
     return {
-      title: 'Doppelgänger\'s Choice',
+      title: "Doppelgänger's Choice",
       subtitle: 'Choose a player to copy. You will become their role if they die.',
       color: 'yellow',
       multiSelect: false,
@@ -50,7 +50,7 @@ export class Doppelganger extends Role {
   onAnyPlayerDeath(context) {
     const { deadPlayer, players, gameState } = context;
 
-    const doppelgangerPlayer = players.find(p => p.role === this.id && p.isAlive);
+    const doppelgangerPlayer = players.find((p) => p.role === this.id && p.isAlive);
 
     // Only if the doppelganger exists, is alive, has chosen a target, and the dead player is their target
     if (
@@ -58,7 +58,9 @@ export class Doppelganger extends Role {
       gameState.nightActions?.doppelgangerPlayerId === doppelgangerPlayer.id &&
       gameState.nightActions?.doppelgangerCopy === deadPlayer.id
     ) {
-      console.log(`Doppelganger (${doppelgangerPlayer.id}) target (${deadPlayer.id}) died. Initiating transformation.`);
+      console.log(
+        `Doppelganger (${doppelgangerPlayer.id}) target (${deadPlayer.id}) died. Initiating transformation.`
+      );
       console.log('Dead Player:', deadPlayer);
       console.log('Doppelganger before transformation:', doppelgangerPlayer);
 

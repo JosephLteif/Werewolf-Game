@@ -62,4 +62,3 @@ export class Vigilante extends Role {
     return `${victimName} was shot by a Vigilante.`;
   }
 }
-
