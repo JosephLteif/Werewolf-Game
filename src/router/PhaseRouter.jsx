@@ -65,7 +65,11 @@ export function PhaseRouter({
   sorcererTarget,
   setSorcererTarget,
   now,
+  isChatOpen, // New prop
+  setIsChatOpen, // New prop
 }) {
+  console.log('DEBUG: PhaseRouter - isChatOpen:', isChatOpen);
+  console.log('DEBUG: PhaseRouter - setIsChatOpen:', setIsChatOpen);
   const wrapGameContent = (children) => (
     <>
       <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
@@ -133,6 +137,8 @@ export function PhaseRouter({
           user={user}
           myPlayer={myPlayer}
           roomCode={gameState.code}
+          isChatOpen={isChatOpen} // Pass isChatOpen
+          setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
         />
       );
     } else if (!isMyTurn) {
@@ -167,6 +173,7 @@ export function PhaseRouter({
           );
         }
         case PHASES.NIGHT_WEREWOLF:
+          console.log('DEBUG: PhaseRouter - myPlayer for WerewolfNightActionScreen:', myPlayer);
           return wrapGameContent(
             <WerewolfNightActionScreen
               gameState={gameState}
@@ -175,6 +182,8 @@ export function PhaseRouter({
               myPlayer={myPlayer}
               advanceNight={actions.advanceNightPhase}
               phaseEndTime={gameState.phaseEndTime}
+              isChatOpen={isChatOpen}
+              setIsChatOpen={setIsChatOpen}
             />
           );
         case PHASES.NIGHT_MINION:
@@ -274,6 +283,8 @@ export function PhaseRouter({
                 lockVote={actions.lockVote}
                 resolveVoting={actions.resolveVoting}
                 advanceNightPhase={actions.advanceNightPhase}
+                isChatOpen={isChatOpen} // Pass isChatOpen
+                setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
               />
             ) : (
               <div>Unknown phase: {gameState.phase}</div>
@@ -327,6 +338,8 @@ export function PhaseRouter({
         user={user}
         myPlayer={myPlayer}
         roomCode={gameState.code}
+        isChatOpen={isChatOpen} // Pass isChatOpen
+        setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
       />
     );
   } else if (CurrentComponent) {
@@ -353,6 +366,8 @@ export function PhaseRouter({
       lockVote: actions.lockVote,
       resolveVoting: actions.resolveVoting,
       advanceNightPhase: actions.advanceNightPhase,
+      isChatOpen: isChatOpen, // Pass isChatOpen
+      setIsChatOpen: setIsChatOpen, // Pass setIsChatOpen
     };
 
     if ([PHASES.LOBBY, PHASES.ROLE_REVEAL].includes(gameState.phase)) {

@@ -17,6 +17,8 @@ export default function DeadScreen({
   gameSettings,
   myPlayer,
   roomCode,
+  isChatOpen, // New prop
+  setIsChatOpen, // New prop
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
@@ -89,15 +91,15 @@ export default function DeadScreen({
               <Skull className="w-16 h-16 text-white" />
             </div>
             <h2
-              className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}
+              className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent text-center`}
             >
               {winnerText}
             </h2>
-            <p className="text-slate-400 mb-8 text-xl">Game Over</p>
+            <p className="text-slate-400 mb-8 text-xl text-center">Game Over</p>
 
             {winningPlayers.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 text-center">
                   Winning Players
                 </h3>
                 <div className="flex flex-wrap justify-center gap-3">
@@ -123,7 +125,7 @@ export default function DeadScreen({
                     </div>
                   ))}
                 </div>
-                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 mt-6">
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 mt-6 text-center">
                   Fallen Players
                 </h3>
                 <div className="flex flex-wrap justify-center gap-3">
@@ -182,12 +184,14 @@ export default function DeadScreen({
         )}
       </div>
 
-      <div className="w-1/3 pl-6">
+      <div className="pl-6">
         <ChatBox
           roomCode={roomCode}
           myPlayer={myPlayer}
           playerRole={myPlayer?.role}
           isAlive={myPlayer?.isAlive}
+          isChatOpen={isChatOpen} // Pass isChatOpen
+          setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
         />
       </div>
     </div>

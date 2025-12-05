@@ -18,6 +18,7 @@ export default function App() {
   const [playerName, setPlayerName] = useState('');
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
+  const [isChatOpen, setIsChatOpen] = useState(false); // State for chat open/close
 
   const { user } = useAuth();
   const toast = useToast(); // Initialize useToast
@@ -197,7 +198,7 @@ export default function App() {
           key={gameState?.phase || 'auth'}
           {...transitionVariants} // Apply the selected variants
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className="w-full h-full"
+          className={`w-full h-full ${isChatOpen ? 'mr-[25rem]' : ''}`} // Conditionally apply margin
         >
           {!user || !joined ? (
             <AuthScreen
@@ -241,6 +242,8 @@ export default function App() {
               sorcererTarget={sorcererTarget}
               setSorcererTarget={setSorcererTarget}
               now={now}
+              isChatOpen={isChatOpen} // Pass isChatOpen
+              setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
             />
           )}
         </motion.div>

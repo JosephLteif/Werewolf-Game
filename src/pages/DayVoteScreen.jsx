@@ -10,6 +10,8 @@ export default function DayVoteScreen({
   lockVote,
   now,
   user,
+  isChatOpen, // New prop
+  setIsChatOpen, // New prop
 }) {
   // Calculate vote counts
   const voteCounts = {};
@@ -182,13 +184,15 @@ export default function DayVoteScreen({
         )}
       </div>
 
-      <div className="w-1/3 flex flex-col justify-between pl-4">
+      <div className="flex flex-col justify-between pl-4">
         <ChatBox
           roomCode={gameState.code}
           myPlayer={myPlayer}
           playerRole={myPlayer?.role}
           isAlive={amAlive}
           gameState={gameState}
+          isChatOpen={isChatOpen} // Pass isChatOpen
+          setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
         />
       </div>
     </div>

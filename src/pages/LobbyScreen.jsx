@@ -20,6 +20,8 @@ export default function LobbyScreen({
   showRoleInfo,
   user,
   leaveRoom,
+  isChatOpen, // New prop
+  setIsChatOpen, // New prop
 }) {
   const [showRulesModal, setShowRulesModal] = useState(false); // State for rules modal
   const [showKickConfirm, setShowKickConfirm] = useState(false); // State for kick confirmation modal
@@ -707,13 +709,15 @@ export default function LobbyScreen({
             </div>
           )}
         </div>
-        <div className="w-1/3 h-full">
+        <div className="h-full">
           <ChatBox
             roomCode={gameState.code}
             myPlayer={players.find((p) => p.id === user.uid)}
-            playerRole={null} // No roles in lobby
-            isAlive={true} // All players are alive in lobby
+            playerRole={null}
+            isAlive={true}
             gameState={gameState}
+            isChatOpen={isChatOpen}
+            setIsChatOpen={setIsChatOpen}
           />
         </div>
       </div>

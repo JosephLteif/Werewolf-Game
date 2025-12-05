@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Skull } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import VoterAvatars from '../components/VoterAvatars.jsx';
+import ChatBox from '../components/ChatBox';
 
 export default function WerewolfNightActionScreen({
   gameState,
@@ -10,6 +11,10 @@ export default function WerewolfNightActionScreen({
   user,
   advanceNight,
   phaseEndTime,
+  myPlayer,
+  roomCode,
+  isChatOpen,
+  setIsChatOpen,
 }) {
   const [selectedTargetId, setSelectedTargetId] = useState(null);
   const [now, setNow] = useState(() => Date.now());
@@ -103,6 +108,14 @@ export default function WerewolfNightActionScreen({
             style={{ animationDelay: '0.4s' }}
           ></div>
         </div>
+        <ChatBox
+          roomCode={roomCode}
+          myPlayer={myPlayer}
+          playerRole={myPlayer?.role}
+          isAlive={myPlayer?.isAlive}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+        />
       </div>
     );
   }
@@ -131,7 +144,9 @@ export default function WerewolfNightActionScreen({
 
             const votePercentage =
               totalVotingWerewolves > 0 ? (displayedVoteCount / totalVotingWerewolves) * 100 : 0;
+
             const isSelectedByMe = selectedTargetId === p.id;
+
             const hasBeenVotedByMe = myVote === p.id;
 
             return (
@@ -139,22 +154,25 @@ export default function WerewolfNightActionScreen({
                 key={p.id}
                 onClick={() => handleCastVote(p.id)}
                 className={`w-full relative overflow-hidden rounded-2xl border-2 transition-all shadow-lg hover:shadow-xl
-                  ${
-                    isSelectedByMe
-                      ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
-                      : hasBeenVotedByMe
-                        ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
-                        : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
-                  }`}
+
+                          ${
+                            isSelectedByMe
+                              ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
+                              : hasBeenVotedByMe
+                                ? 'border-red-500 bg-red-900/20 shadow-red-500/30'
+                                : 'bg-slate-900/50 border-slate-700 hover:border-slate-600'
+                          }`}
                 disabled={!!myVote} // Disable selection if myVote is already cast
               >
                 {/* Vote Progress Bar */}
+
                 <div
                   className="absolute inset-0 bg-gradient-to-r from-red-800/30 to-rose-800/30 transition-all duration-500"
                   style={{ width: `${votePercentage}%` }}
                 />
 
                 {/* Content */}
+
                 <div className="relative p-4 flex items-center gap-4">
                   <div
                     className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
@@ -166,10 +184,12 @@ export default function WerewolfNightActionScreen({
                   <div className="flex-1 text-left">
                     <div className="font-bold text-lg">
                       {p.name}
+
                       {p.id === user.uid && (
                         <span className="text-sm text-red-400 ml-2">(You)</span>
                       )}
                     </div>
+
                     {displayedVoteCount > 0 && (
                       <div className="text-sm text-red-300 flex items-center gap-2">
                         <span>
@@ -177,6 +197,7 @@ export default function WerewolfNightActionScreen({
                         </span>
 
                         {/* Show avatars of voters */}
+
                         <div className="ml-2">
                           <VoterAvatars
                             voterIds={votesByTarget[p.id]}
@@ -190,6 +211,7 @@ export default function WerewolfNightActionScreen({
                   </div>
 
                   {/* Teammate Indicator (Red Skull) */}
+
                   {p.role === ROLE_IDS.WEREWOLF && p.id !== user.uid && (
                     <div
                       className="bg-red-950/50 p-1.5 rounded-full border border-red-900/50"
@@ -208,7 +230,17 @@ export default function WerewolfNightActionScreen({
           })}
         </div>
 
+        <ChatBox
+          roomCode={roomCode}
+          myPlayer={myPlayer}
+          playerRole={myPlayer?.role}
+          isAlive={myPlayer?.isAlive}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+        />
+
         {/* Action Button */}
+
         <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800 space-y-3">
           {!myVote ? (
             <>
@@ -240,6 +272,16 @@ export default function WerewolfNightActionScreen({
             </div>
           )}
         </div>
+      </div>
+      <div className="pl-6">
+        <ChatBox
+          roomCode={roomCode}
+          myPlayer={myPlayer}
+          playerRole={myPlayer?.role}
+          isAlive={myPlayer?.isAlive}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+        />
       </div>
     </div>
   );
