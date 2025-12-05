@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // Import useState and useEffect
+import { useState, useEffect, useRef } from 'react'; // Import useState, useEffect, and useRef
 import { Info, Copy, ArrowLeft, XCircle, Pencil, Check, X } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { kickPlayer, renamePlayer } from '../services/rooms';
@@ -8,6 +8,7 @@ import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesMo
 import ConfirmationModal from '../components/modals/ConfirmationModal'; // Import ConfirmationModal
 import { roleRegistry } from '../roles/RoleRegistry';
 import { GameValidator } from '../utils/GameValidator';
+import { useToast } from '../context/ToastContext';
 
 export default function LobbyScreen({
   gameState,
@@ -20,9 +21,19 @@ export default function LobbyScreen({
   leaveRoom,
 }) {
   const [showRulesModal, setShowRulesModal] = useState(false); // State for rules modal
-  const [showCopyNotification, setShowCopyNotification] = useState(false); // State for copy notification
   const [showKickConfirm, setShowKickConfirm] = useState(false); // State for kick confirmation modal
   const [playerToKickId, setPlayerToKickId] = useState(null); // State to store the ID of the player to kick
+
+  const toast = useToast();
+
+  const handleLeaveLobby = async () => {
+    // Only kick if the user is still in the players list
+    const stillInRoom = players.some((p) => p.id === user.uid);
+    if (stillInRoom) {
+      await kickPlayer(gameState.code, user.uid);
+    }
+    leaveRoom();
+  };
 
   const handleKick = (playerId) => {
     setPlayerToKickId(playerId);
@@ -65,6 +76,7 @@ export default function LobbyScreen({
 
   // Track if the user has ever been seen in the player list
   const [hasJoined, setHasJoined] = useState(false);
+  const kickedByHostRef = useRef(false);
 
   // Auto self‑eject: if the current user is no longer in the room's player list, leave the lobby
   useEffect(() => {
@@ -74,7 +86,8 @@ export default function LobbyScreen({
       setHasJoined(true);
     } else if (hasJoined) {
       // User was previously present but now missing → host kicked them
-      leaveRoom();
+      kickedByHostRef.current = true;
+      leaveRoom(kickedByHostRef.current);
     }
   }, [players, user.uid, hasJoined, leaveRoom]);
 
@@ -82,7 +95,7 @@ export default function LobbyScreen({
     <div className="min-h-screen bg-slate-900 text-slate-100 p-6 flex flex-col">
       <header className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <button onClick={leaveRoom} className="text-slate-500 hover:text-white">
+          <button onClick={handleLeaveLobby} className="text-slate-500 hover:text-white">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
@@ -92,8 +105,7 @@ export default function LobbyScreen({
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(gameState.code);
-                  setShowCopyNotification(true); // Show notification
-                  setTimeout(() => setShowCopyNotification(false), 2000); // Hide after 2 seconds
+                  toast.success('Copied room code to clipboard!');
                 }}
               >
                 <Copy className="w-4 h-4 text-slate-600 hover:text-white" />
@@ -116,11 +128,7 @@ export default function LobbyScreen({
         </div>
       </header>
 
-      {showCopyNotification && ( // Copy notification
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-500/90 text-white px-4 py-2 rounded-full shadow-lg z-50">
-          Copied!
-        </div>
-      )}
+
 
       <div className="flex-1 overflow-y-auto mb-6">
         <h3 className="text-slate-500 font-bold mb-3 flex justify-between">

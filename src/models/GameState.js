@@ -91,7 +91,10 @@ class GameState {
 
   get players() {
     // Convert players object map to array for easier consumption in components
-    return Object.entries(this._state.players || {}).map(([id, p]) => ({ id, ...p }));
+    // Filter out players without names (fixes zombie entries from onDisconnect)
+    return Object.entries(this._state.players || {})
+      .map(([id, p]) => ({ id, ...p }))
+      .filter((p) => p.name);
   }
 
   get rawPlayers() {

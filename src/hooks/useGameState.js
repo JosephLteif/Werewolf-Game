@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { subscribeToRoom, updateRoom } from '../services/rooms';
+import { subscribeToRoom, updateRoom, claimHostIfAvailable } from '../services/rooms';
 import GameState from '../models/GameState'; // Import GameState class
 
 export function useGameState(user, roomCode, joined) {
@@ -21,6 +21,23 @@ export function useGameState(user, roomCode, joined) {
 
     return () => unsubscribe();
   }, [user, roomCode, joined]);
+
+  // Monitor host presence and perform migration if needed
+  useEffect(() => {
+    if (!gameState || !user || !roomCode) return;
+
+    const hostId = gameState.hostId;
+    const players = gameState.players; // uses the getter which is an array
+    const host = players.find((p) => p.id === hostId);
+
+    // If host is explicitly offline, try to claim host
+    if (host && host.isOnline === false) {
+      const uid = user.id || user.uid;
+      // Only one person needs to succeed, but multiple might try.
+      // This is safe because claimHostIfAvailable uses a transaction.
+      claimHostIfAvailable(roomCode, uid);
+    }
+  }, [gameState, user, roomCode]);
 
   // isHost will now be derived from gameState if it exists
   const isHost = gameState ? gameState.isHost(user.uid) : false;

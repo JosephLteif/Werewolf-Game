@@ -6,9 +6,11 @@ import { PhaseRouter } from './router/PhaseRouter';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
 import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth'; // Import useAuth
+import { usePresenceNotifications } from './hooks/usePresenceNotifications';
 import { coreGameActions } from './services/coreGameActions';
 import AuthScreen from './pages/AuthScreen';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from './context/ToastContext'; // Import useToast
 
 export default function App() {
   const [roomCode, setRoomCode] = useState('');
@@ -17,13 +19,20 @@ export default function App() {
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
 
   const { user } = useAuth();
+  const toast = useToast(); // Initialize useToast
 
-  const leaveRoom = useCallback(() => {
+  const leaveRoom = useCallback((kickedByHost = false) => {
     setJoined(false);
     setRoomCode('');
-  }, []);
+    if (kickedByHost) {
+      toast.error('You have been kicked from the room by the host.');
+    }
+  }, [toast]);
 
   const { gameState, isHost } = useGameState(user, roomCode, joined);
+
+  // Enable presence notifications
+  usePresenceNotifications(gameState, user?.uid);
 
   const players = useMemo(() => (gameState ? gameState.players : []), [gameState]);
 
