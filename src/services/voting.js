@@ -173,8 +173,8 @@ export const resolveDayVoting = async (gameState, players) => {
 
   newPlayers = handleDoppelgangerTransformation(
     newPlayers,
-    gameState.doppelgangerPlayerId,
-    gameState.doppelgangerTarget,
+    gameState.doppelgangerPlayerId || gameState.nightActions?.doppelgangerPlayerId,
+    gameState.nightActions?.doppelgangerCopy,
     victim.id
   );
 

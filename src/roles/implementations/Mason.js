@@ -14,6 +14,7 @@ export class Mason extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 2;
+    this.nightPriority = 45;
   }
 
   isWakeUpPhase(phase) {

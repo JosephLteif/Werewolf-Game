@@ -101,7 +101,7 @@ class MockGameState {
     return this._state.currentSpeaker;
   }
   get doppelgangerPlayerId() {
-    return this._state.doppelgangerPlayerId;
+    return this._state.nightActions?.doppelgangerPlayerId;
   }
   get doppelgangerTarget() {
     return this._state.doppelgangerTarget;
@@ -502,7 +502,7 @@ describe('Night Actions Service', () => {
             werewolfVotes: { [wolfPlayer.id]: confirmedTarget.id },
             werewolfProvisionalVotes: {}, // Added
           },
-          phase: PHASES.NIGHT_DOCTOR,
+          phase: PHASES.NIGHT_SEER,
           phaseEndTime: expect.any(Number),
         })
       );
@@ -552,11 +552,14 @@ describe('Night Actions Service', () => {
       const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON };
       const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
       const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
+      const playersMap = {};
+      players.forEach(p => playersMap[p.id] = p);
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_SEER, // Coming from Seer phase
-        nightActions: { seerCheck: 'p1' }, // Assume action done
+        players: playersMap, // Use the test-specific players
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {}, // No seerCheck needed here
       });
 
       await nightActions.advanceNight(testGameState, players, now);
@@ -593,14 +596,15 @@ describe('Night Actions Service', () => {
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_SEER, // Coming from a phase before Mason
+        phase: PHASES.NIGHT_WEREWOLF, // Coming from a phase before Mason, now WEREWOLF
         nightActions: {
-          seerCheck: 'p1',
+          seerCheck: null, // Clear seerCheck as the phase has passed
           masonsReady: { someOldId: true }, // Old mason ready state
+          werewolfVotes: { p3: 'p2' }, // Assume werewolf vote completed
         },
       });
 
-      await nightActions.advanceNight(testGameState, players, now, 'seerCheck', 'p2');
+      await nightActions.advanceNight(testGameState, players, now, null, null); // Simulate advancing without a specific action
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -633,7 +637,10 @@ describe('Night Actions Service', () => {
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          doppelgangerTarget: targetPlayer.id,
+          nightActions: expect.objectContaining({
+            doppelgangerCopy: targetPlayer.id,
+            doppelgangerPlayerId: doppelgangerPlayer.id,
+          }),
           phase: PHASES.NIGHT_WEREWOLF, // Assuming Werewolf is the next active phase
           phaseEndTime: expect.any(Number),
         })
@@ -826,9 +833,8 @@ describe('Night Actions Service', () => {
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_INTRO, // An early phase
         doppelgangerTarget: 'someExistingTargetId', // Doppelganger has already made a choice
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
+        doppelgangerPlayerId: doppelgangerPlayer.id,
         lovers: [], // To ensure Cupid would be the next if Doppelganger is skipped
-        nightActions: { doppelgangerCopy: null }, // Explicitly set if it's supposed to be null
       });
 
       await nightActions.advanceNight(testGameState, players, now);
@@ -1028,9 +1034,9 @@ describe('Night Actions Service', () => {
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_WEREWOLF, // Phase doesn't strictly matter for resolveNight, but good context
-        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
         nightActions: {
+          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
+          doppelgangerPlayerId: doppelgangerPlayer.id,
           werewolfVotes: { [werewolfPlayer.id]: targetPlayer.id }, // Werewolf kills p2
           doctorProtect: null,
         },
@@ -1398,9 +1404,9 @@ describe('Night Actions Service', () => {
         phase: PHASES.HUNTER_ACTION,
         dayLog: [`${hunterPlayer.name} (Hunter) was voted out!`],
         lovers: [],
-        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
         nightActions: {
+          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
+          doppelgangerPlayerId: doppelgangerPlayer.id,
           doctorProtect: null,
         },
       });

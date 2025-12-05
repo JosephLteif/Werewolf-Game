@@ -15,6 +15,18 @@ export class Doctor extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 4;
+    this.nightPriority = 40;
+  }
+
+  getNightScreenConfig() {
+    return {
+      title: 'Medical Miracle',
+      subtitle: 'Choose one player to protect from an attack tonight.',
+      color: 'blue',
+      multiSelect: false,
+      maxSelect: 1,
+      canSkip: false,
+    };
   }
 
   isWakeUpPhase(phase) {

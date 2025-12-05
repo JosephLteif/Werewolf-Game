@@ -14,6 +14,7 @@ export class Sorcerer extends Role {
     this.alignment = ALIGNMENTS.EVIL;
     this.team = Teams.WEREWOLF;
     this.weight = -3;
+    this.nightPriority = 25;
   }
 
   isWakeUpPhase(phase) {

@@ -15,6 +15,18 @@ export class Cupid extends Role {
     this.alignment = ALIGNMENTS.NEUTRAL;
     this.team = Teams.VILLAGER; // Neutral, but starts as villager alignment
     this.weight = -2;
+    this.nightPriority = 2;
+  }
+
+  getNightScreenConfig() {
+    return {
+      title: "Cupid's Arrow",
+      subtitle: 'Choose two players to link with love for the entire game.',
+      color: 'purple',
+      multiSelect: true,
+      maxSelect: 2,
+      canSkip: false,
+    };
   }
 
   isWakeUpPhase(phase) {

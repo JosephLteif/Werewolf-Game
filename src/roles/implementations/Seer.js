@@ -15,6 +15,18 @@ export class Seer extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 7;
+    this.nightPriority = 30;
+  }
+
+  getNightScreenConfig() {
+    return {
+      title: 'Seer Vision',
+      subtitle: 'Choose a player to reveal their alignment.',
+      color: 'purple',
+      multiSelect: false,
+      maxSelect: 1,
+      canSkip: false,
+    };
   }
 
   isWakeUpPhase(phase) {

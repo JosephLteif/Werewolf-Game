@@ -14,6 +14,7 @@ export class Minion extends Role {
     this.alignment = ALIGNMENTS.EVIL;
     this.team = Teams.WEREWOLF;
     this.weight = -3;
+    this.nightPriority = 27;
   }
 
   isWakeUpPhase(phase) {

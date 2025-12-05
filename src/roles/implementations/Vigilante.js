@@ -16,6 +16,7 @@ export class Vigilante extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 3;
+    this.nightPriority = 60;
   }
 
   isWakeUpPhase(phase) {
@@ -24,6 +25,15 @@ export class Vigilante extends Role {
 
   getNightPhase() {
     return PHASES.NIGHT_VIGILANTE;
+  }
+
+  getNightScreenConfig({ ammo }) {
+    return {
+      title: `Vigilante (${ammo} ammo)`,
+      subtitle: ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo.",
+      color: 'yellow',
+      canSkip: true,
+    };
   }
 
   processNightAction(_gameState, _player, action) {

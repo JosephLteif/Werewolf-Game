@@ -16,6 +16,18 @@ export class Werewolf extends Role {
     this.alignment = ALIGNMENTS.EVIL;
     this.team = Teams.WEREWOLF;
     this.weight = -6;
+    this.nightPriority = 20;
+  }
+
+  getNightScreenConfig() {
+    return {
+      title: 'Werewolf Attack',
+      subtitle: 'Choose a player to eliminate tonight.',
+      color: 'red',
+      multiSelect: false,
+      maxSelect: 1,
+      canSkip: true,
+    };
   }
 
   isWakeUpPhase(phase) {

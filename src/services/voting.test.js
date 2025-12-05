@@ -368,8 +368,11 @@ describe('Voting Service', () => {
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         players: playersWithDoppelgangerMap,
-        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
+        nightActions: {
+          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
+          doppelgangerPlayerId: doppelgangerPlayer.id,
+        },
+        doppelgangerPlayerId: doppelgangerPlayer.id, // Also set at root level for fallback
         votes: {
           p3: targetPlayer.id, // p3 votes for p2
           p4: targetPlayer.id, // p4 votes for p2

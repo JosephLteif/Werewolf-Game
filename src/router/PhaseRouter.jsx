@@ -2,6 +2,8 @@ import React from 'react';
 import { PHASES } from '../constants';
 import { ROLE_IDS } from '../constants/roleIds';
 
+import { roleRegistry } from '../roles/RoleRegistry';
+
 // Import all screen components
 import DayRevealScreen from '../pages/DayRevealScreen';
 import DayVoteScreen from '../pages/DayVoteScreen';
@@ -133,34 +135,34 @@ export function PhaseRouter({
     } else if (!isMyTurn) {
       return wrapGameContent(<NightWaitingScreen />);
     } else {
+      const role = myPlayer?.role ? roleRegistry.getRole(myPlayer.role) : null;
       // Specific Night Action Screens
       switch (gameState.phase) {
-        case PHASES.NIGHT_CUPID:
+        case PHASES.NIGHT_CUPID: {
+          const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
+              {...config}
               players={players.filter(
                 (p) =>
                   p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid)
               )}
               onAction={(ids) => actions.advanceNightPhase('cupidLinks', ids)}
-              myPlayer={myPlayer}
-              multiSelect={true}
-              maxSelect={2}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
-        case PHASES.NIGHT_DOPPELGANGER:
+        }
+        case PHASES.NIGHT_DOPPELGANGER: {
+          const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
-              title="Doppelgänger"
-              subtitle="Choose a player to copy if they die."
-              color="slate"
+              {...config}
               players={players.filter((p) => p.isAlive && p.id !== user.uid)}
               onAction={(id) => actions.advanceNightPhase('doppelgangerCopy', id)}
-              myPlayer={myPlayer}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
+        }
         case PHASES.NIGHT_WEREWOLF:
           return wrapGameContent(
             <WerewolfNightActionScreen
@@ -193,19 +195,17 @@ export function PhaseRouter({
               now={now}
             />
           );
-        case PHASES.NIGHT_DOCTOR:
+        case PHASES.NIGHT_DOCTOR: {
+          const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
-              title="Doctor"
-              subtitle="Protect someone."
-              color="blue"
+              {...config}
               players={players.filter((p) => p.isAlive)}
               onAction={(id) => actions.advanceNightPhase('doctorProtect', id)}
-              myPlayer={myPlayer}
-              canSkip={true}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
+        }
         case PHASES.NIGHT_SEER:
           return wrapGameContent(
             <SeerNightActionScreen
@@ -228,13 +228,12 @@ export function PhaseRouter({
             />
           );
         case PHASES.NIGHT_VIGILANTE: {
-          const ammo = gameState.vigilanteAmmo[user.uid] || 0;
+          const ammo = gameState.vigilanteAmmo?.[user.uid] || 0;
+          const config = role.getNightScreenConfig({ ammo });
           return wrapGameContent(
             <NightActionScreen
-              title={`Vigilante (${ammo} ammo)`}
-              subtitle={ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo."}
-              color="yellow"
-              players={players.filter((p) => p.isAlive)}
+              {...config}
+              players={players.filter((p) => p.isAlive && (ammo > 0 ? true : p.id !== user.uid))}
               onAction={(id) => {
                 if (ammo > 0 && id) {
                   const newVigilanteAmmo = { ...gameState.vigilanteAmmo, [user.uid]: 0 };
@@ -243,8 +242,6 @@ export function PhaseRouter({
                   actions.advanceNightPhase('vigilanteTarget', null);
                 }
               }}
-              myPlayer={myPlayer}
-              canSkip={true}
               phaseEndTime={gameState.phaseEndTime}
             />
           );

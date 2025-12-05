@@ -85,10 +85,18 @@ export function handleDoppelgangerTransformation(
   const chosenTarget = players.find((p) => p.id === doppelgangerTargetId);
 
   if (doppelganger && chosenTarget) {
-    // Return a new players array with the doppelganger's role updated
+    // Get the role info to copy team and alignment
+    const newRole = roleRegistry.getRole(chosenTarget.role);
+
+    // Return a new players array with the doppelganger's role, team, and alignment updated
     return players.map((p) => {
       if (p.id === doppelganger.id) {
-        return { ...p, role: chosenTarget.role };
+        return {
+          ...p,
+          role: chosenTarget.role,
+          alignment: newRole?.alignment ?? p.alignment,
+          team: newRole?.team ?? p.team,
+        };
       }
       return p;
     });
