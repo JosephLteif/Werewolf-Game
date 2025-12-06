@@ -83,7 +83,6 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, _nightActio
     } else {
       // For any other active night phase, its presence in the sequence is enough
       // because determineNightSequence already filters for alive players and active roles.
-      console.log('getNextNightPhaseInternal: returning', p);
       return p;
     }
   }

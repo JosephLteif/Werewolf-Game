@@ -192,6 +192,7 @@ export default function DeadScreen({
           isAlive={myPlayer?.isAlive}
           isChatOpen={isChatOpen} // Pass isChatOpen
           setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
+          gameState={{ phase: 'GAME_OVER' }} // Explicitly pass game state for Game Over detection
         />
       </div>
     </div>

@@ -68,8 +68,6 @@ export function PhaseRouter({
   isChatOpen, // New prop
   setIsChatOpen, // New prop
 }) {
-  console.log('DEBUG: PhaseRouter - isChatOpen:', isChatOpen);
-  console.log('DEBUG: PhaseRouter - setIsChatOpen:', setIsChatOpen);
   const wrapGameContent = (children) => (
     <>
       <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
@@ -128,7 +126,7 @@ export function PhaseRouter({
           winner={null}
           winners={gameState?.winners || []}
           isGameOver={false}
-          onReset={() => {}}
+          onReset={() => { }}
           isHost={false}
           dayLog={gameState.dayLog}
           players={players}
@@ -173,7 +171,6 @@ export function PhaseRouter({
           );
         }
         case PHASES.NIGHT_WEREWOLF:
-          console.log('DEBUG: PhaseRouter - myPlayer for WerewolfNightActionScreen:', myPlayer);
           return wrapGameContent(
             <WerewolfNightActionScreen
               gameState={gameState}
@@ -184,6 +181,7 @@ export function PhaseRouter({
               phaseEndTime={gameState.phaseEndTime}
               isChatOpen={isChatOpen}
               setIsChatOpen={setIsChatOpen}
+              roomCode={gameState.code}
             />
           );
         case PHASES.NIGHT_MINION:
@@ -368,6 +366,7 @@ export function PhaseRouter({
       advanceNightPhase: actions.advanceNightPhase,
       isChatOpen: isChatOpen, // Pass isChatOpen
       setIsChatOpen: setIsChatOpen, // Pass setIsChatOpen
+      roomCode: gameState.code,
     };
 
     if ([PHASES.LOBBY, PHASES.ROLE_REVEAL].includes(gameState.phase)) {

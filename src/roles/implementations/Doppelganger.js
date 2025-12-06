@@ -58,17 +58,11 @@ export class Doppelganger extends Role {
       gameState.nightActions?.doppelgangerPlayerId === doppelgangerPlayer.id &&
       gameState.nightActions?.doppelgangerCopy === deadPlayer.id
     ) {
-      console.log(
-        `Doppelganger (${doppelgangerPlayer.id}) target (${deadPlayer.id}) died. Initiating transformation.`
-      );
-      console.log('Dead Player:', deadPlayer);
-      console.log('Doppelganger before transformation:', doppelgangerPlayer);
 
       // The doppelganger's target has died, so the doppelganger transforms.
       // Update the doppelganger's role to the dead player's role.
       // We must return a NEW players array.
       const newRole = roleRegistry.getRole(deadPlayer.role);
-      console.log('New role for Doppelganger:', newRole);
 
       return players.map((p) => {
         if (p.id === doppelgangerPlayer.id) {
@@ -78,7 +72,6 @@ export class Doppelganger extends Role {
             alignment: newRole.alignment, // Set new alignment
             team: newRole.team, // Set new team
           };
-          console.log('Doppelganger after transformation:', transformedDoppelganger);
           return transformedDoppelganger;
         }
         return p;
