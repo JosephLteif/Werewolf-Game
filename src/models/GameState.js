@@ -219,9 +219,20 @@ class GameState {
     return this.players.find((p) => p.id === playerUid);
   }
 
-  // Returns true if all players are ready, or if all alive players are ready.
-  areAllPlayersReady(includeDead = false) {
-    return this.players.every((p) => p.ready || (includeDead ? false : !p.isAlive));
+  async resetGame() {
+    await this._updateGame({
+      phase: 'LOBBY',
+      dayLog: ['Waiting for game to start...'],
+      nightActions: {},
+      vigilanteAmmo: {},
+      lockedVotes: [],
+      lovers: [],
+      voteHistory: [],
+      dayNumber: 1,
+      votes: {},
+      winner: null,
+      winners: [],
+    });
   }
 }
 
