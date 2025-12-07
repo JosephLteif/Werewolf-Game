@@ -14,6 +14,12 @@ export class Minion extends Role {
     this.alignment = ALIGNMENTS.EVIL;
     this.team = Teams.WEREWOLF;
     this.weight = -3;
+    this.nightPriority = 27;
+  }
+
+  getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
+    // Minions see Werewolves
+    return allPlayers.filter((p) => p.role === 'werewolf');
   }
 
   isWakeUpPhase(phase) {

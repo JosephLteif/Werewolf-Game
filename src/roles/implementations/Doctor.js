@@ -15,6 +15,18 @@ export class Doctor extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 4;
+    this.nightPriority = 40;
+  }
+
+  getNightScreenConfig() {
+    return {
+      title: 'Medical Miracle',
+      subtitle: 'Choose one player to protect from an attack tonight.',
+      color: 'blue',
+      multiSelect: false,
+      maxSelect: 1,
+      canSkip: false,
+    };
   }
 
   isWakeUpPhase(phase) {
@@ -32,5 +44,18 @@ export class Doctor extends Role {
       };
     }
     return {};
+  }
+
+  isTargetValid(target, gameState, actor) {
+    // Cannot target self
+    if (target.id === actor.id) {
+      return false;
+    }
+    // Cannot save the same person two nights in a row
+    const lastProtected = gameState.lastDoctorProtect;
+    if (lastProtected && lastProtected === target.id) {
+      return false;
+    }
+    return target.isAlive;
   }
 }

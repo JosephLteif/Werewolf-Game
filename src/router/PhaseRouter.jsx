@@ -2,6 +2,8 @@ import React from 'react';
 import { PHASES } from '../constants';
 import { ROLE_IDS } from '../constants/roleIds';
 
+import { roleRegistry } from '../roles/RoleRegistry';
+
 // Import all screen components
 import DayRevealScreen from '../pages/DayRevealScreen';
 import DayVoteScreen from '../pages/DayVoteScreen';
@@ -18,12 +20,7 @@ import SeerNightActionScreen from '../pages/SeerNightActionScreen';
 import SorcererNightActionScreen from '../pages/SorcererNightActionScreen';
 import WaitingForHunterScreen from '../pages/WaitingForHunterScreen';
 import WerewolfNightActionScreen from '../pages/WerewolfNightActionScreen';
-
-// Import common components for wrapGameContent
-import ActiveRolesPanel from '../components/ActiveRolesPanel';
-import GameHistoryPanel from '../components/GameHistoryPanel';
-import PlayerRoleDisplay from '../components/PlayerRoleDisplay';
-import TeammateList from '../components/TeammateList';
+import DeathNoteInputScreen from '../pages/DeathNoteInputScreen'; // Import DeathNoteInputScreen
 
 const PHASE_COMPONENTS = {
   [PHASES.LOBBY]: LobbyScreen,
@@ -42,6 +39,7 @@ const PHASE_COMPONENTS = {
   [PHASES.DAY_REVEAL]: DayRevealScreen,
   [PHASES.DAY_VOTING]: DayVoteScreen,
   [PHASES.GAME_OVER]: DeadScreen,
+  [PHASES.DEATH_NOTE_INPUT]: DeathNoteInputScreen, // Add DeathNoteInputScreen
 };
 
 export function PhaseRouter({
@@ -63,29 +61,10 @@ export function PhaseRouter({
   sorcererTarget,
   setSorcererTarget,
   now,
+  isChatOpen, // New prop
+  setIsChatOpen, // New prop
 }) {
-  const wrapGameContent = (children) => (
-    <>
-      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
-        <TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />
-        {gameState?.settings?.showActiveRolesPanel && (
-          <ActiveRolesPanel
-            activeRoles={gameState.settings.activeRoles}
-            wolfCount={gameState.settings.wolfCount}
-            playerCount={players.length}
-          />
-        )}
-      </div>
-
-      {gameState?.dayLog && gameState.dayLog.length > 0 && (
-        <div className="absolute top-16 right-4 z-50">
-          <GameHistoryPanel dayLog={gameState.dayLog} />
-        </div>
-      )}
-      <PlayerRoleDisplay myPlayer={myPlayer} />
-      {children}
-    </>
-  );
+  const wrapGameContent = (children) => <>{children}</>;
 
   if (!gameState) {
     return <div>Loading game state...</div>;
@@ -128,39 +107,44 @@ export function PhaseRouter({
           players={players}
           lovers={gameState.lovers}
           gameSettings={gameState.settings}
+          user={user}
+          myPlayer={myPlayer}
+          roomCode={gameState.code}
+          isChatOpen={isChatOpen} // Pass isChatOpen
+          setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
         />
       );
     } else if (!isMyTurn) {
       return wrapGameContent(<NightWaitingScreen />);
     } else {
+      const role = myPlayer?.role ? roleRegistry.getRole(myPlayer.role) : null;
       // Specific Night Action Screens
       switch (gameState.phase) {
-        case PHASES.NIGHT_CUPID:
+        case PHASES.NIGHT_CUPID: {
+          const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
+              {...config}
               players={players.filter(
                 (p) =>
                   p.isAlive && (gameState.settings.cupidCanChooseSelf ? true : p.id !== user.uid)
               )}
               onAction={(ids) => actions.advanceNightPhase('cupidLinks', ids)}
-              myPlayer={myPlayer}
-              multiSelect={true}
-              maxSelect={2}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
-        case PHASES.NIGHT_DOPPELGANGER:
+        }
+        case PHASES.NIGHT_DOPPELGANGER: {
+          const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
-              title="Doppelgänger"
-              subtitle="Choose a player to copy if they die."
-              color="slate"
+              {...config}
               players={players.filter((p) => p.isAlive && p.id !== user.uid)}
               onAction={(id) => actions.advanceNightPhase('doppelgangerCopy', id)}
-              myPlayer={myPlayer}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
+        }
         case PHASES.NIGHT_WEREWOLF:
           return wrapGameContent(
             <WerewolfNightActionScreen
@@ -170,6 +154,9 @@ export function PhaseRouter({
               myPlayer={myPlayer}
               advanceNight={actions.advanceNightPhase}
               phaseEndTime={gameState.phaseEndTime}
+              isChatOpen={isChatOpen}
+              setIsChatOpen={setIsChatOpen}
+              roomCode={gameState.code}
             />
           );
         case PHASES.NIGHT_MINION:
@@ -193,19 +180,17 @@ export function PhaseRouter({
               now={now}
             />
           );
-        case PHASES.NIGHT_DOCTOR:
+        case PHASES.NIGHT_DOCTOR: {
+          const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
-              title="Doctor"
-              subtitle="Protect someone."
-              color="blue"
+              {...config}
               players={players.filter((p) => p.isAlive)}
               onAction={(id) => actions.advanceNightPhase('doctorProtect', id)}
-              myPlayer={myPlayer}
-              canSkip={true}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
+        }
         case PHASES.NIGHT_SEER:
           return wrapGameContent(
             <SeerNightActionScreen
@@ -228,13 +213,12 @@ export function PhaseRouter({
             />
           );
         case PHASES.NIGHT_VIGILANTE: {
-          const ammo = gameState.vigilanteAmmo[user.uid] || 0;
+          const ammo = gameState.vigilanteAmmo?.[user.uid] || 0;
+          const config = role.getNightScreenConfig({ ammo });
           return wrapGameContent(
             <NightActionScreen
-              title={`Vigilante (${ammo} ammo)`}
-              subtitle={ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo."}
-              color="yellow"
-              players={players.filter((p) => p.isAlive)}
+              {...config}
+              players={players.filter((p) => p.isAlive && (ammo > 0 ? true : p.id !== user.uid))}
               onAction={(id) => {
                 if (ammo > 0 && id) {
                   const newVigilanteAmmo = { ...gameState.vigilanteAmmo, [user.uid]: 0 };
@@ -243,8 +227,6 @@ export function PhaseRouter({
                   actions.advanceNightPhase('vigilanteTarget', null);
                 }
               }}
-              myPlayer={myPlayer}
-              canSkip={true}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
@@ -274,6 +256,8 @@ export function PhaseRouter({
                 lockVote={actions.lockVote}
                 resolveVoting={actions.resolveVoting}
                 advanceNightPhase={actions.advanceNightPhase}
+                isChatOpen={isChatOpen} // Pass isChatOpen
+                setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
               />
             ) : (
               <div>Unknown phase: {gameState.phase}</div>
@@ -324,6 +308,19 @@ export function PhaseRouter({
         players={players}
         lovers={gameState.lovers}
         gameSettings={gameState.settings}
+        user={user}
+        myPlayer={myPlayer}
+        roomCode={gameState.code}
+        isChatOpen={isChatOpen} // Pass isChatOpen
+        setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
+      />
+    );
+  } else if (gameState.phase === PHASES.DEATH_NOTE_INPUT) {
+    return wrapGameContent(
+      <DeathNoteInputScreen
+        gameState={gameState}
+        user={user}
+        actions={actions} // Pass the actions object containing submitDeathNote
       />
     );
   } else if (CurrentComponent) {
@@ -350,6 +347,9 @@ export function PhaseRouter({
       lockVote: actions.lockVote,
       resolveVoting: actions.resolveVoting,
       advanceNightPhase: actions.advanceNightPhase,
+      isChatOpen: isChatOpen, // Pass isChatOpen
+      setIsChatOpen: setIsChatOpen, // Pass setIsChatOpen
+      roomCode: gameState.code,
     };
 
     if ([PHASES.LOBBY, PHASES.ROLE_REVEAL].includes(gameState.phase)) {

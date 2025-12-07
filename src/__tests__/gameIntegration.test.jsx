@@ -406,7 +406,7 @@ describe('Game Integration Tests', () => {
       expect(MockUpdateGame).toHaveBeenCalled();
       const updatedVillager = gameState.players[villager1.id];
       expect(updatedVillager.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 1 died.');
+      expect(gameState.dayLog).toContain('Player 1 was torn apart by wolves during the night.');
     });
 
     it('Scenario: Split Vote - Wolves vote for different targets (Random resolution)', async () => {
@@ -441,7 +441,7 @@ describe('Game Integration Tests', () => {
       // One should be dead, the other alive. Based on mock, A should die.
       expect(updatedVillagerA.isAlive).toBe(false);
       expect(updatedVillagerB.isAlive).toBe(true);
-      expect(gameState.dayLog.some((log) => log.includes('died'))).toBe(true); // Either Player 1 or Player 2 died
+      expect(gameState.dayLog.some((log) => log.includes('wolves'))).toBe(true); // Either Player 1 or Player 2 was torn apart by wolves
     });
 
     it('Scenario: Single werewolf votes for a target', async () => {
@@ -464,7 +464,7 @@ describe('Game Integration Tests', () => {
       expect(MockUpdateGame).toHaveBeenCalled();
       const updatedVillager = gameState.players[villager1.id];
       expect(updatedVillager.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 1 died.');
+      expect(gameState.dayLog).toContain('Player 1 was torn apart by wolves during the night.');
     });
 
     it('Scenario: No werewolf votes', async () => {
@@ -520,7 +520,7 @@ describe('Game Integration Tests', () => {
       const deadPlayers = alivePlayers.filter((s) => !s);
 
       expect(deadPlayers.length).toBe(1);
-      expect(gameState.dayLog.some((log) => log.includes('died'))).toBe(true);
+      expect(gameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('Scenario: Werewolf votes for another werewolf', async () => {
@@ -544,7 +544,7 @@ describe('Game Integration Tests', () => {
 
       const targetWolf = gameState.players[wolf2.id];
       expect(targetWolf.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 2 died.');
+      expect(gameState.dayLog).toContain('Player 2 was torn apart by wolves during the night.');
     });
   });
 
@@ -788,7 +788,7 @@ describe('Game Integration Tests', () => {
       await handleHunterShot(gameState, Object.values(gameState.players), target.id);
 
       expect(gameState.players[target.id].isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('The Hunter shot Player 2!');
+      expect(gameState.dayLog).toContain("Player 2 was taken down by the Hunter's final shot.");
     });
 
     it('Scenario: Doctor protects from Werewolf kill', async () => {

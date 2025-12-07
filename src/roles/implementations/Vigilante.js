@@ -3,6 +3,9 @@ import { PHASES } from '../../constants/phases';
 import { Zap } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
+import { ACTION_TYPES } from '../../constants/actions';
+import { ROLE_IDS } from '../../constants/roleIds';
+import { findPlayerById } from '../../utils/playersUtils';
 
 export class Vigilante extends Role {
   constructor() {
@@ -14,6 +17,7 @@ export class Vigilante extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 3;
+    this.nightPriority = 60;
   }
 
   isWakeUpPhase(phase) {
@@ -24,12 +28,37 @@ export class Vigilante extends Role {
     return PHASES.NIGHT_VIGILANTE;
   }
 
+  getNightScreenConfig({ ammo }) {
+    return {
+      title: `Vigilante (${ammo} ammo)`,
+      subtitle: ammo > 0 ? 'Choose your target carefully.' : "You're out of ammo.",
+      color: 'yellow',
+      canSkip: true,
+    };
+  }
+
   processNightAction(_gameState, _player, action) {
-    if (action.type === 'vigilanteTarget') {
+    if (action.type === ACTION_TYPES.VIGILANTE_TARGET) {
       return {
         vigilanteTarget: action.targetId,
       };
     }
     return {};
+  }
+
+  applyNightOutcome({ nightActions, players, deaths }) {
+    const targetId = nightActions.vigilanteTarget;
+    if (targetId && targetId !== nightActions.doctorProtect) {
+      const victim = findPlayerById(players, targetId);
+      if (victim && victim.isAlive) {
+        victim.isAlive = false;
+        victim.killedBy = ROLE_IDS.VIGILANTE;
+        deaths.push(victim);
+      }
+    }
+  }
+
+  getKillMessage(victimName) {
+    return `${victimName} was shot by a Vigilante.`;
   }
 }

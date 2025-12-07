@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { History, ChevronDown } from 'lucide-react';
+import { History, ChevronDown, BookOpen } from 'lucide-react';
+import VoteHistoryModal from './VoteHistoryModal';
 
-export default function GameHistoryPanel({ dayLog }) {
+export default function GameHistoryPanel({ dayLog, voteHistory, players }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isVoteHistoryOpen, setIsVoteHistoryOpen] = useState(false);
 
   if (!dayLog || dayLog.length === 0) return null;
 
   return (
-    <div className="relative z-50">
+    <div className="relative z-50 flex gap-2">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="px-3 py-2 rounded-lg bg-slate-900/80 backdrop-blur border border-indigo-500/30 text-indigo-200 text-sm font-medium transition-colors flex items-center gap-2 hover:bg-slate-800"
@@ -17,6 +19,14 @@ export default function GameHistoryPanel({ dayLog }) {
         <ChevronDown
           className={`w-4 h-4 text-indigo-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
+      </button>
+
+      <button
+        onClick={() => setIsVoteHistoryOpen(true)}
+        className="px-3 py-2 rounded-lg bg-slate-900/80 backdrop-blur border border-orange-500/30 text-orange-200 text-sm font-medium transition-colors flex items-center gap-2 hover:bg-slate-800"
+      >
+        <BookOpen className="w-4 h-4 text-orange-400" />
+        Vote History
       </button>
 
       {isOpen && (
@@ -29,6 +39,13 @@ export default function GameHistoryPanel({ dayLog }) {
           ))}
         </div>
       )}
+
+      <VoteHistoryModal
+        isOpen={isVoteHistoryOpen}
+        onClose={() => setIsVoteHistoryOpen(false)}
+        voteHistory={voteHistory}
+        players={players}
+      />
     </div>
   );
 }

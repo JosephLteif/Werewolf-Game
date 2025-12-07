@@ -8,7 +8,7 @@ export default function PlayerRoleDisplay({ myPlayer }) {
 
   return (
     <div
-      className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 z-50 shadow-lg"
+      className="bg-slate-900/80 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg"
       data-testid="player-role-display"
     >
       <div

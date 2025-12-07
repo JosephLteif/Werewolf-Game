@@ -1,7 +1,16 @@
 import { Sun } from 'lucide-react';
 import { PHASES } from '../constants';
+import ChatBox from '../components/ChatBox';
 
-export default function DayRevealScreen({ gameState, isHost, now }) {
+export default function DayRevealScreen({
+  gameState,
+  isHost,
+  now,
+  myPlayer,
+  roomCode,
+  isChatOpen,
+  setIsChatOpen,
+}) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 text-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
       {/* Animated sun rays */}
@@ -17,7 +26,6 @@ export default function DayRevealScreen({ gameState, isHost, now }) {
           />
         ))}
       </div>
-
       <div className="relative z-10">
         <div className="relative mb-8">
           <div className="absolute inset-0 blur-2xl bg-orange-300 opacity-30 rounded-full"></div>
@@ -51,6 +59,17 @@ export default function DayRevealScreen({ gameState, isHost, now }) {
             Waiting for host...
           </div>
         )}
+      </div>{' '}
+      {/* This is the legitimate closing div for the main content area */}
+      <div className="pl-6">
+        <ChatBox
+          roomCode={roomCode}
+          myPlayer={myPlayer}
+          playerRole={myPlayer?.role}
+          isAlive={myPlayer?.isAlive}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+        />
       </div>
     </div>
   );

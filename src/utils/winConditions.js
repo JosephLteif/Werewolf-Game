@@ -1,8 +1,6 @@
-import { TEAMS, CUPID_FATES } from '../constants';
+import { TEAMS } from '../constants';
 import { roleRegistry } from '../roles/RoleRegistry';
 import { ROLE_IDS } from '../constants/roleIds';
-import { Teams } from '../models/Team'; // Explicitly import Teams
-import { ALIGNMENTS } from '../constants/alignments';
 
 /**
  * Checks if the game has ended and determines the winner
@@ -10,15 +8,9 @@ import { ALIGNMENTS } from '../constants/alignments';
  */
 import { TannerWinStrategy } from '../strategies/winConditions/TannerWinStrategy';
 import { LoversWinStrategy } from '../strategies/winConditions/LoversWinStrategy';
-import { VillageWinStrategy } from '../strategies/winConditions/VillageWinStrategy';
-import { WerewolfWinStrategy } from '../strategies/winConditions/WerewolfWinStrategy';
+import { Teams } from '../models/Team';
 
-const STRATEGIES = [
-  TannerWinStrategy,
-  LoversWinStrategy,
-  VillageWinStrategy,
-  WerewolfWinStrategy,
-].sort((a, b) => a.priority - b.priority);
+const STRATEGIES = [TannerWinStrategy, LoversWinStrategy].sort((a, b) => a.priority - b.priority);
 
 /**
  * Checks if the game has ended and determines the winner
@@ -43,6 +35,7 @@ export function checkWinCondition(
     gameSettings,
     currentWinners: accumulatedWinners,
     recentDeath: recentDeathContext,
+    roleRegistry: roleRegistry,
   };
 
   for (const strategy of STRATEGIES) {
@@ -60,6 +53,56 @@ export function checkWinCondition(
 
       if (result.isGameOver) {
         gameOverTriggered = true;
+      }
+    }
+  }
+
+  // Polymorphic Team Checks
+  // Identify active teams from alive players
+  const activeTeams = new Set();
+  alivePlayers.forEach((p) => {
+    const role = roleRegistry.getRole(p.role);
+    if (role && role.team) {
+      // role.team is a Team object
+      activeTeams.add(role.team);
+    }
+    // Also check if player has a specific team override (though usually handled by role)
+    // If p.team is stored as ID, we might need to map it back to Team object if possible,
+    // but for now we rely on Role's team which is the standard.
+  });
+
+  // Also include teams that might not have alive players but could still win?
+  // Usually win conditions depend on alive players.
+  // We should definitely check VILLAGER and WEREWOLF teams if they are present in the game.
+  // Since we moved logic to Teams.VILLAGER and Teams.WEREWOLF, we can just check them explicitly
+  // or iterate through all defined Teams if we want to be fully generic.
+  // For now, let's check the standard teams + any active ones.
+
+  const teamsToCheck = [Teams.VILLAGER, Teams.WEREWOLF];
+  // Add any other teams found on players that are not in the default list?
+  activeTeams.forEach((t) => {
+    if (!teamsToCheck.includes(t)) {
+      teamsToCheck.push(t);
+    }
+  });
+
+  for (const team of teamsToCheck) {
+    if (team.checkWin(context)) {
+      // Map Team object back to string ID expected by the game
+      // The game uses 'VILLAGERS' and 'WEREWOLVES' as winner strings in some places,
+      // but 'village' and 'werewolf' as IDs.
+      // The strategies returned 'VILLAGERS' and 'WEREWOLVES'.
+      // We should probably standardize this.
+      // Existing code expects 'VILLAGERS' and 'WEREWOLVES'.
+
+      let winnerId = team.id;
+      if (team.id === TEAMS.VILLAGE) winnerId = 'VILLAGERS';
+      if (team.id === TEAMS.WEREWOLF) winnerId = 'WEREWOLVES';
+
+      if (!accumulatedWinners.includes(winnerId)) {
+        accumulatedWinners.push(winnerId);
+        hasNewWinners = true;
+        gameOverTriggered = true; // Most team wins end the game
       }
     }
   }
@@ -83,53 +126,61 @@ export function checkWinCondition(
 
 /**
  * Determines if a player is a winner based on the winning teams.
- * Returns true if the player satisfies any win condition.
+ * Delegates the check to the player's role for polymorphic behavior.
  */
 export function isPlayerWinner(player, winners, lovers, gameSettings) {
   if (!winners || winners.length === 0) return false;
 
-  // Direct win by player ID (e.g., custom winner IDs)
-  if (winners.includes(player.id)) return true;
+  // Map display winner strings to team IDs for comparison
+  const winnerToTeamMapping = {
+    VILLAGERS: TEAMS.VILLAGE,
+    WEREWOLVES: TEAMS.WEREWOLF,
+    LOVERS: TEAMS.LOVERS,
+  };
 
-  const playerRole = roleRegistry.getRole(player.role);
-  const teamId = player.alignment || playerRole?.team?.id;
+  // Normalize winners to include both display strings and team IDs
+  const normalizedWinners = winners.flatMap((w) => {
+    const teamId = winnerToTeamMapping[w];
+    return teamId ? [w, teamId] : [w];
+  });
 
-  // Tanner win
-  if (winners.includes('TANNER') && player.role === ROLE_IDS.TANNER) {
-    return true;
-  }
-  // Lovers win
-  if (winners.includes('LOVERS')) {
-    if (lovers && lovers.includes(player.id)) return true;
-    if (
-      gameSettings.cupidFateOption === CUPID_FATES.THIRD_WHEEL &&
-      player.role === ROLE_IDS.CUPID
-    ) {
-      return true;
-    }
-  }
+  // Direct win by player ID (e.g., for Tanner)
+  if (normalizedWinners.includes(player.id)) return true;
 
-  // Villagers win
-  if (winners.includes('VILLAGERS') && teamId === Teams.VILLAGER.id) {
+  // The "Lovers" win is a global condition that can override normal team alignment.
+  if (normalizedWinners.includes('LOVERS') && lovers?.includes(player.id)) {
     return true;
   }
 
-  // Werewolves win
-  if (winners.includes('WEREWOLVES')) {
-    // Sorcerer wins only if they have found the Seer
-    if (playerRole && playerRole.id === ROLE_IDS.SORCERER) {
-      return !!player.foundSeer;
-    }
-    // Any other werewolf team member wins
-    if (teamId === Teams.WEREWOLF.id) {
-      return true;
-    }
+  // Check if player's specific role ID is among the winners
+  if (normalizedWinners.includes(player.role)) {
+    // Special condition for Sorcerer: only wins with Werewolves if they found the Seer
+    return !(player.role === ROLE_IDS.SORCERER && !player.foundSeer);
   }
 
-  // Cupid win (explicit)
-  if (winners.includes('CUPID') && player.role === ROLE_IDS.CUPID) {
-    return true;
+  const role = roleRegistry.getRole(player.role);
+  if (!role) {
+    // Fallback for unknown roles: check team alignment only.
+    // player.team could be a Team object or a string ID
+    const teamId = player.team?.id || player.team;
+    return teamId ? normalizedWinners.includes(teamId) : false;
   }
 
-  return false;
+  // Get the player's team ID - it could be stored directly on player (after transformation)
+  // or we get it from the role definition. player.team might be a Team object with .id
+  const playerTeamId = player.team?.id || player.team || role.team?.id;
+
+  // Check if the player's team is among the winners
+  if (playerTeamId && normalizedWinners.includes(playerTeamId)) {
+    // Special condition for Sorcerer if Werewolves won as a team but Sorcerer didn't find the Seer
+    return !(
+      player.role === ROLE_IDS.SORCERER &&
+      playerTeamId === TEAMS.WEREWOLF &&
+      !player.foundSeer
+    );
+  }
+
+  // Delegate to role's checkWin for any specific, complex win conditions not covered above.
+  // This allows roles to override the default team-based win if necessary.
+  return role.checkWin(player, normalizedWinners, { lovers, settings: gameSettings });
 }

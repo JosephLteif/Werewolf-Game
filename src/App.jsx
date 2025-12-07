@@ -4,26 +4,41 @@ import { ACTION_TYPES } from './constants/actions';
 import { useGameEngine } from './hooks/useGameEngine';
 import { PhaseRouter } from './router/PhaseRouter';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
+import { submitDeathNote } from './services/voting'; // Import submitDeathNote
 import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth'; // Import useAuth
+import { usePresenceNotifications } from './hooks/usePresenceNotifications';
 import { coreGameActions } from './services/coreGameActions';
 import AuthScreen from './pages/AuthScreen';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from './context/ToastContext'; // Import useToast
+import GameUIWrapper from './components/GameUIWrapper';
 
 export default function App() {
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [joined, setJoined] = useState(false);
   const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
+  const [isChatOpen, setIsChatOpen] = useState(false); // State for chat open/close
 
   const { user } = useAuth();
+  const toast = useToast(); // Initialize useToast
 
-  const leaveRoom = useCallback(() => {
-    setJoined(false);
-    setRoomCode('');
-  }, []);
+  const leaveRoom = useCallback(
+    (kickedByHost = false) => {
+      setJoined(false);
+      setRoomCode('');
+      if (kickedByHost) {
+        toast.error('You have been kicked from the room by the host.');
+      }
+    },
+    [toast]
+  );
 
   const { gameState, isHost } = useGameState(user, roomCode, joined);
+
+  // Enable presence notifications
+  usePresenceNotifications(gameState, user?.uid);
 
   const players = useMemo(() => (gameState ? gameState.players : []), [gameState]);
 
@@ -176,12 +191,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {joined && gameState && gameState.phase !== PHASES.LOBBY && (
+        <GameUIWrapper
+          gameState={gameState}
+          players={players}
+          myPlayer={myPlayer}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+        />
+      )}
       <AnimatePresence mode="sync">
         <motion.div
           key={gameState?.phase || 'auth'}
           {...transitionVariants} // Apply the selected variants
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className="w-full h-full"
+          className={`w-full h-full ${isChatOpen ? 'mr-[25rem]' : ''}`} // Conditionally apply margin
         >
           {!user || !joined ? (
             <AuthScreen
@@ -214,6 +238,7 @@ export default function App() {
                 castVote,
                 lockVote,
                 resolveVoting,
+                submitDeathNote, // Pass submitDeathNote
               }}
               leaveRoom={leaveRoom}
               nightIntroStars={nightIntroStars}
@@ -225,6 +250,8 @@ export default function App() {
               sorcererTarget={sorcererTarget}
               setSorcererTarget={setSorcererTarget}
               now={now}
+              isChatOpen={isChatOpen} // Pass isChatOpen
+              setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
             />
           )}
         </motion.div>

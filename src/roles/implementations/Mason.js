@@ -14,6 +14,12 @@ export class Mason extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 2;
+    this.nightPriority = 45;
+  }
+
+  getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
+    // Masons see other Masons
+    return allPlayers.filter((p) => p.role === 'mason' && p.id !== _currentPlayer.id);
   }
 
   isWakeUpPhase(phase) {

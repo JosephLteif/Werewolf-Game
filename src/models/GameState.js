@@ -58,9 +58,13 @@ class GameState {
       vigilanteAmmo: {},
       lockedVotes: [],
       lovers: [],
+      voteHistory: [],
+      dayNumber: 1,
       votes: {},
       winner: null,
       winners: [],
+      playerAwaitingDeathNote: null, // New field to track who is writing a death note
+      deathNotes: {}, // New field to store death notes by player ID
     };
   }
 
@@ -91,7 +95,10 @@ class GameState {
 
   get players() {
     // Convert players object map to array for easier consumption in components
-    return Object.entries(this._state.players || {}).map(([id, p]) => ({ id, ...p }));
+    // Filter out players without names (fixes zombie entries from onDisconnect)
+    return Object.entries(this._state.players || {})
+      .map(([id, p]) => ({ id, ...p }))
+      .filter((p) => p.name);
   }
 
   get rawPlayers() {
@@ -114,6 +121,14 @@ class GameState {
     return this._state.lovers;
   }
 
+  get voteHistory() {
+    return this._state.voteHistory;
+  }
+
+  get dayNumber() {
+    return this._state.dayNumber;
+  }
+
   get votes() {
     return this._state.votes;
   }
@@ -128,6 +143,14 @@ class GameState {
 
   get phaseEndTime() {
     return this._state.phaseEndTime;
+  }
+
+  get playerAwaitingDeathNote() {
+    return this._state.playerAwaitingDeathNote;
+  }
+
+  get deathNotes() {
+    return this._state.deathNotes;
   }
 
   // --- Methods to update game state properties ---
@@ -206,9 +229,22 @@ class GameState {
     return this.players.find((p) => p.id === playerUid);
   }
 
-  // Returns true if all players are ready, or if all alive players are ready.
-  areAllPlayersReady(includeDead = false) {
-    return this.players.every((p) => p.ready || (includeDead ? false : !p.isAlive));
+  async resetGame() {
+    await this._updateGame({
+      phase: 'LOBBY',
+      dayLog: ['Waiting for game to start...'],
+      nightActions: {},
+      vigilanteAmmo: {},
+      lockedVotes: [],
+      lovers: [],
+      voteHistory: [],
+      dayNumber: 1,
+      votes: {},
+      winner: null,
+      winners: [],
+      playerAwaitingDeathNote: null,
+      deathNotes: {},
+    });
   }
 }
 

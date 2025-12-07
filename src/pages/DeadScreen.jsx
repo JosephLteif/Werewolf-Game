@@ -13,7 +13,7 @@ export default function DeadScreen({
   dayLog,
   players,
   lovers,
-  gameSettings, // Add gameSettings to props
+  gameSettings,
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
@@ -57,7 +57,7 @@ export default function DeadScreen({
   }, [isGameOver]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex p-6 relative overflow-hidden">
       {/* Ambient background */}
       {isGameOver && (
         <div className="absolute inset-0 opacity-10">
@@ -77,7 +77,7 @@ export default function DeadScreen({
         </div>
       )}
 
-      <div className="relative z-10 max-w-md w-full">
+      <div className="relative z-10 flex-1 max-w-2xl mx-auto">
         {isGameOver ? (
           <>
             <div
@@ -86,15 +86,15 @@ export default function DeadScreen({
               <Skull className="w-16 h-16 text-white" />
             </div>
             <h2
-              className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent`}
+              className={`text-6xl font-black mb-4 bg-gradient-to-r ${colors.bg} bg-clip-text text-transparent text-center`}
             >
               {winnerText}
             </h2>
-            <p className="text-slate-400 mb-8 text-xl">Game Over</p>
+            <p className="text-slate-400 mb-8 text-xl text-center">Game Over</p>
 
             {winningPlayers.length > 0 && (
               <div className="mb-8">
-                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4">
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 text-center">
                   Winning Players
                 </h3>
                 <div className="flex flex-wrap justify-center gap-3">
@@ -120,7 +120,7 @@ export default function DeadScreen({
                     </div>
                   ))}
                 </div>
-                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 mt-6">
+                <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest mb-4 mt-6 text-center">
                   Fallen Players
                 </h3>
                 <div className="flex flex-wrap justify-center gap-3">

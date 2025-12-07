@@ -1,7 +1,8 @@
-import { PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
+import { PHASES, ROLE_IDS } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { findPlayerById } from '../utils/playersUtils';
 import { handleDoppelgangerTransformation } from '../utils/gameLogic';
+import { roleRegistry } from '../roles/RoleRegistry';
 
 /**
  * Voting Service
@@ -9,15 +10,18 @@ import { handleDoppelgangerTransformation } from '../utils/gameLogic';
  */
 
 /**
- * Count votes with Mayor's double vote weight
+ * Count votes with role-specific vote weights.
  */
-export function countVotes(votes, players) {
+export function countVotes(votes, players, gameState) {
   const voteCounts = {};
 
   Object.entries(votes || {}).forEach(([voterId, targetId]) => {
     const voter = players.find((p) => p.id === voterId);
-    const weight = voter && voter.role === ROLE_IDS.MAYOR && voter.isAlive ? 2 : 1;
-    voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
+    if (voter && voter.isAlive) {
+      const role = roleRegistry.getRole(voter.role);
+      const weight = role ? role.getVoteWeight(gameState) : 1;
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + weight;
+    }
   });
 
   return voteCounts;
@@ -112,16 +116,13 @@ const handleLoverDeathOnVote = (victim, newPlayers, gameState) => {
   }
 };
 
-const handleHunterVoteDeath = async (victim, newPlayers, gameState) => {
-  await gameState.update({
-    players: newPlayers,
-    phase: PHASES.HUNTER_ACTION,
-    votes: {},
-    lockedVotes: [],
-  });
-  await gameState.addDayLog(`${victim.name} (Hunter) was voted out!`);
-
-  return true;
+// This function determines if a Hunter's death triggers a special phase.
+// It returns the special phase (e.g., PHASES.HUNTER_ACTION) or null if no special phase.
+const handleHunterVoteDeath = (victim) => {
+  if (victim.role === ROLE_IDS.HUNTER) {
+    return PHASES.HUNTER_ACTION;
+  }
+  return null;
 };
 
 export const resolveDayVoting = async (gameState, players) => {
@@ -134,16 +135,26 @@ export const resolveDayVoting = async (gameState, players) => {
     return acc;
   }, {});
 
-  const voteCounts = countVotes(votesToCount, players);
+  const voteCounts = countVotes(votesToCount, players, gameState);
 
   const { type, victims } = determineVotingResult(voteCounts);
 
   if (type === 'no_elimination') {
     const logMessage = victims.length > 1 ? 'The vote was a tie!' : 'No one was eliminated.';
+
+    // Record Vote History for No Elimination
+    const historyEntry = {
+      day: gameState.dayNumber || 1,
+      votes: { ...gameState.votes },
+      outcome: victims.length > 1 ? 'tie' : 'skip',
+      victimName: null,
+    };
+
     await gameState.update({
       phase: PHASES.NIGHT_INTRO,
       votes: {},
       lockedVotes: [],
+      voteHistory: [...(gameState.voteHistory || []), historyEntry],
     });
     await gameState.addDayLog(logMessage);
     return;
@@ -169,8 +180,8 @@ export const resolveDayVoting = async (gameState, players) => {
 
   newPlayers = handleDoppelgangerTransformation(
     newPlayers,
-    gameState.doppelgangerPlayerId,
-    gameState.doppelgangerTarget,
+    gameState.doppelgangerPlayerId || gameState.nightActions?.doppelgangerPlayerId,
+    gameState.nightActions?.doppelgangerCopy,
     victim.id
   );
 
@@ -178,10 +189,11 @@ export const resolveDayVoting = async (gameState, players) => {
 
   handleLoverDeathOnVote(victim, newPlayers, gameState);
 
-  // Hunter Vote Death
-
-  if (victim.role === ROLE_IDS.HUNTER) {
-    if (await handleHunterVoteDeath(victim, newPlayers, gameState)) return;
+  // Determine next phase after death note (or direct if game over)
+  let nextPhaseAfterDeathNote = PHASES.NIGHT_INTRO;
+  const hunterActionPhase = handleHunterVoteDeath(victim);
+  if (hunterActionPhase) {
+    nextPhaseAfterDeathNote = hunterActionPhase;
   }
 
   const winResult = checkWinCondition(
@@ -192,37 +204,77 @@ export const resolveDayVoting = async (gameState, players) => {
     { ...victim, cause: 'VOTE' }
   );
 
-  if (winResult) {
-    if (winResult.isGameOver) {
-      const singularWinner =
-        winResult.winners && winResult.winners.length > 0
-          ? winResult.winners.length > 1
-            ? 'MULTIPLE'
-            : winResult.winners[0]
-          : 'WINNER'; // Default to generic WINNER if no specific winner is provided
+  const historyEntry = {
+    day: gameState.dayNumber || 1,
+    votes: { ...gameState.votes },
+    outcome: victim.id,
+    victimName: victim.name,
+  };
 
-      await gameState.update({
-        players: newPlayers,
-        ...winResult,
-        winner: singularWinner, // Explicitly set the singular winner for display
-        phase: PHASES.GAME_OVER,
-      });
-      await gameState.addDayLog(`${victim.name} was lynched.`);
+  if (winResult && winResult.isGameOver) {
+    const singularWinner =
+      winResult.winners && winResult.winners.length > 0
+        ? winResult.winners.length > 1
+          ? 'MULTIPLE'
+          : winResult.winners[0]
+        : 'WINNER'; // Default to generic WINNER if no specific winner is provided
 
-      return;
-    } else if (winResult.winners) {
-      // Game continues but we have new winners (e.g. Tanner)
-      await gameState.update({
-        winners: winResult.winners,
-      });
-    }
+    await gameState.update({
+      players: newPlayers,
+      ...winResult,
+      winner: singularWinner, // Explicitly set the singular winner for display
+      phase: PHASES.GAME_OVER,
+      voteHistory: [...(gameState.voteHistory || []), historyEntry],
+      votes: {}, // Clear votes even if game over
+      lockedVotes: [], // Clear locked votes even if game over
+    });
+    await gameState.addDayLog(`${victim.name} was lynched. Game Over.`);
+    return;
+  } else if (winResult?.winners) {
+    // Game continues but we have new winners (e.g. Tanner)
+    await gameState.update({
+      winners: winResult.winners,
+    });
   }
 
+  // If game is not over, and a victim exists, transition to death note input phase
   await gameState.update({
     players: newPlayers,
-    phase: PHASES.NIGHT_INTRO,
+    phase: PHASES.DEATH_NOTE_INPUT,
+    playerAwaitingDeathNote: victim.id,
+    nextPhaseAfterDeathNote: nextPhaseAfterDeathNote, // Store for submitDeathNote
     votes: {},
     lockedVotes: [],
+    voteHistory: [...(gameState.voteHistory || []), historyEntry],
   });
-  await gameState.addDayLog(`${victim.name} was lynched.`);
+  await gameState.addDayLog(`${victim.name} was lynched. They are writing their last will...`);
+};
+
+export const submitDeathNote = async (gameState, playerId, message) => {
+  // Ensure the message is trimmed and within the character limit
+  const sanitizedMessage = (message || '').trim().substring(0, 50);
+
+  // Get the next phase from the stored game state, defaulting to NIGHT_INTRO if not set
+  const nextPhase = gameState.nextPhaseAfterDeathNote || PHASES.NIGHT_INTRO;
+
+  const currentDeathNotes = gameState.deathNotes || {};
+  const updatedDeathNotes = {
+    ...currentDeathNotes,
+    [playerId]: sanitizedMessage,
+  };
+
+  await gameState.update({
+    deathNotes: updatedDeathNotes,
+    playerAwaitingDeathNote: null, // Clear the player awaiting the note
+    nextPhaseAfterDeathNote: null, // Clear the stored next phase
+    phase: nextPhase, // Transition to the next phase
+  });
+
+  const victimPlayer = gameState.players.find((p) => p.id === playerId);
+  if (victimPlayer) {
+    const logMessage = sanitizedMessage
+      ? `${victimPlayer.name}'s last will: "${sanitizedMessage}"`
+      : `${victimPlayer.name} chose not to leave a last will.`;
+    await gameState.addDayLog(logMessage);
+  }
 };

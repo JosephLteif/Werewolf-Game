@@ -2,6 +2,7 @@ import { Role } from '../Role';
 import { Crosshair } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
+import { PHASES } from '../../constants';
 
 export class Hunter extends Role {
   constructor() {
@@ -13,6 +14,14 @@ export class Hunter extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 3;
+  }
+
+  async onDeath(_context) {
+    return PHASES.HUNTER_ACTION;
+  }
+
+  getKillMessage(victimName) {
+    return `${victimName} was taken down by the Hunter's final shot.`;
   }
   // Hunter has a passive effect (revenge kill) which is handled in resolution logic,
   // not a specific night phase action (unless we add a phase for them to choose, but usually it's immediate upon death).

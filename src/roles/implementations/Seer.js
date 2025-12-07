@@ -15,6 +15,18 @@ export class Seer extends Role {
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 7;
+    this.nightPriority = 30;
+  }
+
+  getNightScreenConfig() {
+    return {
+      title: 'Seer Vision',
+      subtitle: 'Choose a player to reveal their alignment.',
+      color: 'purple',
+      multiSelect: false,
+      maxSelect: 1,
+      canSkip: false,
+    };
   }
 
   isWakeUpPhase(phase) {
@@ -32,5 +44,32 @@ export class Seer extends Role {
       return { seerCheck: action.targetId };
     }
     return {};
+  }
+
+  /**
+   * Investigates a target player to reveal their role/alignment.
+   * @param {object} targetPlayer - The player to investigate.
+   * @param {object} roleRegistry - The role registry instance.
+   * @returns {object} - The investigation result.
+   */
+  investigate(targetPlayer, roleRegistry) {
+    const targetRole = roleRegistry.getRole(targetPlayer.role);
+    return {
+      role: targetRole.getSeenRole(this),
+      alignment: targetRole.getSeenAlignment(this),
+    };
+  }
+
+  isTargetValid(target, gameState, actor) {
+    // Cannot target self
+    if (target.id === actor.id) {
+      return false;
+    }
+    // Cannot check players already revealed
+    const revealedRoles = gameState.revealedRoles || [];
+    if (revealedRoles.includes(target.id)) {
+      return false;
+    }
+    return target.isAlive;
   }
 }

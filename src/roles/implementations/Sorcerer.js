@@ -14,6 +14,7 @@ export class Sorcerer extends Role {
     this.alignment = ALIGNMENTS.EVIL;
     this.team = Teams.WEREWOLF;
     this.weight = -3;
+    this.nightPriority = 25;
   }
 
   isWakeUpPhase(phase) {
@@ -31,5 +32,15 @@ export class Sorcerer extends Role {
       };
     }
     return {};
+  }
+
+  /**
+   * The Sorcerer wins with the Werewolves, but only if they have successfully identified a Seer.
+   * @param {object} player - The player instance.
+   * @param {string[]} winningTeams - An array of winning team IDs.
+   * @returns {boolean}
+   */
+  checkWin(player, winningTeams) {
+    return winningTeams.includes(this.team.id) && !!player.foundSeer;
   }
 }

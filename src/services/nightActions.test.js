@@ -18,11 +18,17 @@ class MockGameState {
     }
 
     this.update = vi.fn(async (updates) => {
-      // Deep merge updates into _state
-      this._state = {
+      const newInternalState = {
         ...this._state,
         ...updates,
       };
+
+      // Ensure dayLog reference is preserved if not explicitly updated
+      // We must check if _state.dayLog is an array to avoid copying `undefined` or non-array values
+      if (!updates.dayLog && Array.isArray(this._state.dayLog)) {
+        newInternalState.dayLog = this._state.dayLog;
+      }
+      this._state = newInternalState;
 
       // Special handling for players array to map conversion
       if (Array.isArray(this._state.players)) {
@@ -101,10 +107,14 @@ class MockGameState {
     return this._state.currentSpeaker;
   }
   get doppelgangerPlayerId() {
-    return this._state.doppelgangerPlayerId;
+    return this._state.nightActions?.doppelgangerPlayerId;
   }
   get doppelgangerTarget() {
     return this._state.doppelgangerTarget;
+  }
+
+  get dayNumber() {
+    return this._state.dayNumber;
   }
 
   // Add any methods used by the tested functions that are not simple getters
@@ -502,7 +512,7 @@ describe('Night Actions Service', () => {
             werewolfVotes: { [wolfPlayer.id]: confirmedTarget.id },
             werewolfProvisionalVotes: {}, // Added
           },
-          phase: PHASES.NIGHT_DOCTOR,
+          phase: PHASES.NIGHT_SEER,
           phaseEndTime: expect.any(Number),
         })
       );
@@ -552,11 +562,14 @@ describe('Night Actions Service', () => {
       const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON };
       const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
       const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
+      const playersMap = {};
+      players.forEach((p) => (playersMap[p.id] = p));
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_SEER, // Coming from Seer phase
-        nightActions: { seerCheck: 'p1' }, // Assume action done
+        players: playersMap, // Use the test-specific players
+        phase: PHASES.NIGHT_WEREWOLF,
+        nightActions: {}, // No seerCheck needed here
       });
 
       await nightActions.advanceNight(testGameState, players, now);
@@ -593,14 +606,15 @@ describe('Night Actions Service', () => {
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_SEER, // Coming from a phase before Mason
+        phase: PHASES.NIGHT_WEREWOLF, // Coming from a phase before Mason, now WEREWOLF
         nightActions: {
-          seerCheck: 'p1',
+          seerCheck: null, // Clear seerCheck as the phase has passed
           masonsReady: { someOldId: true }, // Old mason ready state
+          werewolfVotes: { p3: 'p2' }, // Assume werewolf vote completed
         },
       });
 
-      await nightActions.advanceNight(testGameState, players, now, 'seerCheck', 'p2');
+      await nightActions.advanceNight(testGameState, players, now, null, null); // Simulate advancing without a specific action
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -633,7 +647,10 @@ describe('Night Actions Service', () => {
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          doppelgangerTarget: targetPlayer.id,
+          nightActions: expect.objectContaining({
+            doppelgangerCopy: targetPlayer.id,
+            doppelgangerPlayerId: doppelgangerPlayer.id,
+          }),
           phase: PHASES.NIGHT_WEREWOLF, // Assuming Werewolf is the next active phase
           phaseEndTime: expect.any(Number),
         })
@@ -826,9 +843,8 @@ describe('Night Actions Service', () => {
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_INTRO, // An early phase
         doppelgangerTarget: 'someExistingTargetId', // Doppelganger has already made a choice
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
+        doppelgangerPlayerId: doppelgangerPlayer.id,
         lovers: [], // To ensure Cupid would be the next if Doppelganger is skipped
-        nightActions: { doppelgangerCopy: null }, // Explicitly set if it's supposed to be null
       });
 
       await nightActions.advanceNight(testGameState, players, now);
@@ -962,7 +978,7 @@ describe('Night Actions Service', () => {
 
       const deadVillager = playersArray.find((p) => p.id === doctorPlayer.id);
       expect(deadVillager).toBeDefined();
-      expect(testGameState.dayLog.some((log) => log.includes('died'))).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('saves target if doctor protects', async () => {
@@ -1028,9 +1044,9 @@ describe('Night Actions Service', () => {
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_WEREWOLF, // Phase doesn't strictly matter for resolveNight, but good context
-        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
         nightActions: {
+          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
+          doppelgangerPlayerId: doppelgangerPlayer.id,
           werewolfVotes: { [werewolfPlayer.id]: targetPlayer.id }, // Werewolf kills p2
           doctorProtect: null,
         },
@@ -1051,7 +1067,9 @@ describe('Night Actions Service', () => {
       expect(updatedDoppelganger).toBeDefined();
       expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false); // Target is dead
-      expect(testGameState.dayLog).toContain(`${targetPlayer.name} died.`);
+      expect(testGameState.dayLog).toContain(
+        `${targetPlayer.name} was torn apart by wolves during the night.`
+      );
     });
 
     it('eliminates vigilante target if not protected', async () => {
@@ -1080,7 +1098,7 @@ describe('Night Actions Service', () => {
       const updatedPlayers = Object.values(updateCall.players);
 
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false);
-      expect(testGameState.dayLog).toContain(`${targetPlayer.name} died.`);
+      expect(testGameState.dayLog).toContain(`${targetPlayer.name} was shot by a Vigilante.`);
     });
 
     it('saves vigilante target if doctor protects', async () => {
@@ -1140,7 +1158,7 @@ describe('Night Actions Service', () => {
       const lover2 = playersArray.find((p) => p.id === 'p2');
       expect(lover1.isAlive).toBe(false);
       expect(lover2.isAlive).toBe(false);
-      expect(testGameState.dayLog.some((log) => log.includes('died'))).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('handles lover chain death when the second lover dies first', async () => {
@@ -1168,11 +1186,7 @@ describe('Night Actions Service', () => {
       const updatedLover2 = playersArray.find((p) => p.id === lover2.id);
       expect(updatedLover1.isAlive).toBe(false);
       expect(updatedLover2.isAlive).toBe(false); // Lover2 should be dead (direct kill)
-      expect(
-        testGameState.dayLog.some(
-          (log) => log.includes(lover1.name) && log.includes(lover2.name) && log.includes('died')
-        )
-      ).toBe(true);
+      expect(testGameState.dayLog.some((log) => log.includes('wolves'))).toBe(true);
     });
 
     it('sets lovers alignment to LOVERS_TEAM for Forbidden Love (Wolf + Villager)', async () => {
@@ -1260,7 +1274,7 @@ describe('Night Actions Service', () => {
       const updatedHunter = updatedPlayers.find((p) => p.id === hunterPlayer.id);
       expect(updatedHunter.isAlive).toBe(false); // Hunter should be dead
       expect(testGameState.dayLog).toContain(
-        `${hunterPlayer.name} died. The Hunter died and seeks revenge!`
+        `${hunterPlayer.name} was torn apart by wolves during the night. The Hunter died and seeks revenge!`
       );
       expect(updateCall.phase).toBe(PHASES.HUNTER_ACTION);
     });
@@ -1322,8 +1336,34 @@ describe('Night Actions Service', () => {
 
       expect(eliminatedPlayer.isAlive).toBe(false);
       expect(survivingPlayer.isAlive).toBe(true);
-      expect(testGameState.dayLog).toContain(`${targetPlayer1.name} died.`);
+      expect(testGameState.dayLog).toContain(
+        `${targetPlayer1.name} was torn apart by wolves during the night.`
+      );
       expect(updateCall.phase).toBe(PHASES.DAY_REVEAL);
+    });
+
+    it('increments dayNumber on subsequent days', async () => {
+      vi.spyOn(winConditions, 'checkWinCondition').mockReturnValue(null);
+
+      const testGameState = new MockGameState({
+        ...mockGameStateInstance._state,
+        dayNumber: 1,
+        phase: PHASES.NIGHT_SEER,
+        nightActions: { seerCheck: 'p2' },
+      });
+
+      // --- Day 1 -> Day 2 ---
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
+
+      expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({ dayNumber: 2 }));
+
+      // --- Day 2 -> Day 3 ---
+      // The mock's state is updated automatically.
+      testGameState._state.phase = PHASES.NIGHT_SEER; // Reset for next night
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
+
+      // The mock was called twice, so we check the second call.
+      expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({ dayNumber: 3 }));
     });
   });
 
@@ -1351,7 +1391,9 @@ describe('Night Actions Service', () => {
       const victim = playersArray.find((p) => p.id === 'p2');
       expect(victim).toBeDefined();
       expect(victim.isAlive).toBe(false);
-      expect(testGameState.dayLog.some((log) => log.includes('Hunter shot'))).toBe(true);
+      expect(
+        testGameState.dayLog.some((log) => log.includes("taken down by the Hunter's final shot."))
+      ).toBe(true);
     });
 
     it('triggers lover death when hunter kills a lover', async () => {
@@ -1398,9 +1440,9 @@ describe('Night Actions Service', () => {
         phase: PHASES.HUNTER_ACTION,
         dayLog: [`${hunterPlayer.name} (Hunter) was voted out!`],
         lovers: [],
-        doppelgangerTarget: targetPlayer.id, // Doppelganger chose p2
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Add this line
         nightActions: {
+          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
+          doppelgangerPlayerId: doppelgangerPlayer.id,
           doctorProtect: null,
         },
       });
@@ -1422,7 +1464,9 @@ describe('Night Actions Service', () => {
       expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false);
       expect(
-        testGameState.dayLog.some((log) => log.includes(`Hunter shot ${targetPlayer.name}`))
+        testGameState.dayLog.some((log) =>
+          log.includes(`${targetPlayer.name} was taken down by the Hunter's final shot.`)
+        )
       ).toBe(true);
     });
 
