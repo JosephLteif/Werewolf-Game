@@ -20,6 +20,7 @@ import SeerNightActionScreen from '../pages/SeerNightActionScreen';
 import SorcererNightActionScreen from '../pages/SorcererNightActionScreen';
 import WaitingForHunterScreen from '../pages/WaitingForHunterScreen';
 import WerewolfNightActionScreen from '../pages/WerewolfNightActionScreen';
+import DeathNoteInputScreen from '../pages/DeathNoteInputScreen'; // Import DeathNoteInputScreen
 
 const PHASE_COMPONENTS = {
   [PHASES.LOBBY]: LobbyScreen,
@@ -38,6 +39,7 @@ const PHASE_COMPONENTS = {
   [PHASES.DAY_REVEAL]: DayRevealScreen,
   [PHASES.DAY_VOTING]: DayVoteScreen,
   [PHASES.GAME_OVER]: DeadScreen,
+  [PHASES.DEATH_NOTE_INPUT]: DeathNoteInputScreen, // Add DeathNoteInputScreen
 };
 
 export function PhaseRouter({
@@ -311,6 +313,14 @@ export function PhaseRouter({
         roomCode={gameState.code}
         isChatOpen={isChatOpen} // Pass isChatOpen
         setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
+      />
+    );
+  } else if (gameState.phase === PHASES.DEATH_NOTE_INPUT) {
+    return wrapGameContent(
+      <DeathNoteInputScreen
+        gameState={gameState}
+        user={user}
+        actions={actions} // Pass the actions object containing submitDeathNote
       />
     );
   } else if (CurrentComponent) {

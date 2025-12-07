@@ -63,6 +63,8 @@ class GameState {
       votes: {},
       winner: null,
       winners: [],
+      playerAwaitingDeathNote: null, // New field to track who is writing a death note
+      deathNotes: {}, // New field to store death notes by player ID
     };
   }
 
@@ -141,6 +143,14 @@ class GameState {
 
   get phaseEndTime() {
     return this._state.phaseEndTime;
+  }
+
+  get playerAwaitingDeathNote() {
+    return this._state.playerAwaitingDeathNote;
+  }
+
+  get deathNotes() {
+    return this._state.deathNotes;
   }
 
   // --- Methods to update game state properties ---
@@ -232,6 +242,8 @@ class GameState {
       votes: {},
       winner: null,
       winners: [],
+      playerAwaitingDeathNote: null,
+      deathNotes: {},
     });
   }
 }

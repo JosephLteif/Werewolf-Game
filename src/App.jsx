@@ -4,6 +4,7 @@ import { ACTION_TYPES } from './constants/actions';
 import { useGameEngine } from './hooks/useGameEngine';
 import { PhaseRouter } from './router/PhaseRouter';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
+import { submitDeathNote } from './services/voting'; // Import submitDeathNote
 import { useGameState } from './hooks/useGameState';
 import { useAuth } from './hooks/useAuth'; // Import useAuth
 import { usePresenceNotifications } from './hooks/usePresenceNotifications';
@@ -237,6 +238,7 @@ export default function App() {
                 castVote,
                 lockVote,
                 resolveVoting,
+                submitDeathNote, // Pass submitDeathNote
               }}
               leaveRoom={leaveRoom}
               nightIntroStars={nightIntroStars}
