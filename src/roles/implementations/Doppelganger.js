@@ -58,7 +58,6 @@ export class Doppelganger extends Role {
       gameState.nightActions?.doppelgangerPlayerId === doppelgangerPlayer.id &&
       gameState.nightActions?.doppelgangerCopy === deadPlayer.id
     ) {
-
       // The doppelganger's target has died, so the doppelganger transforms.
       // Update the doppelganger's role to the dead player's role.
       // We must return a NEW players array.

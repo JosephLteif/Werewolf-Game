@@ -58,6 +58,8 @@ class GameState {
       vigilanteAmmo: {},
       lockedVotes: [],
       lovers: [],
+      voteHistory: [],
+      dayNumber: 1,
       votes: {},
       winner: null,
       winners: [],
@@ -115,6 +117,14 @@ class GameState {
 
   get lovers() {
     return this._state.lovers;
+  }
+
+  get voteHistory() {
+    return this._state.voteHistory;
+  }
+
+  get dayNumber() {
+    return this._state.dayNumber;
   }
 
   get votes() {

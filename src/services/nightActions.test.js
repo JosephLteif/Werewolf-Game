@@ -113,6 +113,10 @@ class MockGameState {
     return this._state.doppelgangerTarget;
   }
 
+  get dayNumber() {
+    return this._state.dayNumber;
+  }
+
   // Add any methods used by the tested functions that are not simple getters
   isHost(playerUid) {
     return this.hostId === playerUid;
@@ -1336,6 +1340,30 @@ describe('Night Actions Service', () => {
         `${targetPlayer1.name} was torn apart by wolves during the night.`
       );
       expect(updateCall.phase).toBe(PHASES.DAY_REVEAL);
+    });
+
+    it('increments dayNumber on subsequent days', async () => {
+      vi.spyOn(winConditions, 'checkWinCondition').mockReturnValue(null);
+
+      const testGameState = new MockGameState({
+        ...mockGameStateInstance._state,
+        dayNumber: 1,
+        phase: PHASES.NIGHT_SEER,
+        nightActions: { seerCheck: 'p2' },
+      });
+
+      // --- Day 1 -> Day 2 ---
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
+
+      expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({ dayNumber: 2 }));
+
+      // --- Day 2 -> Day 3 ---
+      // The mock's state is updated automatically.
+      testGameState._state.phase = PHASES.NIGHT_SEER; // Reset for next night
+      await nightActions.resolveNight(testGameState, _mockPlayersArray, testGameState.nightActions);
+
+      // The mock was called twice, so we check the second call.
+      expect(testGameState.update).toHaveBeenCalledWith(expect.objectContaining({ dayNumber: 3 }));
     });
   });
 

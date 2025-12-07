@@ -1,4 +1,6 @@
 import { Check } from 'lucide-react';
+import React, { useState } from 'react';
+import VoteHistoryModal from '../components/VoteHistoryModal';
 import VoterAvatars from '../components/VoterAvatars.jsx';
 import ChatBox from '../components/ChatBox';
 
@@ -43,6 +45,7 @@ export default function DayVoteScreen({
   const totalPlayers = alivePlayers.length;
 
   const myPlayer = players.find((p) => p.id === user.uid);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex">
@@ -195,6 +198,12 @@ export default function DayVoteScreen({
           setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
         />
       </div>
+      <VoteHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        voteHistory={gameState.voteHistory}
+        players={players}
+      />
     </div>
   );
 }

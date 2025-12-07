@@ -144,10 +144,20 @@ export const resolveDayVoting = async (gameState, players) => {
 
   if (type === 'no_elimination') {
     const logMessage = victims.length > 1 ? 'The vote was a tie!' : 'No one was eliminated.';
+
+    // Record Vote History for No Elimination
+    const historyEntry = {
+      day: gameState.dayNumber || 1,
+      votes: { ...gameState.votes },
+      outcome: victims.length > 1 ? 'tie' : 'skip',
+      victimName: null,
+    };
+
     await gameState.update({
       phase: PHASES.NIGHT_INTRO,
       votes: {},
       lockedVotes: [],
+      voteHistory: [...(gameState.voteHistory || []), historyEntry],
     });
     await gameState.addDayLog(logMessage);
     return;
@@ -205,11 +215,19 @@ export const resolveDayVoting = async (gameState, players) => {
             : winResult.winners[0]
           : 'WINNER'; // Default to generic WINNER if no specific winner is provided
 
+      const historyEntry = {
+        day: gameState.dayNumber || 1,
+        votes: { ...gameState.votes },
+        outcome: victim.id,
+        victimName: victim.name,
+      };
+
       await gameState.update({
         players: newPlayers,
         ...winResult,
         winner: singularWinner, // Explicitly set the singular winner for display
         phase: PHASES.GAME_OVER,
+        voteHistory: [...(gameState.voteHistory || []), historyEntry],
       });
       await gameState.addDayLog(`${victim.name} was lynched.`);
 
@@ -222,11 +240,20 @@ export const resolveDayVoting = async (gameState, players) => {
     }
   }
 
+  // Record Vote History for Elimination
+  const historyEntry = {
+    day: gameState.dayNumber || 1,
+    votes: { ...gameState.votes },
+    outcome: victim.id,
+    victimName: victim.name,
+  };
+
   await gameState.update({
     players: newPlayers,
     phase: PHASES.NIGHT_INTRO,
     votes: {},
     lockedVotes: [],
+    voteHistory: [...(gameState.voteHistory || []), historyEntry],
   });
   await gameState.addDayLog(`${victim.name} was lynched.`);
 };

@@ -21,12 +21,6 @@ import SorcererNightActionScreen from '../pages/SorcererNightActionScreen';
 import WaitingForHunterScreen from '../pages/WaitingForHunterScreen';
 import WerewolfNightActionScreen from '../pages/WerewolfNightActionScreen';
 
-// Import common components for wrapGameContent
-import ActiveRolesPanel from '../components/ActiveRolesPanel';
-import GameHistoryPanel from '../components/GameHistoryPanel';
-import PlayerRoleDisplay from '../components/PlayerRoleDisplay';
-import TeammateList from '../components/TeammateList';
-
 const PHASE_COMPONENTS = {
   [PHASES.LOBBY]: LobbyScreen,
   [PHASES.ROLE_REVEAL]: RoleRevealScreen,
@@ -68,28 +62,7 @@ export function PhaseRouter({
   isChatOpen, // New prop
   setIsChatOpen, // New prop
 }) {
-  const wrapGameContent = (children) => (
-    <>
-      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
-        <TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />
-        {gameState?.settings?.showActiveRolesPanel && (
-          <ActiveRolesPanel
-            activeRoles={gameState.settings.activeRoles}
-            wolfCount={gameState.settings.wolfCount}
-            playerCount={players.length}
-          />
-        )}
-      </div>
-
-      {gameState?.dayLog && gameState.dayLog.length > 0 && (
-        <div className="absolute top-16 right-4 z-50">
-          <GameHistoryPanel dayLog={gameState.dayLog} />
-        </div>
-      )}
-      <PlayerRoleDisplay myPlayer={myPlayer} />
-      {children}
-    </>
-  );
+  const wrapGameContent = (children) => <>{children}</>;
 
   if (!gameState) {
     return <div>Loading game state...</div>;
@@ -126,7 +99,7 @@ export function PhaseRouter({
           winner={null}
           winners={gameState?.winners || []}
           isGameOver={false}
-          onReset={() => { }}
+          onReset={() => {}}
           isHost={false}
           dayLog={gameState.dayLog}
           players={players}

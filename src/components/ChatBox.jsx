@@ -12,7 +12,15 @@ const CHAT_CHANNELS = {
   DEAD: 'dead',
 };
 
-const ChatBox = ({ roomCode, myPlayer, playerRole, isAlive, isChatOpen, setIsChatOpen, gameState }) => {
+const ChatBox = ({
+  roomCode,
+  myPlayer,
+  playerRole,
+  isAlive,
+  isChatOpen,
+  setIsChatOpen,
+  gameState,
+}) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentChannel, setCurrentChannel] = useState(CHAT_CHANNELS.GLOBAL);
@@ -147,15 +155,17 @@ const ChatBox = ({ roomCode, myPlayer, playerRole, isAlive, isChatOpen, setIsCha
     <motion.div
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className={`fixed bottom-4 right-4 z-[100] flex flex-col bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl transition-all duration-300 ease-in-out font-sans ${isChatOpen
-        ? 'w-96 h-[32rem] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)]'
-        : 'w-auto h-auto'
-        }`}
+      className={`fixed bottom-4 right-4 z-[100] flex flex-col bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl transition-all duration-300 ease-in-out font-sans ${
+        isChatOpen
+          ? 'w-96 h-[32rem] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6rem)]'
+          : 'w-auto h-auto'
+      }`}
     >
       {/* Header */}
       <div
-        className={`flex items-center justify-between p-3 cursor-pointer ${isChatOpen ? 'border-b border-slate-700/50' : ''
-          }`}
+        className={`flex items-center justify-between p-3 cursor-pointer ${
+          isChatOpen ? 'border-b border-slate-700/50' : ''
+        }`}
         onClick={() => setIsChatOpen(!isChatOpen)}
       >
         <div className="flex items-center gap-2.5">
@@ -200,10 +210,11 @@ const ChatBox = ({ roomCode, myPlayer, playerRole, isAlive, isChatOpen, setIsCha
                 <button
                   key={channel}
                   onClick={() => setCurrentChannel(channel)}
-                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${currentChannel === channel
-                    ? getChannelStyle(channel) + ' shadow-inner'
-                    : 'text-slate-500 hover:bg-slate-800/50 border-transparent'
-                    }`}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                    currentChannel === channel
+                      ? getChannelStyle(channel) + ' shadow-inner'
+                      : 'text-slate-500 hover:bg-slate-800/50 border-transparent'
+                  }`}
                 >
                   {channel}
                 </button>
@@ -236,10 +247,11 @@ const ChatBox = ({ roomCode, myPlayer, playerRole, isAlive, isChatOpen, setIsCha
                       </span>
                     )}
                     <div
-                      className={`relative px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${isMe
-                        ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-br-none'
-                        : 'bg-slate-800/80 text-slate-200 border border-slate-700/50 rounded-bl-none'
-                        } ${getMessageColorClass(msg)}`}
+                      className={`relative px-3 py-2 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${
+                        isMe
+                          ? 'bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-br-none'
+                          : 'bg-slate-800/80 text-slate-200 border border-slate-700/50 rounded-bl-none'
+                      } ${getMessageColorClass(msg)}`}
                     >
                       {msg.text}
                       <div
@@ -247,9 +259,9 @@ const ChatBox = ({ roomCode, myPlayer, playerRole, isAlive, isChatOpen, setIsCha
                       >
                         {msg.timestamp
                           ? new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
                           : '...'}
                       </div>
                     </div>
@@ -275,12 +287,13 @@ const ChatBox = ({ roomCode, myPlayer, playerRole, isAlive, isChatOpen, setIsCha
                       : `Message ${currentChannel}...`
                   }
                   className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none min-w-0"
-                  disabled={(!isAlive && !isGameOver) && currentChannel === CHAT_CHANNELS.GLOBAL}
+                  disabled={!isAlive && !isGameOver && currentChannel === CHAT_CHANNELS.GLOBAL}
                 />
                 <button
                   type="submit"
                   disabled={
-                    ((!isAlive && !isGameOver) && currentChannel === CHAT_CHANNELS.GLOBAL) || !newMessage.trim()
+                    (!isAlive && !isGameOver && currentChannel === CHAT_CHANNELS.GLOBAL) ||
+                    !newMessage.trim()
                   }
                   className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-slate-700 text-white transition-colors"
                 >

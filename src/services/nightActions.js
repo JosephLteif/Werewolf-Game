@@ -421,6 +421,8 @@ export const resolveNight = async (gameState, players, finalActions) => {
     phase: nextPhase,
     doppelgangerPlayerId:
       finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId || null,
+    dayNumber:
+      nextPhase === PHASES.DAY_REVEAL ? (gameState.dayNumber || 0) + 1 : gameState.dayNumber,
   });
   await gameState.addDayLog(log);
 };
@@ -537,5 +539,6 @@ export const handleHunterShot = async (gameState, players, targetId) => {
   await gameState.update({
     players: newPlayers,
     phase: wasNightDeath ? PHASES.DAY_REVEAL : PHASES.NIGHT_INTRO,
+    dayNumber: wasNightDeath ? (gameState.dayNumber || 0) + 1 : gameState.dayNumber,
   });
 };

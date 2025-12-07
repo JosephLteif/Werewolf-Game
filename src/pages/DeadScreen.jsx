@@ -3,7 +3,6 @@ import { ROLE_IDS } from '../constants/roleIds';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 import { isPlayerWinner } from '../utils/winConditions';
 import { Skull, RotateCcw } from 'lucide-react';
-import ChatBox from '../components/ChatBox';
 
 export default function DeadScreen({
   winner,
@@ -15,10 +14,6 @@ export default function DeadScreen({
   players,
   lovers,
   gameSettings,
-  myPlayer,
-  roomCode,
-  isChatOpen, // New prop
-  setIsChatOpen, // New prop
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
@@ -182,18 +177,6 @@ export default function DeadScreen({
             Play Again
           </button>
         )}
-      </div>
-
-      <div className="pl-6">
-        <ChatBox
-          roomCode={roomCode}
-          myPlayer={myPlayer}
-          playerRole={myPlayer?.role}
-          isAlive={myPlayer?.isAlive}
-          isChatOpen={isChatOpen} // Pass isChatOpen
-          setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
-          gameState={{ phase: 'GAME_OVER' }} // Explicitly pass game state for Game Over detection
-        />
       </div>
     </div>
   );

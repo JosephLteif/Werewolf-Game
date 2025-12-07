@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Check, Skull } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import VoterAvatars from '../components/VoterAvatars.jsx';
-import ChatBox from '../components/ChatBox';
 
 export default function WerewolfNightActionScreen({
   gameState,
@@ -11,10 +10,6 @@ export default function WerewolfNightActionScreen({
   user,
   advanceNight,
   phaseEndTime,
-  myPlayer,
-  roomCode,
-  isChatOpen,
-  setIsChatOpen,
 }) {
   const [selectedTargetId, setSelectedTargetId] = useState(null);
   const [now, setNow] = useState(() => Date.now());
@@ -108,14 +103,6 @@ export default function WerewolfNightActionScreen({
             style={{ animationDelay: '0.4s' }}
           ></div>
         </div>
-        <ChatBox
-          roomCode={roomCode}
-          myPlayer={myPlayer}
-          playerRole={myPlayer?.role}
-          isAlive={myPlayer?.isAlive}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-        />
       </div>
     );
   }
@@ -230,15 +217,6 @@ export default function WerewolfNightActionScreen({
           })}
         </div>
 
-        <ChatBox
-          roomCode={roomCode}
-          myPlayer={myPlayer}
-          playerRole={myPlayer?.role}
-          isAlive={myPlayer?.isAlive}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-        />
-
         {/* Action Button */}
 
         <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl shadow-lg p-4 border-2 border-slate-800 space-y-3">
@@ -273,16 +251,7 @@ export default function WerewolfNightActionScreen({
           )}
         </div>
       </div>
-      <div className="pl-6">
-        <ChatBox
-          roomCode={roomCode}
-          myPlayer={myPlayer}
-          playerRole={myPlayer?.role}
-          isAlive={myPlayer?.isAlive}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-        />
-      </div>
+      <div className="pl-6"></div>
     </div>
   );
 }

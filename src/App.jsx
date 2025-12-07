@@ -11,6 +11,7 @@ import { coreGameActions } from './services/coreGameActions';
 import AuthScreen from './pages/AuthScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from './context/ToastContext'; // Import useToast
+import GameUIWrapper from './components/GameUIWrapper';
 
 export default function App() {
   const [roomCode, setRoomCode] = useState('');
@@ -37,7 +38,6 @@ export default function App() {
 
   // Enable presence notifications
   usePresenceNotifications(gameState, user?.uid);
-
 
   const players = useMemo(() => (gameState ? gameState.players : []), [gameState]);
 
@@ -190,6 +190,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {joined && gameState && gameState.phase !== PHASES.LOBBY && (
+        <GameUIWrapper
+          gameState={gameState}
+          players={players}
+          myPlayer={myPlayer}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+        />
+      )}
       <AnimatePresence mode="sync">
         <motion.div
           key={gameState?.phase || 'auth'}
