@@ -65,7 +65,7 @@ export function getGameAnalysis(history, players) {
   });
 
   // Calculate "Sherlock" - most accurate voter for evil roles
-  let maxCorrectVotes = -1;
+  let maxCorrectVotes = 0; // Initialize to 0
   let sherlocks = [];
   Object.entries(correctVotesByPlayer).forEach(([playerId, count]) => {
     if (count > maxCorrectVotes) {
@@ -81,10 +81,13 @@ export function getGameAnalysis(history, players) {
       });
     }
   });
-  accolades.push(...sherlocks);
+  // Only push sherlocks if there was at least one correct vote
+  if (maxCorrectVotes > 0) {
+    accolades.push(...sherlocks);
+  }
 
   // Calculate "The Target" - most voted for player
-  let maxTimesVoted = -1;
+  let maxTimesVoted = 0; // Initialize to 0
   let targets = [];
   Object.entries(voteCountsForPlayer).forEach(([playerId, count]) => {
     if (count > maxTimesVoted) {
@@ -100,7 +103,10 @@ export function getGameAnalysis(history, players) {
       });
     }
   });
-  accolades.push(...targets);
+  // Only push targets if there was at least one vote
+  if (maxTimesVoted > 0) {
+    accolades.push(...targets);
+  }
 
   return {
     accolades,

@@ -154,7 +154,9 @@ export default function DeadScreen({
                 </div>
 
                 <div className="mt-8 space-y-8">
-                  <AccoladesPanel accolades={accolades} players={players} />
+                  {accolades.length > 0 && (
+                    <AccoladesPanel accolades={accolades} players={players} />
+                  )}
                   <VotingMatrix votingMatrix={votingMatrix} players={players} />
                 </div>
               </div>
