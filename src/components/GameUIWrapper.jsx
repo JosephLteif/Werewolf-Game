@@ -4,6 +4,7 @@ import ChatBox from './ChatBox';
 import ActiveRolesPanel from './ActiveRolesPanel';
 import TeammateList from './TeammateList';
 import PlayerRoleDisplay from './PlayerRoleDisplay';
+import Notepad from './Notepad';
 
 export default function GameUIWrapper({ gameState, players, myPlayer, isChatOpen, setIsChatOpen }) {
   return (
@@ -39,6 +40,7 @@ export default function GameUIWrapper({ gameState, players, myPlayer, isChatOpen
           gameState={gameState}
         />
       </div>
+      <Notepad />
     </>
   );
 }

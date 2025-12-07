@@ -42,7 +42,9 @@ export default function DeathNoteInputScreen({ gameState, user, actions }) {
       {isMyTurn ? (
         <>
           <h2 className="text-4xl font-bold mb-4 text-red-400">Your Last Will</h2>
-          <p className="text-lg text-slate-300 mb-6">You've been lynched! Leave a message for the living.</p>
+          <p className="text-lg text-slate-300 mb-6">
+            You've been lynched! Leave a message for the living.
+          </p>
           <div className="w-full max-w-md">
             <textarea
               className="w-full p-4 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-red-500 resize-none"
@@ -74,12 +76,13 @@ export default function DeathNoteInputScreen({ gameState, user, actions }) {
         <>
           <h2 className="text-4xl font-bold mb-4">Day Concludes...</h2>
           <p className="text-lg text-slate-300">
-            Waiting for <span className="text-red-400 font-bold">{victimPlayer.name}</span> to write their last will.
+            Waiting for <span className="text-red-400 font-bold">{victimPlayer.name}</span> to write
+            their last will.
           </p>
-          <p className="text-md text-slate-300">
-            check the grimoire after this phase.
+          <p className="text-md text-slate-300">check the grimoire after this phase.</p>
+          <p className="text-sm text-slate-500 mt-2 animate-pulse">
+            The game will continue shortly...
           </p>
-          <p className="text-sm text-slate-500 mt-2 animate-pulse">The game will continue shortly...</p>
         </>
       )}
     </div>

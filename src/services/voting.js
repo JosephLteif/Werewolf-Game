@@ -250,7 +250,6 @@ export const resolveDayVoting = async (gameState, players) => {
   await gameState.addDayLog(`${victim.name} was lynched. They are writing their last will...`);
 };
 
-
 export const submitDeathNote = async (gameState, playerId, message) => {
   // Ensure the message is trimmed and within the character limit
   const sanitizedMessage = (message || '').trim().substring(0, 50);
@@ -271,7 +270,7 @@ export const submitDeathNote = async (gameState, playerId, message) => {
     phase: nextPhase, // Transition to the next phase
   });
 
-  const victimPlayer = gameState.players.find(p => p.id === playerId);
+  const victimPlayer = gameState.players.find((p) => p.id === playerId);
   if (victimPlayer) {
     const logMessage = sanitizedMessage
       ? `${victimPlayer.name}'s last will: "${sanitizedMessage}"`

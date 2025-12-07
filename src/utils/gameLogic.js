@@ -54,7 +54,7 @@ function buildRoleDeck(playerCount, activeRolesSettings, wolfCount) {
   // Ensure deck size matches player count (should be true if GameValidator worked)
   if (deck.length !== playerCount) {
     console.warn(
-      `Role deck size mismatch! Expected ${playerCount}, got ${deck.length}. This indicates a potential GameValidator issue.`,
+      `Role deck size mismatch! Expected ${playerCount}, got ${deck.length}. This indicates a potential GameValidator issue.`
     );
     // Attempt to recover by trimming or padding if necessary, though this shouldn't happen.
     while (deck.length > playerCount) {
