@@ -250,9 +250,10 @@ export async function transferHost(roomCode, newHostId) {
   await runTransaction(roomRef, (room) => {
     if (!room || !room.players) return; // Room or players don't exist
 
-    // Ensure the new host is a valid player in the room
+    // Ensure the new host is a valid player in the room. If not, abort the transaction.
     if (!room.players[newHostId]) {
-      throw new Error(`Player with ID ${newHostId} not found in room ${roomCode}.`);
+      // Player not found, abort transaction gracefully.
+      return undefined;
     }
 
     room.hostId = newHostId;
