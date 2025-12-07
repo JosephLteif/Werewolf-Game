@@ -3,6 +3,9 @@ import { ROLE_IDS } from '../constants/roleIds';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 import { isPlayerWinner } from '../utils/winConditions';
 import { Skull, RotateCcw } from 'lucide-react';
+import { useGameHistory } from '../hooks/useGameHistory';
+import AccoladesPanel from '../components/AccoladesPanel';
+import VotingMatrix from '../components/VotingMatrix';
 
 export default function DeadScreen({
   winner,
@@ -14,6 +17,7 @@ export default function DeadScreen({
   players,
   lovers,
   gameSettings,
+  gameState, // Added gameState
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
@@ -55,6 +59,8 @@ export default function DeadScreen({
     }, 0);
     return () => clearTimeout(t);
   }, [isGameOver]);
+
+  const { accolades, votingMatrix } = useGameHistory(gameState?.voteHistory, players);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex p-6 relative overflow-hidden">
@@ -145,6 +151,11 @@ export default function DeadScreen({
                       </span>
                     </div>
                   ))}
+                </div>
+
+                <div className="mt-8 space-y-8">
+                  <AccoladesPanel accolades={accolades} players={players} />
+                  <VotingMatrix votingMatrix={votingMatrix} players={players} />
                 </div>
               </div>
             )}
