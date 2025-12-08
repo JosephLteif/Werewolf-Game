@@ -31,7 +31,7 @@ const createInitialGameState = (playersArray, settings = {}, initialPhase = PHAS
       cupidFateOption: CUPID_FATES.SELFLESS, // Default cupid fate
       ...settings,
     },
-    dayLog: '',
+    dayLog: [], // Start with an empty array
     nightActions: {
       werewolfVotes: {},
       doctorProtect: null,
@@ -51,8 +51,7 @@ const createInitialGameState = (playersArray, settings = {}, initialPhase = PHAS
     addDayLog: vi.fn(async (log) => {
       if (gameState && gameState.update) {
         const currentLog = gameState.dayLog || [];
-        // If dayLog is a string (legacy), convert to array or append
-        const newLog = Array.isArray(currentLog) ? [...currentLog, log] : [currentLog, log];
+        const newLog = [...currentLog, log];
         await gameState.update({ dayLog: newLog });
       }
     }),
@@ -406,7 +405,7 @@ describe('Game Integration Tests', () => {
       expect(MockUpdateGame).toHaveBeenCalled();
       const updatedVillager = gameState.players[villager1.id];
       expect(updatedVillager.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 1 was torn apart by wolves during the night.');
+      expect(gameState.dayLog.some((log) => log.includes('was torn apart by wolves'))).toBe(true);
     });
 
     it('Scenario: Split Vote - Wolves vote for different targets (Random resolution)', async () => {
@@ -464,7 +463,7 @@ describe('Game Integration Tests', () => {
       expect(MockUpdateGame).toHaveBeenCalled();
       const updatedVillager = gameState.players[villager1.id];
       expect(updatedVillager.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 1 was torn apart by wolves during the night.');
+      expect(gameState.dayLog.some((log) => log.includes('was torn apart by wolves'))).toBe(true);
     });
 
     it('Scenario: No werewolf votes', async () => {
@@ -544,7 +543,7 @@ describe('Game Integration Tests', () => {
 
       const targetWolf = gameState.players[wolf2.id];
       expect(targetWolf.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 2 was torn apart by wolves during the night.');
+      expect(gameState.dayLog.some((log) => log.includes('was torn apart by wolves'))).toBe(true);
     });
   });
 
@@ -563,10 +562,10 @@ describe('Game Integration Tests', () => {
       };
       gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
       gameState.update = MockUpdateGame;
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
       const updatedP3 = gameState.players[p3.id];
       expect(updatedP3.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 3 was lynched.');
+      expect(gameState.dayLog.some((log) => log.includes('was lynched'))).toBe(true);
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
       expect(gameState.winners).toContain('VILLAGERS');
     });
@@ -585,7 +584,7 @@ describe('Game Integration Tests', () => {
       };
       gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
       gameState.update = MockUpdateGame;
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
       expect(MockUpdateGame).toHaveBeenCalled();
       const updatedP1 = gameState.players[p1.id];
       const updatedP3 = gameState.players[p3.id];
@@ -609,10 +608,10 @@ describe('Game Integration Tests', () => {
       };
       gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
       gameState.update = MockUpdateGame;
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
       const updatedP3 = gameState.players[p3.id];
       expect(updatedP3.isAlive).toBe(false);
-      expect(gameState.dayLog).toContain('Player 3 was lynched.');
+      expect(gameState.dayLog.some((log) => log.includes('was lynched'))).toBe(true);
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
     });
 
@@ -628,7 +627,7 @@ describe('Game Integration Tests', () => {
       };
       gameState.lockedVotes = [p1.id, p2.id, p3.id];
       gameState.update = MockUpdateGame;
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.players[p3.id].isAlive).toBe(false);
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
@@ -649,7 +648,7 @@ describe('Game Integration Tests', () => {
       };
       gameState.lockedVotes = [p1.id, p2.id, p3.id, p4.id];
       gameState.update = MockUpdateGame;
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.players[p3.id].isAlive).toBe(false);
       // Now it's 2 werewolves vs 1 villager. Parity is met.
@@ -678,13 +677,13 @@ describe('Game Integration Tests', () => {
       gameState.lockedVotes = [wolf1.id, wolf2.id, villager1.id, villager2.id];
       gameState.update = MockUpdateGame;
 
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
 
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.players[villager1.id].isAlive).toBe(false);
       expect(gameState.players[villager2.id].isAlive).toBe(true);
       expect(gameState.players[wolf1.id].isAlive).toBe(true);
-      expect(gameState.dayLog).toContain('Player 1 was lynched.');
+      expect(gameState.dayLog.some((log) => log.includes('was lynched'))).toBe(true);
     });
 
     it('Scenario: Tanner Win Strategy - END_GAME', async () => {
@@ -708,7 +707,7 @@ describe('Game Integration Tests', () => {
       gameState.lockedVotes = [wolf.id, villager.id, tanner.id];
       gameState.update = MockUpdateGame;
 
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
 
       expect(MockUpdateGame).toHaveBeenCalled();
       expect(gameState.phase).toBe(PHASES.GAME_OVER);
@@ -738,12 +737,14 @@ describe('Game Integration Tests', () => {
       gameState.lockedVotes = [wolf.id, villager1.id, villager2.id, tanner.id];
       gameState.update = MockUpdateGame;
 
-      await resolveDayVoting(gameState, Object.values(gameState.players));
+      await resolveDayVoting(gameState, Object.values(gameState.players), gameState.lockedVotes);
 
       expect(MockUpdateGame).toHaveBeenCalled();
       // Game should NOT be over (still 1 wolf vs 2 villagers)
       expect(gameState.phase).not.toBe(PHASES.GAME_OVER);
-      expect(gameState.phase).toBe(PHASES.NIGHT_INTRO);
+      expect(gameState.phase).toBe(PHASES.DEATH_NOTE_INPUT);
+      expect(gameState.playerAwaitingDeathNote).toBe(tanner.id);
+      expect(gameState.nextPhaseAfterDeathNote).toBe(PHASES.NIGHT_INTRO);
       // Tanner should be in winners list
       expect(gameState.winners).toContain('TANNER');
       // Tanner should be dead
@@ -773,22 +774,34 @@ describe('Game Integration Tests', () => {
       const hunter = createPlayer('h1', ROLE_IDS.HUNTER);
       const target = createPlayer('t2', ROLE_IDS.VILLAGER);
       const wolf = createPlayer('w3', ROLE_IDS.WEREWOLF);
+      const villager = createPlayer('v4', ROLE_IDS.VILLAGER);
 
-      let players = [hunter, target, wolf];
+      let players = [hunter, target, wolf, villager];
       gameState = createInitialGameState(players, {}, PHASES.DAY_VOTING);
       gameState.update = MockUpdateGame;
 
-      gameState.votes = { [wolf.id]: hunter.id, [target.id]: hunter.id };
-      gameState.lockedVotes = [wolf.id, target.id];
-      await resolveDayVoting(gameState, players);
+      gameState.votes = {
+        [wolf.id]: hunter.id,
+        [target.id]: hunter.id,
+        [villager.id]: hunter.id,
+      };
+      gameState.lockedVotes = [wolf.id, target.id, villager.id];
+      await resolveDayVoting(gameState, players, gameState.lockedVotes);
 
-      expect(gameState.phase).toBe(PHASES.HUNTER_ACTION);
+      expect(gameState.phase).toBe(PHASES.DEATH_NOTE_INPUT);
+      expect(gameState.playerAwaitingDeathNote).toBe(hunter.id);
+      expect(gameState.nextPhaseAfterDeathNote).toBe(PHASES.HUNTER_ACTION);
       expect(gameState.players[hunter.id].isAlive).toBe(false);
+
+      // Manually advance phase to simulate submitting death note
+      gameState.phase = PHASES.HUNTER_ACTION;
 
       await handleHunterShot(gameState, Object.values(gameState.players), target.id);
 
       expect(gameState.players[target.id].isAlive).toBe(false);
-      expect(gameState.dayLog).toContain("Player 2 was taken down by the Hunter's final shot.");
+      expect(
+        gameState.dayLog.some((log) => log.includes("was taken down by the Hunter's final shot"))
+      ).toBe(true);
     });
 
     it('Scenario: Doctor protects from Werewolf kill', async () => {

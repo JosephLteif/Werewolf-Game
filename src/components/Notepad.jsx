@@ -69,7 +69,6 @@ const Notepad = () => {
 
       {/* NOTEPAD CONTENT (The Vault) */}
       <div className="w-64 md:w-80 h-[28rem] bg-gray-900 border-l border-gray-700 shadow-2xl flex flex-col">
-
         {/* Header */}
         <div className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
           <h3 className="text-gray-100 font-semibold flex items-center gap-2">
@@ -91,7 +90,9 @@ const Notepad = () => {
                 key={note.id}
                 className="group relative bg-gray-800/50 hover:bg-gray-700/80 p-3 rounded border border-gray-700/50 hover:border-indigo-500/30 transition-all duration-200"
               >
-                <p className="text-sm text-gray-200 pr-6 break-words whitespace-pre-wrap">{note.text}</p>
+                <p className="text-sm text-gray-200 pr-6 break-words whitespace-pre-wrap">
+                  {note.text}
+                </p>
                 <button
                   onClick={() => handleDeleteNote(note.id)}
                   className="absolute top-2 right-2 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"

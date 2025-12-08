@@ -78,7 +78,7 @@ export default function VoteHistoryModal({ isOpen, onClose, voteHistory, players
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {/* Group votes by target */}
                     {Object.entries(
-                      Object.entries(entry.votes).reduce((acc, [voterId, targetId]) => {
+                      Object.entries(entry.votes || {}).reduce((acc, [voterId, targetId]) => {
                         if (!acc[targetId]) acc[targetId] = [];
                         acc[targetId].push(voterId);
                         return acc;

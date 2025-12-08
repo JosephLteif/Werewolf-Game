@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { castPlayerVote, lockPlayerVote, resolveDayVoting, determineVotingResult } from './voting';
+import {
+  castPlayerVote,
+  lockPlayerVote,
+  resolveDayVoting,
+  determineVotingResult,
+} from './voting';
 import { PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
 
 // MockGameState class (re-used from nightActions.test.js and roles.test.js)
@@ -100,6 +105,12 @@ class MockGameState {
   }
   get doppelgangerTarget() {
     return this._state.doppelgangerTarget;
+  }
+  get playerAwaitingDeathNote() {
+    return this._state.playerAwaitingDeathNote;
+  }
+  get nextPhaseAfterDeathNote() {
+    return this._state.nextPhaseAfterDeathNote;
   }
 
   isHost(playerUid) {
@@ -274,9 +285,13 @@ describe('Voting Service', () => {
       // This call will trigger the last lock and then resolveDayVoting
       await lockPlayerVote(testGameState, updatedMockPlayers, { uid: 'p5' });
 
-      // After resolveDayVoting, testGameState should reflect the changes
-      expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
-      expect(testGameState._state.dayLog).toContain('Player 1 was lynched.');
+      // After resolveDayVoting, should go to death note phase
+      expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
+      expect(testGameState._state.playerAwaitingDeathNote).toBe('p1');
+      expect(testGameState._state.nextPhaseAfterDeathNote).toBe(PHASES.NIGHT_INTRO);
+      expect(testGameState._state.dayLog).toContain(
+        'Player 1 was lynched. They are writing their last will...'
+      );
       expect(testGameState._state.players['p1'].isAlive).toBe(false);
     });
   });
@@ -289,12 +304,15 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2', 'p3'],
       });
 
-      await resolveDayVoting(testGameState, mockPlayersArray);
+      await resolveDayVoting(testGameState, mockPlayersArray, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p4'].isAlive).toBe(false);
-      expect(testGameState._state.dayLog).toContain('Player 4 was lynched.');
-      expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
+      expect(testGameState._state.dayLog).toContain(
+        'Player 4 was lynched. They are writing their last will...'
+      );
+      expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
+      expect(testGameState._state.playerAwaitingDeathNote).toBe('p4');
     });
 
     it("accounts for Mayor's double vote", async () => {
@@ -317,11 +335,12 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2', 'p4'],
       });
 
-      await resolveDayVoting(testGameState, playersWithMayor);
+      await resolveDayVoting(testGameState, playersWithMayor, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p5'].isAlive).toBe(false);
-      expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
+      expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
+      expect(testGameState._state.playerAwaitingDeathNote).toBe('p5');
     });
 
     it('handles a tie in votes (no elimination)', async () => {
@@ -331,7 +350,7 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2', 'p3', 'p4'],
       });
 
-      await resolveDayVoting(testGameState, mockPlayersArray);
+      await resolveDayVoting(testGameState, mockPlayersArray, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.dayLog).toContain('The vote was a tie!');
@@ -345,7 +364,7 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2', 'p3'],
       });
 
-      await resolveDayVoting(testGameState, mockPlayersArray);
+      await resolveDayVoting(testGameState, mockPlayersArray, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.dayLog).toContain('No one was eliminated.');
@@ -380,7 +399,11 @@ describe('Voting Service', () => {
         lockedVotes: ['p3', 'p4'],
       });
 
-      await resolveDayVoting(testGameState, playersWithDoppelganger);
+      await resolveDayVoting(
+        testGameState,
+        playersWithDoppelganger,
+        testGameState.lockedVotes
+      );
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players[doppelgangerPlayer.id].role).toBe(ROLE_IDS.SEER);
@@ -407,7 +430,7 @@ describe('Voting Service', () => {
         lockedVotes: ['p3', 'p4'],
       });
 
-      await resolveDayVoting(testGameState, playersWithLovers);
+      await resolveDayVoting(testGameState, playersWithLovers, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players[lover1.id].isAlive).toBe(false);
@@ -415,7 +438,7 @@ describe('Voting Service', () => {
     });
 
     it('handles Hunter being voted out', async () => {
-      const hunterPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.HUNTER }; // p1 is Hunter
+      const hunterPlayer = { ...mockPlayersArray[0], name: 'Hunter P', role: ROLE_IDS.HUNTER }; // p1 is Hunter
       const playersWithHunter = [hunterPlayer, ...mockPlayersArray.slice(1)];
       const playersWithHunterMap = {};
       playersWithHunter.forEach((p) => {
@@ -432,12 +455,16 @@ describe('Voting Service', () => {
         lockedVotes: ['p2', 'p3'],
       });
 
-      await resolveDayVoting(testGameState, playersWithHunter);
+      await resolveDayVoting(testGameState, playersWithHunter, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players[hunterPlayer.id].isAlive).toBe(false);
-      expect(testGameState._state.dayLog).toContain('Player 1 (Hunter) was voted out!');
-      expect(testGameState._state.phase).toBe(PHASES.HUNTER_ACTION);
+      expect(testGameState._state.dayLog).toContain(
+        `${hunterPlayer.name} was lynched. They are writing their last will...`
+      );
+      expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
+      expect(testGameState._state.playerAwaitingDeathNote).toBe(hunterPlayer.id);
+      expect(testGameState._state.nextPhaseAfterDeathNote).toBe(PHASES.HUNTER_ACTION);
     });
 
     it('resolves day voting on timeout even if not all players have locked their votes', async () => {
@@ -448,12 +475,14 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2'],
       });
 
-      await resolveDayVoting(testGameState, mockPlayersArray);
+      await resolveDayVoting(testGameState, mockPlayersArray, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p4'].isAlive).toBe(false);
-      expect(testGameState._state.dayLog).toContain('Player 4 was lynched.');
-      expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
+      expect(testGameState._state.dayLog).toContain(
+        'Player 4 was lynched. They are writing their last will...'
+      );
+      expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
     });
 
     it('ignores votes that are not locked', async () => {
@@ -470,12 +499,14 @@ describe('Voting Service', () => {
         lockedVotes: ['p1', 'p2'],
       });
 
-      await resolveDayVoting(testGameState, mockPlayersArray);
+      await resolveDayVoting(testGameState, mockPlayersArray, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.players['p4'].isAlive).toBe(false);
       expect(testGameState._state.players['p5'].isAlive).toBe(true);
-      expect(testGameState._state.dayLog).toContain('Player 4 was lynched.');
+      expect(testGameState._state.dayLog).toContain(
+        'Player 4 was lynched. They are writing their last will...'
+      );
     });
 
     it('handles Tanner win with END_GAME strategy', async () => {
@@ -500,7 +531,7 @@ describe('Voting Service', () => {
         lockedVotes: ['p2', 'p3'],
       });
 
-      await resolveDayVoting(testGameState, playersWithTanner);
+      await resolveDayVoting(testGameState, playersWithTanner, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.phase).toBe(PHASES.GAME_OVER);
@@ -530,17 +561,19 @@ describe('Voting Service', () => {
         winners: [],
       });
 
-      await resolveDayVoting(testGameState, playersWithTanner);
+      await resolveDayVoting(testGameState, playersWithTanner, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
-      expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
+      // Tanner's death still triggers the death note phase before continuing
+      expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
       expect(testGameState._state.winners).toEqual(['TANNER']);
       expect(testGameState._state.players[tannerPlayer.id].isAlive).toBe(false);
+      expect(testGameState._state.playerAwaitingDeathNote).toBe(tannerPlayer.id);
+      expect(testGameState._state.nextPhaseAfterDeathNote).toBe(PHASES.NIGHT_INTRO);
     });
   });
 
   describe('determineVotingResult', () => {
-    // ... tests for determineVotingResult remain unchanged ...
     it('returns no_elimination if there are no votes', () => {
       const result = determineVotingResult({});
       expect(result.type).toBe('no_elimination');
@@ -561,6 +594,12 @@ describe('Voting Service', () => {
 
     it('returns no_elimination on a skip vote win', () => {
       const voteCounts = { skip: 2, p2: 1 };
+      const result = determineVotingResult(voteCounts);
+      expect(result.type).toBe('no_elimination');
+    });
+
+    it('returns no_elimination if max votes is 0', () => {
+      const voteCounts = { p1: 0, p2: 0 };
       const result = determineVotingResult(voteCounts);
       expect(result.type).toBe('no_elimination');
     });

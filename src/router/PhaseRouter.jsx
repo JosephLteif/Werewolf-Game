@@ -313,6 +313,7 @@ export function PhaseRouter({
         roomCode={gameState.code}
         isChatOpen={isChatOpen} // Pass isChatOpen
         setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
+        gameState={gameState}
       />
     );
   } else if (gameState.phase === PHASES.DEATH_NOTE_INPUT) {

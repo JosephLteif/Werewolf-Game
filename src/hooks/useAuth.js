@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import {
+  signInAnonymously,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
+} from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 export function useAuth() {
@@ -9,6 +14,7 @@ export function useAuth() {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        await setPersistence(auth, browserLocalPersistence);
         await signInAnonymously(auth);
       } catch (err) {
         console.error('Auth failed:', err);

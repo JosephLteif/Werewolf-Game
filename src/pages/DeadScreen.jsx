@@ -3,6 +3,9 @@ import { ROLE_IDS } from '../constants/roleIds';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 import { isPlayerWinner } from '../utils/winConditions';
 import { Skull, RotateCcw } from 'lucide-react';
+import { useGameHistory } from '../hooks/useGameHistory';
+import AccoladesPanel from '../components/AccoladesPanel';
+import VotingMatrix from '../components/VotingMatrix';
 
 export default function DeadScreen({
   winner,
@@ -14,6 +17,7 @@ export default function DeadScreen({
   players,
   lovers,
   gameSettings,
+  gameState, // Added gameState
 }) {
   const winnerColors = {
     VILLAGERS: { bg: 'from-blue-600 to-cyan-600', text: 'text-blue-400', alignment: 'good' },
@@ -56,8 +60,10 @@ export default function DeadScreen({
     return () => clearTimeout(t);
   }, [isGameOver]);
 
+  const { accolades, votingMatrix } = useGameHistory(gameState?.voteHistory, players);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center p-6 relative overflow-hidden">
       {/* Ambient background */}
       {isGameOver && (
         <div className="absolute inset-0 opacity-10">
@@ -146,14 +152,21 @@ export default function DeadScreen({
                     </div>
                   ))}
                 </div>
+
+                <div className="mt-8 space-y-8">
+                  {accolades.length > 0 && (
+                    <AccoladesPanel accolades={accolades} players={players} />
+                  )}
+                  <VotingMatrix votingMatrix={votingMatrix} players={players} />
+                </div>
               </div>
             )}
           </>
         ) : (
           <>
             <Skull className="w-24 h-24 text-slate-600 mb-6 opacity-50 mx-auto" />
-            <h2 className="text-4xl font-black mb-3 text-slate-300">YOU ARE DEAD</h2>
-            <p className="text-slate-500 mb-8">You can watch, but don't speak.</p>
+            <h2 className="text-4xl font-black mb-3 text-slate-300 text-center">YOU ARE DEAD</h2>
+            <p className="text-slate-500 mb-8 text-center">You can watch, but don't speak.</p>
 
             {dayLog && (
               <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl backdrop-blur-sm">
