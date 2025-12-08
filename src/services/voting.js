@@ -43,10 +43,13 @@ export function determineVotingResult(voteCounts) {
     }
   });
 
-  // Handle no votes, a tie, or a skip vote
-  if (victims.length !== 1 || victims[0] === 'skip') {
-    return { type: 'no_elimination', victims };
-  }
+    // Handle no votes, a tie, a skip vote, or if the highest vote count is 0
+
+    if (victims.length !== 1 || victims[0] === 'skip' || maxVotes === 0) {
+
+      return { type: 'no_elimination', victims };
+
+    }
 
   return { type: 'elimination', victims };
 }
