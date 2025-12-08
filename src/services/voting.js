@@ -129,16 +129,16 @@ const handleHunterVoteDeath = (victim) => {
 };
 
 export const resolveDayVoting = async (gameState, players) => {
-  const lockedVoterIds = gameState.lockedVotes || [];
-  const votesToCount = Object.entries(gameState.votes || {}).reduce((acc, [voterId, targetId]) => {
-    if (lockedVoterIds.includes(voterId)) {
-      acc[voterId] = targetId;
+  const alivePlayers = players.filter((p) => p.isAlive);
+  const finalVotes = { ...(gameState.votes || {}) };
+
+  alivePlayers.forEach((player) => {
+    if (!finalVotes[player.id]) {
+      finalVotes[player.id] = 'skip';
     }
+  });
 
-    return acc;
-  }, {});
-
-  const voteCounts = countVotes(votesToCount, players, gameState);
+  const voteCounts = countVotes(finalVotes, players, gameState);
 
   const { type, victims } = determineVotingResult(voteCounts);
 
@@ -148,7 +148,7 @@ export const resolveDayVoting = async (gameState, players) => {
     // Record Vote History for No Elimination
     const historyEntry = {
       day: gameState.dayNumber || 1,
-      votes: { ...gameState.votes },
+      votes: finalVotes,
       outcome: victims.length > 1 ? 'tie' : 'skip',
       victimName: null,
     };
@@ -209,7 +209,7 @@ export const resolveDayVoting = async (gameState, players) => {
 
   const historyEntry = {
     day: gameState.dayNumber || 1,
-    votes: { ...gameState.votes },
+    votes: finalVotes,
     outcome: victim.id,
     victimName: victim.name,
   };

@@ -1,8 +1,10 @@
 import { Check } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import VoteHistoryModal from '../components/VoteHistoryModal';
 import VoterAvatars from '../components/VoterAvatars.jsx';
 import ChatBox from '../components/ChatBox';
+import { useTimeout } from '../hooks/useTimeout';
+import { resolveDayVoting } from '../services/voting';
 
 export default function DayVoteScreen({
   gameState,
@@ -46,6 +48,14 @@ export default function DayVoteScreen({
 
   const myPlayer = players.find((p) => p.id === user.uid);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const timeLeft = gameState.phaseEndTime
+    ? Math.max(0, Math.ceil((gameState.phaseEndTime - now) / 1000))
+    : null;
+
+  useTimeout(() => {
+    resolveDayVoting(gameState, players);
+  }, timeLeft !== null && timeLeft > 0 ? timeLeft * 1000 : null);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 text-slate-900 p-4 flex">

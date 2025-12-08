@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Skull } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import VoterAvatars from '../components/VoterAvatars.jsx';
+import { useTimeout } from '../hooks/useTimeout';
 
 export default function WerewolfNightActionScreen({
   gameState,
@@ -20,6 +21,16 @@ export default function WerewolfNightActionScreen({
   }, []);
 
   const timeLeft = phaseEndTime ? Math.max(0, Math.ceil((phaseEndTime - now) / 1000)) : null;
+
+  useTimeout(
+    () => {
+      if (!myConfirmedVote) {
+        handleSkip();
+      }
+    },
+    timeLeft !== null ? timeLeft * 1000 : null
+  );
+
 
   const alivePlayers = players.filter((p) => p.isAlive);
   const votingWerewolves = alivePlayers.filter((p) => p.role === ROLE_IDS.WEREWOLF);

@@ -41,8 +41,9 @@ export function getGameAnalysis(history, players) {
       dayEntry.outcome !== 'tie' && dayEntry.outcome !== 'skip' ? dayEntry.outcome : null;
     const wasEvilEliminated = eliminatedPlayerId ? isEvil(eliminatedPlayerId, players) : false;
 
+    const votes = dayEntry.votes || {};
     // Populate votingMatrix and count votes for "The Target"
-    Object.entries(dayEntry.votes).forEach(([voterId, targetId]) => {
+    Object.entries(votes).forEach(([voterId, targetId]) => {
       if (votingMatrix[voterId]) {
         votingMatrix[voterId].push(targetId);
       }
@@ -58,7 +59,7 @@ export function getGameAnalysis(history, players) {
 
     // For players who didn't vote on a given day, push null or 'no_vote' to maintain array length consistency
     players.forEach((player) => {
-      if (!(player.id in dayEntry.votes)) {
+      if (!(player.id in votes)) {
         votingMatrix[player.id].push(null); // Represents no vote for that day
       }
     });
