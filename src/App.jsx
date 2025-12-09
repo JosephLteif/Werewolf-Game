@@ -197,7 +197,9 @@ export default function App() {
   let contentToRender;
   // Show AuthScreen if user is null OR if user is anonymous and hasn't chosen an auth method
   if (!user || (user.isAnonymous && !authMethodChosen)) {
-    contentToRender = <AuthScreen errorMsg={errorMsg} version={version} setAuthMethodChosen={setAuthMethodChosen} />;
+    contentToRender = (
+      <AuthScreen errorMsg={errorMsg} version={version} setAuthMethodChosen={setAuthMethodChosen} />
+    );
   } else if (!joined) {
     contentToRender = (
       <RoomSelectionScreen
@@ -253,26 +255,39 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {joined && gameState && gameState.phase !== PHASES.LOBBY && (
-        <GameUIWrapper
-          gameState={gameState}
-          players={players}
-          myPlayer={myPlayer}
-          isChatOpen={isChatOpen}
-          setIsChatOpen={setIsChatOpen}
-        />
+    <div className="relative">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        {joined && gameState && gameState.phase !== PHASES.LOBBY && (
+          <GameUIWrapper
+            gameState={gameState}
+            players={players}
+            myChatOpen={isChatOpen}
+            setIsChatOpen={setIsChatOpen}
+          />
+        )}
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={gameState?.phase || 'auth'}
+            {...transitionVariants}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className={`w-full h-full ${isChatOpen ? 'mr-[25rem]' : ''}`}
+          >
+            {contentToRender}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      {!joined && (
+        <div className="fixed bottom-4 left-4 z-50 p-2">
+          <a
+            href="https://www.buymeacoffee.com/JosephLteif"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-200"
+          >
+            Support me 🐺
+          </a>
+        </div>
       )}
-      <AnimatePresence mode="sync">
-        <motion.div
-          key={gameState?.phase || 'auth'}
-          {...transitionVariants}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
-          className={`w-full h-full ${isChatOpen ? 'mr-[25rem]' : ''}`}
-        >
-          {contentToRender}
-        </motion.div>
-      </AnimatePresence>
     </div>
   );
 }

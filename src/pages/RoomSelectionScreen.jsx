@@ -1,5 +1,4 @@
 import React from 'react';
-import { Moon } from 'lucide-react';
 import LogoutButton from '../components/LogoutButton'; // Import LogoutButton
 
 export default function RoomSelectionScreen({
@@ -16,7 +15,9 @@ export default function RoomSelectionScreen({
 }) {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6">
-      <div className="absolute top-4 right-4 z-10"> {/* Container for LogoutButton */}
+      <div className="absolute top-4 right-4 z-10">
+        {' '}
+        {/* Container for LogoutButton */}
         <LogoutButton />
       </div>
       <div className="text-center space-y-2">
