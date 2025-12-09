@@ -62,6 +62,7 @@ export default function AuthScreen({ errorMsg, version, setAuthMethodChosen }) {
 
       <div className="text-center text-xs text-slate-500 absolute bottom-4">
         <p>Version: {version}</p>
+        <p>Copyright (c) 2025 Joseph Lteif. All Rights Reserved.</p>
       </div>
     </div>
   );

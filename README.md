@@ -93,3 +93,4 @@ To build for production:
 ```bash
 npm run build
 ```
+Copyright (c) 2025 Joseph Lteif. All Rights Reserved.

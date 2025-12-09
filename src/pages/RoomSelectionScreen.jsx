@@ -77,6 +77,7 @@ export default function RoomSelectionScreen({
         <p>
           {onlineUsers} Players Online • {activeRooms} Active Rooms
         </p>
+        <p>Copyright (c) 2025 Joseph Lteif. All Rights Reserved.</p>
       </div>
     </div>
   );
