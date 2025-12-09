@@ -43,13 +43,11 @@ export function determineVotingResult(voteCounts) {
     }
   });
 
-    // Handle no votes, a tie, a skip vote, or if the highest vote count is 0
+  // Handle no votes, a tie, a skip vote, or if the highest vote count is 0
 
-    if (victims.length !== 1 || victims[0] === 'skip' || maxVotes === 0) {
-
-      return { type: 'no_elimination', victims };
-
-    }
+  if (victims.length !== 1 || victims[0] === 'skip' || maxVotes === 0) {
+    return { type: 'no_elimination', victims };
+  }
 
   return { type: 'elimination', victims };
 }
@@ -129,57 +127,39 @@ const handleHunterVoteDeath = (victim) => {
 };
 
 export const resolveDayVoting = async (gameState, players) => {
-  const alivePlayers = players.filter((p) => p.isAlive);
-  const finalVotes = { ...(gameState.votes || {}) };
-
-  alivePlayers.forEach((player) => {
-    if (!finalVotes[player.id]) {
-      finalVotes[player.id] = 'skip';
+  const lockedVotes = gameState.lockedVotes || [];
+  const votesToCount = {};
+  lockedVotes.forEach((voterId) => {
+    if (gameState.votes[voterId]) {
+      votesToCount[voterId] = gameState.votes[voterId];
     }
   });
 
-  const voteCounts = countVotes(finalVotes, players, gameState);
-
+  const voteCounts = countVotes(votesToCount, players, gameState);
   const { type, victims } = determineVotingResult(voteCounts);
 
+  console.log('resolveDayVoting - voteCounts:', voteCounts);
+  console.log('resolveDayVoting - type:', type);
+  console.log('resolveDayVoting - victims:', victims);
+
   if (type === 'no_elimination') {
-    const logMessage = victims.length > 1 ? 'The vote was a tie!' : 'No one was eliminated.';
-
-    // Record Vote History for No Elimination
-    const historyEntry = {
-      day: gameState.dayNumber || 1,
-      votes: finalVotes,
-      outcome: victims.length > 1 ? 'tie' : 'skip',
-      victimName: null,
-    };
-
-    await gameState.update({
-      phase: PHASES.NIGHT_INTRO,
-      votes: {},
-      lockedVotes: [],
-      voteHistory: [...(gameState.voteHistory || []), historyEntry],
-    });
+    const logMessage = voteCounts.skip > 0 ? 'No one was eliminated.' : 'The vote was a tie!';
+    await gameState.update({ phase: PHASES.NIGHT_INTRO, votes: {}, lockedVotes: [] });
     await gameState.addDayLog(logMessage);
     return;
   }
 
-  const targetId = victims[0];
-
-  let newPlayers = [...players];
-
-  const victim = findPlayerById(newPlayers, targetId);
+  const victimId = victims[0];
+  let newPlayers = JSON.parse(JSON.stringify(players));
+  const victim = findPlayerById(newPlayers, victimId);
 
   if (victim) {
     victim.isAlive = false;
+    await gameState.addDayLog(`${victim.name} was lynched. They are writing their last will...`);
   } else {
-    console.error('Voted victim not found:', targetId);
-
+    console.error('Voted victim not found:', victimId);
     return;
   }
-
-  // Tanner Win logic is now handled in checkWinCondition via TannerWinStrategy
-
-  // Doppelgänger Transformation (Voting Death)
 
   newPlayers = handleDoppelgangerTransformation(
     newPlayers,
@@ -188,69 +168,40 @@ export const resolveDayVoting = async (gameState, players) => {
     victim.id
   );
 
-  // Lovers Check
-
   handleLoverDeathOnVote(victim, newPlayers, gameState);
 
-  // Determine next phase after death note (or direct if game over)
-  let nextPhaseAfterDeathNote = PHASES.NIGHT_INTRO;
-  const hunterActionPhase = handleHunterVoteDeath(victim);
-  if (hunterActionPhase) {
-    nextPhaseAfterDeathNote = hunterActionPhase;
-  }
+  const hunterDeathPhase = handleHunterVoteDeath(victim);
+  let nextPhase = hunterDeathPhase || PHASES.NIGHT_INTRO;
 
   const winResult = checkWinCondition(
     newPlayers,
     gameState.lovers,
     gameState.winners,
     gameState.settings,
-    { ...victim, cause: 'VOTE' }
+    {
+      ...victim,
+      cause: 'VOTE',
+    }
   );
 
-  const historyEntry = {
-    day: gameState.dayNumber || 1,
-    votes: finalVotes,
-    outcome: victim.id,
-    victimName: victim.name,
-  };
-
   if (winResult && winResult.isGameOver) {
-    const singularWinner =
-      winResult.winners && winResult.winners.length > 0
-        ? winResult.winners.length > 1
-          ? 'MULTIPLE'
-          : winResult.winners[0]
-        : 'WINNER'; // Default to generic WINNER if no specific winner is provided
-
     await gameState.update({
       players: newPlayers,
-      ...winResult,
-      winner: singularWinner, // Explicitly set the singular winner for display
       phase: PHASES.GAME_OVER,
-      voteHistory: [...(gameState.voteHistory || []), historyEntry],
-      votes: {}, // Clear votes even if game over
-      lockedVotes: [], // Clear locked votes even if game over
+      ...winResult,
     });
-    await gameState.addDayLog(`${victim.name} was lynched. Game Over.`);
     return;
-  } else if (winResult?.winners) {
-    // Game continues but we have new winners (e.g. Tanner)
-    await gameState.update({
-      winners: winResult.winners,
-    });
   }
 
-  // If game is not over, and a victim exists, transition to death note input phase
   await gameState.update({
     players: newPlayers,
     phase: PHASES.DEATH_NOTE_INPUT,
     playerAwaitingDeathNote: victim.id,
-    nextPhaseAfterDeathNote: nextPhaseAfterDeathNote, // Store for submitDeathNote
+    nextPhaseAfterDeathNote: nextPhase,
     votes: {},
     lockedVotes: [],
-    voteHistory: [...(gameState.voteHistory || []), historyEntry],
+    winners: winResult ? winResult.winners : gameState.winners,
   });
-  await gameState.addDayLog(`${victim.name} was lynched. They are writing their last will...`);
 };
 
 export const submitDeathNote = async (gameState, playerId, message) => {

@@ -31,7 +31,6 @@ export default function WerewolfNightActionScreen({
     timeLeft !== null ? timeLeft * 1000 : null
   );
 
-
   const alivePlayers = players.filter((p) => p.isAlive);
   const votingWerewolves = alivePlayers.filter((p) => p.role === ROLE_IDS.WEREWOLF);
   const totalVotingWerewolves = votingWerewolves.length;

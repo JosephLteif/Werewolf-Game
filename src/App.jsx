@@ -13,6 +13,9 @@ import AuthScreen from './pages/AuthScreen';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from './context/ToastContext'; // Import useToast
 import GameUIWrapper from './components/GameUIWrapper';
+import { useGlobalStats } from './hooks/useGlobalStats';
+import { setupGlobalPresence } from './services/presence';
+import { version } from '../package.json';
 
 export default function App() {
   const [roomCode, setRoomCode] = useState('');
@@ -23,6 +26,13 @@ export default function App() {
 
   const { user } = useAuth();
   const toast = useToast(); // Initialize useToast
+  const { onlineUsers, activeRooms } = useGlobalStats();
+
+  useEffect(() => {
+    if (user) {
+      setupGlobalPresence(user);
+    }
+  }, [user]);
 
   const leaveRoom = useCallback(
     (kickedByHost = false) => {
@@ -217,6 +227,9 @@ export default function App() {
               createRoom={createRoom}
               user={user}
               errorMsg={errorMsg}
+              version={version}
+              onlineUsers={onlineUsers}
+              activeRooms={activeRooms}
             />
           ) : !gameState ? (
             <div>Loading game state...</div>
