@@ -35,30 +35,30 @@ export function usePresenceNotifications(gameState) {
     const currentPlayersMap = gameState.players.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
     const prevPlayersMap = prevPlayersRef.current;
 
-    // Check for new players (Joins)
-    gameState.players.forEach((player) => {
-      const prevPlayer = prevPlayersMap[player.id];
+    // Iterate over previous players to detect leaves and disconnections
+    Object.keys(prevPlayersMap).forEach((prevId) => {
+      const prevPlayer = prevPlayersMap[prevId];
+      const currentPlayer = currentPlayersMap[prevId];
 
-      if (!prevPlayer) {
-        // New player joined
-        info(`${player.name} joined the lobby`);
-      } else {
-        // Existing player, check status changes
-        if (prevPlayer.isOnline !== player.isOnline) {
-          if (player.isOnline) {
-            success(`${player.name} reconnected`);
-          } else {
-            warning(`${player.name} disconnected`);
-          }
+      if (!currentPlayer) {
+        // Player is no longer in the current game state, they have left.
+        error(`${prevPlayer.name} left the game`);
+      } else if (prevPlayer.isOnline !== currentPlayer.isOnline) {
+        // Player is still in the game state, but their online status changed.
+        if (currentPlayer.isOnline) {
+          success(`${currentPlayer.name} reconnected`);
+        } else {
+          warning(`${currentPlayer.name} disconnected`);
         }
       }
     });
 
-    // Check for removed players (Leaves/Kicks)
-    Object.keys(prevPlayersMap).forEach((prevId) => {
-      if (!currentPlayersMap[prevId]) {
-        const leftPlayer = prevPlayersMap[prevId];
-        error(`${leftPlayer.name} left the game`);
+    // Iterate over current players to detect new joins
+    gameState.players.forEach((player) => {
+      const prevPlayer = prevPlayersMap[player.id];
+      if (!prevPlayer) {
+        // Player is in current game state but not in previous, they have joined.
+        info(`${player.name} joined the lobby`);
       }
     });
 

@@ -1,44 +1,63 @@
 import { useState, useEffect } from 'react';
 import {
-  signInAnonymously,
   onAuthStateChanged,
+  signInWithPopup,
+  signInAnonymously,
   setPersistence,
   browserLocalPersistence,
 } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, googleProvider } from '../services/firebase';
 
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-        await signInAnonymously(auth);
-      } catch (err) {
-        console.error('Auth failed:', err);
-        if (err.code === 'auth/admin-restricted-operation') {
-          setError(
-            "Enable 'Anonymous' sign-in in Firebase Console > Authentication > Sign-in method."
-          );
-        } else {
-          setError('Auth Error: ' + err.message);
-        }
-      }
-    };
-    initAuth();
+  const signInWithGoogle = async () => {
+    try {
+      await setPersistence(auth, browserLocalPersistence); // Set persistence for Google sign-in
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('Google Auth failed:', err);
+      setError('Google Auth Error: ' + err.message);
+    }
+  };
 
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      if (u) {
-        setUser(u);
+  const signInAsGuest = async () => {
+    try {
+      await setPersistence(auth, browserLocalPersistence); // Set persistence for anonymous sign-in
+      await signInAnonymously(auth);
+    } catch (err) {
+      console.error('Anonymous Auth failed:', err);
+      if (err.code === 'auth/admin-restricted-operation') {
+        setError(
+          "Enable 'Anonymous' sign-in in Firebase Console > Authentication > Sign-in method."
+        );
       } else {
-        setUser(null);
+        setError('Auth Error: ' + err.message);
       }
-    });
+    }
+  };
 
-    return () => unsubscribe();
+  useEffect(() => {
+    // We only set persistence once here if not already set by signInWithGoogle or signInAsGuest
+    const initPersistenceAndListen = async () => {
+      if (!auth.persistence) {
+        // Check if persistence is already set
+        await setPersistence(auth, browserLocalPersistence);
+      }
+
+      const unsubscribe = onAuthStateChanged(auth, (u) => {
+        if (u) {
+          setUser(u);
+        } else {
+          setUser(null);
+        }
+      });
+      return unsubscribe;
+    };
+
+    initPersistenceAndListen();
   }, []);
 
-  return { user, error };
+  return { user, error, signInWithGoogle, signInAsGuest };
 }

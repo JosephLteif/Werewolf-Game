@@ -24,7 +24,7 @@ export function useGameState(user, roomCode, joined) {
 
   // Monitor host presence and perform migration if needed
   useEffect(() => {
-    if (!gameState || !user || !roomCode) return;
+    if (!gameState || !user?.uid || !roomCode) return; // Ensure user.uid is available
 
     const hostId = gameState.hostId;
     const players = gameState.players; // uses the getter which is an array
@@ -35,15 +35,13 @@ export function useGameState(user, roomCode, joined) {
       !hostExistsInPlayersList ||
       (hostExistsInPlayersList && players.find((p) => p.id === hostId).isOnline === false)
     ) {
-      const uid = user.id || user.uid;
-      // The claimHostIfAvailable function will now automatically assign the oldest online player as host.
-      // It's safe to call by any online player.
-      claimHostIfAvailable(roomCode, uid);
+      // Use user.uid directly
+      claimHostIfAvailable(roomCode, user.uid);
     }
-  }, [gameState, user, roomCode]);
+  }, [gameState, user?.uid, roomCode]); // Depend on user.uid
 
-  // isHost will now be derived from gameState if it exists
-  const isHost = gameState ? gameState.isHost(user.uid) : false;
+  // isHost will now be derived from gameState if it exists and user.uid is available
+  const isHost = gameState && user?.uid ? gameState.isHost(user.uid) : false;
 
   return { gameState, isHost, error };
 }
