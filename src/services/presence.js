@@ -8,7 +8,12 @@ export function setupGlobalPresence(user) {
   }
 
   const userStatusRef = ref(rtdb, `/onlineUsers/${user.uid}`);
-  console.log('setupGlobalPresence: Setting up presence for user:', user.uid, 'Path:', `/onlineUsers/${user.uid}`);
+  console.log(
+    'setupGlobalPresence: Setting up presence for user:',
+    user.uid,
+    'Path:',
+    `/onlineUsers/${user.uid}`
+  );
 
   const isOnline = {
     isOnline: true,
@@ -46,7 +51,7 @@ export function subscribeToGlobalStats(callback) {
     const users = snapshot.val();
     onlineUsersCount = 0;
     if (users) {
-      Object.values(users).forEach(user => {
+      Object.values(users).forEach((user) => {
         if (user.isOnline) {
           onlineUsersCount++;
         }

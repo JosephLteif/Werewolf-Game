@@ -4,14 +4,15 @@ import { ACTION_TYPES } from './constants/actions';
 import { useGameEngine } from './hooks/useGameEngine';
 import { PhaseRouter } from './router/PhaseRouter';
 import { createRoom as createRoomRT, joinRoom as joinRoomRT } from './services/rooms';
-import { submitDeathNote } from './services/voting'; // Import submitDeathNote
+import { submitDeathNote } from './services/voting';
 import { useGameState } from './hooks/useGameState';
-import { useAuth } from './hooks/useAuth'; // Import useAuth
+import { useAuth } from './hooks/useAuth';
 import { usePresenceNotifications } from './hooks/usePresenceNotifications';
 import { coreGameActions } from './services/coreGameActions';
 import AuthScreen from './pages/AuthScreen';
+import RoomSelectionScreen from './pages/RoomSelectionScreen';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from './context/ToastContext'; // Import useToast
+import { useToast } from './context/ToastContext';
 import GameUIWrapper from './components/GameUIWrapper';
 import { useGlobalStats } from './hooks/useGlobalStats';
 import { setupGlobalPresence } from './services/presence';
@@ -21,18 +22,24 @@ export default function App() {
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [joined, setJoined] = useState(false);
-  const [showRoleInfo, setShowRoleInfo] = useState(null); // Role ID to show info for
-  const [isChatOpen, setIsChatOpen] = useState(false); // State for chat open/close
+  const [showRoleInfo, setShowRoleInfo] = useState(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [authMethodChosen, setAuthMethodChosen] = useState(false); // New state to track if an auth method has been chosen
 
   const { user } = useAuth();
-  const toast = useToast(); // Initialize useToast
+  const toast = useToast();
   const { onlineUsers, activeRooms } = useGlobalStats();
 
   useEffect(() => {
     if (user) {
       setupGlobalPresence(user);
+      if (user.isAnonymous && !playerName) {
+        setPlayerName(`Guest-${user.uid.substring(0, 5)}`);
+      } else if (user.displayName && !playerName) {
+        setPlayerName(user.displayName);
+      }
     }
-  }, [user]);
+  }, [user, playerName]);
 
   const leaveRoom = useCallback(
     (kickedByHost = false) => {
@@ -47,7 +54,6 @@ export default function App() {
 
   const { gameState, isHost } = useGameState(user, roomCode, joined);
 
-  // Enable presence notifications
   usePresenceNotifications(gameState, user?.uid);
 
   const players = useMemo(() => (gameState ? gameState.players : []), [gameState]);
@@ -77,7 +83,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Host-only effect to advance phase on timer expiry
   useEffect(() => {
     if (!isHost || !gameState?.phase) return;
 
@@ -89,16 +94,13 @@ export default function App() {
       if (isWerewolfVote) {
         advanceNightPhase(ACTION_TYPES.NO_ACTION, null);
       } else if (isNightPhase) {
-        // Timeout for any night action
         advanceNightPhase(ACTION_TYPES.NO_ACTION, null);
       } else if (isDayVote) {
-        // Timeout for day voting
         resolveVoting();
       }
     }
   }, [now, gameState?.phase, isHost, advanceNightPhase, gameState?.phaseEndTime, resolveVoting]);
 
-  // Ambient particles generated on mount (avoid impure Math.random() during render)
   const [roleRevealParticles, setRoleRevealParticles] = useState(null);
   const [nightIntroStars, setNightIntroStars] = useState(null);
 
@@ -123,8 +125,6 @@ export default function App() {
     }, 0);
     return () => clearTimeout(t);
   }, []);
-
-  // --- ACTIONS ---
 
   const createRoom = async () => {
     if (!user) return setErrorMsg('Waiting for connection...');
@@ -165,31 +165,26 @@ export default function App() {
 
   const transitionVariants = useMemo(() => {
     const variants = [
-      // Slide from bottom
       {
         initial: { opacity: 0, y: 50 },
         animate: { opacity: 1, y: 0 },
         exit: { opacity: 0, y: -50 },
       },
-      // Slide from top
       {
         initial: { opacity: 0, y: -50 },
         animate: { opacity: 1, y: 0 },
         exit: { opacity: 0, y: 50 },
       },
-      // Slide from left
       {
         initial: { opacity: 0, x: -50 },
         animate: { opacity: 1, x: 0 },
         exit: { opacity: 0, x: 50 },
       },
-      // Slide from right
       {
         initial: { opacity: 0, x: 50 },
         animate: { opacity: 1, x: 0 },
         exit: { opacity: 0, x: -50 },
       },
-      // Simple fade (no slide)
       { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
     ];
 
@@ -198,6 +193,64 @@ export default function App() {
     const variantIndex = phaseIndex !== -1 ? phaseIndex % variants.length : 0;
     return variants[variantIndex];
   }, [gameState?.phase]);
+
+  let contentToRender;
+  // Show AuthScreen if user is null OR if user is anonymous and hasn't chosen an auth method
+  if (!user || (user.isAnonymous && !authMethodChosen)) {
+    contentToRender = <AuthScreen errorMsg={errorMsg} version={version} setAuthMethodChosen={setAuthMethodChosen} />;
+  } else if (!joined) {
+    contentToRender = (
+      <RoomSelectionScreen
+        playerName={playerName}
+        setPlayerName={setPlayerName}
+        roomCode={roomCode}
+        setRoomCode={setRoomCode}
+        joinRoom={joinRoom}
+        createRoom={createRoom}
+        user={user}
+        onlineUsers={onlineUsers}
+        activeRooms={activeRooms}
+        version={version}
+      />
+    );
+  } else if (!gameState) {
+    contentToRender = <div>Loading game state...</div>;
+  } else {
+    contentToRender = (
+      <PhaseRouter
+        gameState={gameState}
+        players={players}
+        user={user}
+        isHost={isHost}
+        myPlayer={myPlayer}
+        amAlive={amAlive}
+        isMyTurn={isMyTurn}
+        actions={{
+          startGame,
+          markReady,
+          startNightPhase,
+          advanceNightPhase,
+          handleHunterShotAction,
+          castVote,
+          lockVote,
+          resolveVoting,
+          submitDeathNote,
+        }}
+        leaveRoom={leaveRoom}
+        nightIntroStars={nightIntroStars}
+        roleRevealParticles={roleRevealParticles}
+        showRoleInfo={showRoleInfo}
+        setShowRoleInfo={setShowRoleInfo}
+        seerMessage={seerMessage}
+        setSeerMessage={setSeerMessage}
+        sorcererTarget={sorcererTarget}
+        setSorcererTarget={setSorcererTarget}
+        now={now}
+        isChatOpen={isChatOpen}
+        setIsChatOpen={setIsChatOpen}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -213,60 +266,11 @@ export default function App() {
       <AnimatePresence mode="sync">
         <motion.div
           key={gameState?.phase || 'auth'}
-          {...transitionVariants} // Apply the selected variants
+          {...transitionVariants}
           transition={{ duration: 0.7, ease: 'easeOut' }}
-          className={`w-full h-full ${isChatOpen ? 'mr-[25rem]' : ''}`} // Conditionally apply margin
+          className={`w-full h-full ${isChatOpen ? 'mr-[25rem]' : ''}`}
         >
-          {!user || !joined ? (
-            <AuthScreen
-              playerName={playerName}
-              setPlayerName={setPlayerName}
-              roomCode={roomCode}
-              setRoomCode={setRoomCode}
-              joinRoom={joinRoom}
-              createRoom={createRoom}
-              user={user}
-              errorMsg={errorMsg}
-              version={version}
-              onlineUsers={onlineUsers}
-              activeRooms={activeRooms}
-            />
-          ) : !gameState ? (
-            <div>Loading game state...</div>
-          ) : (
-            <PhaseRouter
-              gameState={gameState}
-              players={players}
-              user={user}
-              isHost={isHost}
-              myPlayer={myPlayer}
-              amAlive={amAlive}
-              isMyTurn={isMyTurn}
-              actions={{
-                startGame,
-                markReady,
-                startNightPhase,
-                advanceNightPhase,
-                handleHunterShotAction,
-                castVote,
-                lockVote,
-                resolveVoting,
-                submitDeathNote, // Pass submitDeathNote
-              }}
-              leaveRoom={leaveRoom}
-              nightIntroStars={nightIntroStars}
-              roleRevealParticles={roleRevealParticles}
-              showRoleInfo={showRoleInfo}
-              setShowRoleInfo={setShowRoleInfo}
-              seerMessage={seerMessage}
-              setSeerMessage={setSeerMessage}
-              sorcererTarget={sorcererTarget}
-              setSorcererTarget={setSorcererTarget}
-              now={now}
-              isChatOpen={isChatOpen} // Pass isChatOpen
-              setIsChatOpen={setIsChatOpen} // Pass setIsChatOpen
-            />
-          )}
+          {contentToRender}
         </motion.div>
       </AnimatePresence>
     </div>

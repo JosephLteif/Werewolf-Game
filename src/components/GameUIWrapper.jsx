@@ -5,6 +5,7 @@ import ActiveRolesPanel from './ActiveRolesPanel';
 import TeammateList from './TeammateList';
 import PlayerRoleDisplay from './PlayerRoleDisplay';
 import Notepad from './Notepad';
+import LogoutButton from './LogoutButton'; // Import LogoutButton
 
 export default function GameUIWrapper({ gameState, players, myPlayer, isChatOpen, setIsChatOpen }) {
   return (
@@ -21,6 +22,7 @@ export default function GameUIWrapper({ gameState, players, myPlayer, isChatOpen
       </div>
 
       <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 items-end">
+        <LogoutButton /> {/* Add LogoutButton here */}
         <PlayerRoleDisplay myPlayer={myPlayer} />
         <GameHistoryPanel
           dayLog={gameState.dayLog}
