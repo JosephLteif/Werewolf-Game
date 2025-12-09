@@ -13,6 +13,9 @@ export default function AuthScreen({
   createRoom,
   user,
   errorMsg,
+  version,
+  onlineUsers,
+  activeRooms,
 }) {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6">
@@ -73,6 +76,13 @@ export default function AuthScreen({
             Create New Room
           </button>
         </div>
+      </div>
+
+      <div className="text-center text-xs text-slate-500 absolute bottom-4">
+        <p>Version: {version}</p>
+        <p>
+          {onlineUsers} Players Online • {activeRooms} Active Rooms
+        </p>
       </div>
     </div>
   );
