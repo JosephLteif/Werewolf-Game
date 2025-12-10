@@ -1,5 +1,6 @@
 import React from 'react';
 import LogoutButton from '../components/LogoutButton'; // Import LogoutButton
+import Footer from '../components/Footer';
 
 export default function RoomSelectionScreen({
   playerName,
@@ -14,7 +15,7 @@ export default function RoomSelectionScreen({
   version,
 }) {
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6">
+    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-6 space-y-6 relative">
       <div className="absolute top-4 right-4 z-10">
         {' '}
         {/* Container for LogoutButton */}
@@ -71,14 +72,10 @@ export default function RoomSelectionScreen({
           </button>
         </div>
       </div>
-
-      <div className="text-center text-xs text-slate-500 absolute bottom-4">
-        <p>Version: {version}</p>
-        <p>
-          {onlineUsers} Players Online • {activeRooms} Active Rooms
-        </p>
-        <p>Copyright (c) 2025 Joseph Lteif. All Rights Reserved.</p>
+      <div className="text-center text-xs text-slate-500">
+        <p>{onlineUsers} Players Online • {activeRooms} Active Rooms</p>
       </div>
+      <Footer version={version} />
     </div>
   );
 }

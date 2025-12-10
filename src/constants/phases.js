@@ -16,6 +16,7 @@ export const PHASES = {
   DAY_VOTING: 'DAY_VOTING',
   GAME_OVER: 'GAME_OVER',
   DEATH_NOTE_INPUT: 'DEATH_NOTE_INPUT',
+  HOME: 'HOME',
 };
 
 export const NIGHT_PHASE_SEQUENCE = [

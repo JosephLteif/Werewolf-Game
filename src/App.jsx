@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PHASES } from './constants';
 import { ACTION_TYPES } from './constants/actions';
 import { useGameEngine } from './hooks/useGameEngine';
@@ -11,6 +11,7 @@ import { usePresenceNotifications } from './hooks/usePresenceNotifications';
 import { coreGameActions } from './services/coreGameActions';
 import AuthScreen from './pages/AuthScreen';
 import RoomSelectionScreen from './pages/RoomSelectionScreen';
+import HomeScreen from './pages/HomeScreen'; // Import HomeScreen
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from './context/ToastContext';
 import GameUIWrapper from './components/GameUIWrapper';
@@ -25,6 +26,7 @@ export default function App() {
   const [showRoleInfo, setShowRoleInfo] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [authMethodChosen, setAuthMethodChosen] = useState(false); // New state to track if an auth method has been chosen
+  const [showHomeScreen, setShowHomeScreen] = useState(true); // New state for HomeScreen
 
   const { user } = useAuth();
   const toast = useToast();
@@ -45,6 +47,7 @@ export default function App() {
     (kickedByHost = false) => {
       setJoined(false);
       setRoomCode('');
+      setShowHomeScreen(true); // Reset to show home screen on leaving room
       if (kickedByHost) {
         toast.error('You have been kicked from the room by the host.');
       }
@@ -135,6 +138,7 @@ export default function App() {
       const code = await createRoomRT({ id: user.uid, name: playerName, avatarColor: color });
       setRoomCode(code);
       setJoined(true);
+      setShowHomeScreen(false); // Hide home screen after creating room
     } catch (e) {
       console.error(e);
       setErrorMsg('Failed to create room. ' + (e.message || e));
@@ -155,6 +159,7 @@ export default function App() {
       });
       setRoomCode(code);
       setJoined(true);
+      setShowHomeScreen(false); // Hide home screen after joining room
     } catch (e) {
       console.error(e);
       setErrorMsg('Failed to join. ' + (e.message || e));
@@ -200,6 +205,8 @@ export default function App() {
     contentToRender = (
       <AuthScreen errorMsg={errorMsg} version={version} setAuthMethodChosen={setAuthMethodChosen} />
     );
+  } else if (!joined && showHomeScreen) {
+    contentToRender = <HomeScreen onPlayNow={() => setShowHomeScreen(false)} version={version} />;
   } else if (!joined) {
     contentToRender = (
       <RoomSelectionScreen
@@ -250,6 +257,7 @@ export default function App() {
         now={now}
         isChatOpen={isChatOpen}
         setIsChatOpen={setIsChatOpen}
+        version={version}
       />
     );
   }
