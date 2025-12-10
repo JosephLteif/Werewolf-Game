@@ -26,7 +26,8 @@ export default function App() {
   const [showRoleInfo, setShowRoleInfo] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [authMethodChosen, setAuthMethodChosen] = useState(false); // New state to track if an auth method has been chosen
-  const [showHomeScreen, setShowHomeScreen] = useState(true); // New state for HomeScreen
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'auth', 'room'
+
 
   const { user } = useAuth();
   const toast = useToast();
@@ -47,7 +48,7 @@ export default function App() {
     (kickedByHost = false) => {
       setJoined(false);
       setRoomCode('');
-      setShowHomeScreen(true); // Reset to show home screen on leaving room
+      setCurrentScreen('home');
       if (kickedByHost) {
         toast.error('You have been kicked from the room by the host.');
       }
@@ -138,7 +139,7 @@ export default function App() {
       const code = await createRoomRT({ id: user.uid, name: playerName, avatarColor: color });
       setRoomCode(code);
       setJoined(true);
-      setShowHomeScreen(false); // Hide home screen after creating room
+      
     } catch (e) {
       console.error(e);
       setErrorMsg('Failed to create room. ' + (e.message || e));
@@ -159,7 +160,7 @@ export default function App() {
       });
       setRoomCode(code);
       setJoined(true);
-      setShowHomeScreen(false); // Hide home screen after joining room
+      
     } catch (e) {
       console.error(e);
       setErrorMsg('Failed to join. ' + (e.message || e));
@@ -200,66 +201,77 @@ export default function App() {
   }, [gameState?.phase]);
 
   let contentToRender;
-  // Show AuthScreen if user is null OR if user is anonymous and hasn't chosen an auth method
-  if (!user || (user.isAnonymous && !authMethodChosen)) {
+
+  if (currentScreen === 'home') {
     contentToRender = (
-      <AuthScreen errorMsg={errorMsg} version={version} setAuthMethodChosen={setAuthMethodChosen} />
+      <HomeScreen onPlayNow={() => setCurrentScreen('room')} version={version} />
     );
-  } else if (!joined && showHomeScreen) {
-    contentToRender = <HomeScreen onPlayNow={() => setShowHomeScreen(false)} version={version} />;
-  } else if (!joined) {
+  } else if (!user || (user.isAnonymous && !authMethodChosen)) {
     contentToRender = (
-      <RoomSelectionScreen
-        playerName={playerName}
-        setPlayerName={setPlayerName}
-        roomCode={roomCode}
-        setRoomCode={setRoomCode}
-        joinRoom={joinRoom}
-        createRoom={createRoom}
-        user={user}
-        onlineUsers={onlineUsers}
-        activeRooms={activeRooms}
+      <AuthScreen
+        errorMsg={errorMsg}
         version={version}
+        setAuthMethodChosen={setAuthMethodChosen}
       />
     );
-  } else if (!gameState) {
-    contentToRender = <div>Loading game state...</div>;
+  } else if (currentScreen === 'room') {
+    if (!joined) {
+      contentToRender = (
+        <RoomSelectionScreen
+          playerName={playerName}
+          setPlayerName={setPlayerName}
+          roomCode={roomCode}
+          setRoomCode={setRoomCode}
+          joinRoom={joinRoom}
+          createRoom={createRoom}
+          user={user}
+          onlineUsers={onlineUsers}
+          activeRooms={activeRooms}
+          version={version}
+        />
+      );
+    } else if (!gameState) {
+      contentToRender = <div>Loading game state...</div>;
+    } else {
+      contentToRender = (
+        <PhaseRouter
+          gameState={gameState}
+          players={players}
+          user={user}
+          isHost={isHost}
+          myPlayer={myPlayer}
+          amAlive={amAlive}
+          isMyTurn={isMyTurn}
+          actions={{
+            startGame,
+            markReady,
+            startNightPhase,
+            advanceNightPhase,
+            handleHunterShotAction,
+            castVote,
+            lockVote,
+            resolveVoting,
+            submitDeathNote,
+          }}
+          leaveRoom={leaveRoom}
+          nightIntroStars={nightIntroStars}
+          roleRevealParticles={roleRevealParticles}
+          showRoleInfo={showRoleInfo}
+          setShowRoleInfo={setShowRoleInfo}
+          seerMessage={seerMessage}
+          setSeerMessage={setSeerMessage}
+          sorcererTarget={sorcererTarget}
+          setSorcererTarget={setSorcererTarget}
+          now={now}
+          isChatOpen={isChatOpen}
+          setIsChatOpen={setIsChatOpen}
+          version={version}
+        />
+      );
+    }
   } else {
-    contentToRender = (
-      <PhaseRouter
-        gameState={gameState}
-        players={players}
-        user={user}
-        isHost={isHost}
-        myPlayer={myPlayer}
-        amAlive={amAlive}
-        isMyTurn={isMyTurn}
-        actions={{
-          startGame,
-          markReady,
-          startNightPhase,
-          advanceNightPhase,
-          handleHunterShotAction,
-          castVote,
-          lockVote,
-          resolveVoting,
-          submitDeathNote,
-        }}
-        leaveRoom={leaveRoom}
-        nightIntroStars={nightIntroStars}
-        roleRevealParticles={roleRevealParticles}
-        showRoleInfo={showRoleInfo}
-        setShowRoleInfo={setShowRoleInfo}
-        seerMessage={seerMessage}
-        setSeerMessage={setSeerMessage}
-        sorcererTarget={sorcererTarget}
-        setSorcererTarget={setSorcererTarget}
-        now={now}
-        isChatOpen={isChatOpen}
-        setIsChatOpen={setIsChatOpen}
-        version={version}
-      />
-    );
+    // Fallback to home
+    setCurrentScreen('home');
   }
 
   return (

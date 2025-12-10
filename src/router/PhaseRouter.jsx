@@ -63,6 +63,7 @@ export function PhaseRouter({
   now,
   isChatOpen, // New prop
   setIsChatOpen, // New prop
+  version,
 }) {
   const wrapGameContent = (children) => <>{children}</>;
 
@@ -351,6 +352,7 @@ export function PhaseRouter({
       isChatOpen: isChatOpen, // Pass isChatOpen
       setIsChatOpen: setIsChatOpen, // Pass setIsChatOpen
       roomCode: gameState.code,
+      version,
     };
 
     if ([PHASES.LOBBY, PHASES.ROLE_REVEAL].includes(gameState.phase)) {
