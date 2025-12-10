@@ -7,7 +7,7 @@ const Footer = ({ version, showSupportButton }) => {
       {showSupportButton && (
         <div className="fixed bottom-4 left-4 z-50 p-2">
           <a
-            href="https://www.buymeacoffee.com/JosephLteif"
+            href="https://nowpayments.io/donation/Wrekt001"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-200"
