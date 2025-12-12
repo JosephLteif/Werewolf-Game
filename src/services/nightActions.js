@@ -307,6 +307,7 @@ export const resolveNight = async (gameState, players, finalActions) => {
     nightActions: finalActions,
     players: newPlayers,
     deaths,
+    addLog: gameState.addDayLog,
   };
 
   // Iterate through all roles and apply their night outcomes

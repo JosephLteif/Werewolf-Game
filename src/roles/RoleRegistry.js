@@ -13,6 +13,7 @@ import { Twins } from './implementations/Twins';
 import { Lycan } from './implementations/Lycan';
 import { Mayor } from './implementations/Mayor';
 import { TheFool } from './implementations/TheFool';
+import { Cursed } from './implementations/Cursed';
 
 class RoleRegistry {
   constructor() {
@@ -38,6 +39,7 @@ class RoleRegistry {
       new Lycan(),
       new Mayor(),
       new TheFool(),
+      new Cursed(),
     ];
 
     // Store instances by ID

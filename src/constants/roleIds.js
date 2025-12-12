@@ -14,4 +14,5 @@ export const ROLE_IDS = {
   LYCAN: 'lycan',
   MAYOR: 'mayor',
   THE_FOOL: 'the_fool',
+  CURSED: 'cursed',
 };

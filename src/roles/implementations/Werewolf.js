@@ -22,7 +22,7 @@ export class Werewolf extends Role {
 
   getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
     // Werewolves see other Werewolves
-    return allPlayers.filter((p) => p.role === 'werewolf' && p.id !== _currentPlayer.id);
+    return allPlayers.filter((p) => p.role === ROLE_IDS.WEREWOLF && p.id !== _currentPlayer.id);
   }
 
   getNightScreenConfig() {
@@ -106,15 +106,29 @@ export class Werewolf extends Role {
     return topTargets[Math.floor(Math.random() * topTargets.length)];
   }
 
-  applyNightOutcome({ nightActions, players, deaths }) {
+  applyNightOutcome({ nightActions, players, deaths, addLog }) {
     const targetId = Werewolf.calculateKillTarget(nightActions.werewolfVotes);
 
     if (targetId && targetId !== nightActions.doctorProtect) {
       const victim = findPlayerById(players, targetId);
       if (victim) {
-        victim.isAlive = false;
-        victim.killedBy = ROLE_IDS.WEREWOLF;
-        deaths.push(victim);
+        if (victim.role === ROLE_IDS.CURSED) {
+          // The Cursed is not killed, but is converted.
+          victim.role = ROLE_IDS.WEREWOLF;
+          victim.team = this.team;
+          victim.alignment = this.alignment;
+
+          // Optional: Add a log message to inform players of the conversion
+          if (addLog) {
+            addLog(
+              `${victim.name} was attacked by the werewolves, but survived! They have been turned into a werewolf.`
+            );
+          }
+        } else {
+          victim.isAlive = false;
+          victim.killedBy = ROLE_IDS.WEREWOLF;
+          deaths.push(victim);
+        }
       }
     }
   }
@@ -128,3 +142,4 @@ export class Werewolf extends Role {
     return target.isAlive && target.role !== ROLE_IDS.WEREWOLF;
   }
 }
+
