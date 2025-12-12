@@ -19,6 +19,7 @@ vi.mock('lucide-react', () => ({
   Sparkles: vi.fn(() => <svg data-testid="sparkles-icon" />),
   UserX: vi.fn(() => <svg data-testid="userx-icon" />), // Added UserX
   Zap: vi.fn(() => <svg data-testid="zap-icon" />), // Added Zap
+  UserRound: vi.fn(() => <svg data-testid="user-round-icon" />),
 }));
 
 // Define mock role objects

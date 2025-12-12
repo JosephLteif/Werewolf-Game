@@ -1,16 +1,16 @@
 import { Role } from '../Role';
 import { PHASES } from '../../constants/phases';
-import { Hammer } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
 
-export class Mason extends Role {
+export class Twins extends Role {
   constructor() {
     super();
-    this.id = 'mason';
-    this.name = 'Mason';
-    this.icon = Hammer;
-    this.description = 'You know who the other Masons are.';
+    this.id = 'twin';
+    this.name = 'Twins';
+    this.icon = Users;
+    this.description = 'You know who your twin is.';
     this.alignment = ALIGNMENTS.GOOD;
     this.team = Teams.VILLAGER;
     this.weight = 2;
@@ -18,23 +18,23 @@ export class Mason extends Role {
   }
 
   getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
-    // Masons see other Masons
-    return allPlayers.filter((p) => p.role === 'mason' && p.id !== _currentPlayer.id);
+    // Twins see other Twins
+    return allPlayers.filter((p) => p.role === 'twin' && p.id !== _currentPlayer.id);
   }
 
   isWakeUpPhase(phase) {
-    return phase === PHASES.NIGHT_MASON;
+    return phase === PHASES.NIGHT_TWIN;
   }
 
   getNightPhase() {
-    return PHASES.NIGHT_MASON;
+    return PHASES.NIGHT_TWIN;
   }
 
   processNightAction(gameState, player, action) {
-    if (action.type === 'masonReady') {
+    if (action.type === 'twinReady') {
       return {
-        masonsReady: {
-          ...(gameState.nightActions?.masonsReady || {}),
+        twinsReady: {
+          ...(gameState.nightActions?.twinsReady || {}),
           [player.id]: true,
         },
       };

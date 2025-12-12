@@ -1,5 +1,5 @@
 import { serverTimestamp } from 'firebase/database';
-import { TANNER_WIN_STRATEGIES } from '../constants/index.js';
+import { THE_FOOL_WIN_STRATEGIES } from '../constants/index.js';
 
 function defaultSettings() {
   return {
@@ -9,7 +9,7 @@ function defaultSettings() {
     showActiveRolesPanel: true,
     cupidCanChooseSelf: false,
     cupidFateOption: 'third_wheel',
-    tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,
+    tannerWinStrategy: THE_FOOL_WIN_STRATEGIES.CONTINUE_GAME,
     activeRoles: {
       cupid: false,
       doctor: false,

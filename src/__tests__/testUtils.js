@@ -18,6 +18,7 @@ export class MockGameState {
         ...this._state,
         ...updates,
       };
+      console.log('MockGameState updated, _state:', this._state);
 
       // Special handling for players array to map conversion
       if (Array.isArray(this._state.players)) {
@@ -92,11 +93,11 @@ export class MockGameState {
   get phaseEndTime() {
     return this._state.phaseEndTime;
   }
-  get doppelgangerPlayerId() {
-    return this._state.doppelgangerPlayerId;
+  get shapeshifterPlayerId() {
+    return this._state.nightActions?.shapeshifterPlayerId;
   }
-  get doppelgangerTarget() {
-    return this._state.doppelgangerTarget;
+  get shapeshifterTarget() {
+    return this._state.nightActions?.shapeshifterCopy;
   }
   get playerAwaitingDeathNote() {
     return this._state.playerAwaitingDeathNote;

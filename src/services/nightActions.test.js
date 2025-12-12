@@ -174,7 +174,7 @@ describe('Night Actions Service', () => {
       );
     });
 
-    it('starts with Werewolf if no Cupid and no Doppelganger', async () => {
+    it('starts with Werewolf if no Cupid and no Shapeshifter', async () => {
       const wolfPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.WEREWOLF };
       const playersWithWolf = [wolfPlayer, ..._mockPlayersArray.slice(1)];
 
@@ -188,19 +188,19 @@ describe('Night Actions Service', () => {
       );
     });
 
-    it('starts with Doppelganger if Doppelganger is present and no target yet', async () => {
-      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER };
-      const playersWithDoppelganger = [doppelgangerPlayer, ..._mockPlayersArray.slice(1)];
+    it('starts with Shapeshifter if Shapeshifter is present and no target yet', async () => {
+      const shapeshifterPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SHAPESHIFTER };
+      const playersWithShapeshifter = [shapeshifterPlayer, ..._mockPlayersArray.slice(1)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        doppelgangerTarget: null,
+        shapeshifterTarget: null,
       });
-      await nightActions.startNight(testGameState, playersWithDoppelganger, now);
+      await nightActions.startNight(testGameState, playersWithShapeshifter, now);
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          phase: PHASES.NIGHT_DOPPELGANGER,
+          phase: PHASES.NIGHT_SHAPESHIFTER,
         })
       );
     });
@@ -377,10 +377,10 @@ describe('Night Actions Service', () => {
       expect(updateCall.phase).toBe(PHASES.NIGHT_DOCTOR);
     });
 
-    it('advances from Werewolf to Minion if Minion exists', async () => {
+    it('advances from Werewolf to Fanatic if Fanatic exists', async () => {
       const wolfPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.WEREWOLF };
-      const minionPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.MINION };
-      const players = [wolfPlayer, minionPlayer, ..._mockPlayersArray.slice(2)];
+      const fanaticPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.FANATIC };
+      const players = [wolfPlayer, fanaticPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
@@ -558,10 +558,10 @@ describe('Night Actions Service', () => {
       );
     });
 
-    it('advances from Seer to Mason if Masons exist', async () => {
-      const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON };
-      const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
-      const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
+    it('advances from Seer to Twin if Twins exist', async () => {
+      const twinPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.TWIN };
+      const twinPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.TWIN };
+      const players = [twinPlayer1, twinPlayer2, ..._mockPlayersArray.slice(2)];
       const playersMap = {};
       players.forEach((p) => (playersMap[p.id] = p));
 
@@ -576,40 +576,40 @@ describe('Night Actions Service', () => {
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          phase: PHASES.NIGHT_MASON,
-          phaseEndTime: null, // Mason phase has no action, so timer cleared
+          phase: PHASES.NIGHT_TWIN,
+          phaseEndTime: null, // Twin phase has no action, so timer cleared
         })
       );
     });
 
-    it('advances immediately if only one mason is alive and clicks ready', async () => {
-      const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON, isAlive: true };
-      const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON, isAlive: false }; // Dead mason
-      const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
+    it('advances immediately if only one twin is alive and clicks ready', async () => {
+      const twinPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.TWIN, isAlive: true };
+      const twinPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.TWIN, isAlive: false }; // Dead twin
+      const players = [twinPlayer1, twinPlayer2, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_MASON,
-        nightActions: { masonsReady: {} },
+        phase: PHASES.NIGHT_TWIN,
+        nightActions: { twinsReady: {} },
       });
 
-      await nightActions.advanceNight(testGameState, players, now, 'masonReady', masonPlayer1.id);
+      await nightActions.advanceNight(testGameState, players, now, 'twinReady', twinPlayer1.id);
 
       const updateCall = testGameState.update.mock.calls[0][0];
-      expect(updateCall.phase).not.toBe(PHASES.NIGHT_MASON);
+      expect(updateCall.phase).not.toBe(PHASES.NIGHT_TWIN);
     });
 
-    it('resets masonsReady when entering mason phase', async () => {
-      const masonPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.MASON };
-      const masonPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.MASON };
-      const players = [masonPlayer1, masonPlayer2, ..._mockPlayersArray.slice(2)];
+    it('resets twinsReady when entering twin phase', async () => {
+      const twinPlayer1 = { ..._mockPlayersArray[0], role: ROLE_IDS.TWIN };
+      const twinPlayer2 = { ..._mockPlayersArray[1], role: ROLE_IDS.TWIN };
+      const players = [twinPlayer1, twinPlayer2, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_WEREWOLF, // Coming from a phase before Mason, now WEREWOLF
+        phase: PHASES.NIGHT_WEREWOLF, // Coming from a phase before Twin, now WEREWOLF
         nightActions: {
           seerCheck: null, // Clear seerCheck as the phase has passed
-          masonsReady: { someOldId: true }, // Old mason ready state
+          twinsReady: { someOldId: true }, // Old twin ready state
           werewolfVotes: { p3: 'p2' }, // Assume werewolf vote completed
         },
       });
@@ -618,46 +618,40 @@ describe('Night Actions Service', () => {
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          phase: PHASES.NIGHT_MASON,
+          phase: PHASES.NIGHT_TWIN,
           nightActions: expect.objectContaining({
-            masonsReady: {},
+            twinsReady: {},
           }),
         })
       );
     });
 
-    it('updates doppelgangerTarget if Doppelganger makes a choice', async () => {
-      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER };
+    it('updates shapeshifterTarget if Shapeshifter makes a choice', async () => {
+      const shapeshifterPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SHAPESHIFTER };
       const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER };
-      const players = [doppelgangerPlayer, targetPlayer, ..._mockPlayersArray.slice(2)];
+      const players = [shapeshifterPlayer, targetPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
-        doppelgangerTarget: null,
+        phase: PHASES.NIGHT_SHAPESHIFTER, // Start in Shapeshifter phase
       });
 
       await nightActions.advanceNight(
         testGameState,
         players,
         now,
-        'doppelgangerCopy',
+        ACTION_TYPES.SHAPESHIFTER_COPY,
         targetPlayer.id
       );
 
-      expect(testGameState.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nightActions: expect.objectContaining({
-            doppelgangerCopy: targetPlayer.id,
-            doppelgangerPlayerId: doppelgangerPlayer.id,
-          }),
-          phase: PHASES.NIGHT_WEREWOLF, // Assuming Werewolf is the next active phase
-          phaseEndTime: expect.any(Number),
-        })
-      );
+      // Now, directly assert on the state
+      expect(testGameState._state.nightActions.shapeshifterCopy).toBe(targetPlayer.id);
+      expect(testGameState._state.nightActions.shapeshifterPlayerId).toBe(shapeshifterPlayer.id);
+      expect(testGameState._state.phase).toBe(PHASES.NIGHT_WEREWOLF);
+      expect(testGameState._state.phaseEndTime).toEqual(expect.any(Number));
     });
 
-    it('skips NIGHT_DOPPELGANGER if no Doppelganger is present', async () => {
+    it('skips NIGHT_SHAPESHIFTER if no Shapeshifter is present', async () => {
       // Setup players: One Cupid, one Werewolf, one Doctor, two Villagers (5 players total)
       const players = [
         { id: 'p1', name: 'Player 1', isAlive: true, ready: false, role: ROLE_IDS.CUPID },
@@ -669,13 +663,13 @@ describe('Night Actions Service', () => {
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER,
-        doppelgangerTarget: null, // No target set, but no role exists
+        phase: PHASES.NIGHT_SHAPESHIFTER,
+        shapeshifterTarget: null, // No target set, but no role exists
       });
 
       await nightActions.advanceNight(testGameState, players, now);
 
-      // Expect to skip Doppelganger and Cupid (if no Cupid), landing on Werewolf (if present)
+      // Expect to skip Shapeshifter and Cupid (if no Cupid), landing on Werewolf (if present)
       // or directly to Doctor if Werewolf is also not present/skipped.
       // In _mockPlayersArray, there is a Werewolf.
       expect(testGameState.update).toHaveBeenCalledWith(
@@ -691,8 +685,8 @@ describe('Night Actions Service', () => {
       let playersWithoutCupid = _mockPlayersArray.filter((p) => p.role !== ROLE_IDS.CUPID);
       let testGameState1 = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
-        doppelgangerTarget: 'p1', // Assume Doppelganger action already done
+        phase: PHASES.NIGHT_SHAPESHIFTER, // Start in Shapeshifter phase
+        shapeshifterTarget: 'p1', // Assume Shapeshifter action already done
         lovers: [],
       });
 
@@ -713,8 +707,8 @@ describe('Night Actions Service', () => {
       ];
       let testGameState2 = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
-        doppelgangerTarget: 'p1', // Assume Doppelganger action already done
+        phase: PHASES.NIGHT_SHAPESHIFTER, // Start in Shapeshifter phase
+        shapeshifterTarget: 'p1', // Assume Shapeshifter action already done
         lovers: ['p1', 'p2'], // Lovers already set
       });
 
@@ -754,7 +748,7 @@ describe('Night Actions Service', () => {
     });
 
     it('skips multiple inactive phases to land on the next active phase', async () => {
-      // Setup players: only a Seer is present, no Doppelganger, Cupid, Werewolf, Minion, Sorcerer, Doctor, Mason, Vigilante
+      // Setup players: only a Seer is present, no Shapeshifter, Cupid, Werewolf, Minion, Sorcerer, Doctor, Mason, Vigilante
       const seerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SEER, isAlive: true };
       const playersWithOnlySeer = [
         seerPlayer,
@@ -764,8 +758,8 @@ describe('Night Actions Service', () => {
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER,
-        doppelgangerTarget: null, // No doppelganger anyway
+        phase: PHASES.NIGHT_SHAPESHIFTER,
+        shapeshifterTarget: null, // No shapeshifter anyway
         lovers: ['p1', 'p2'], // Lovers set to skip Cupid
       });
 
@@ -779,20 +773,20 @@ describe('Night Actions Service', () => {
       );
     });
 
-    it('advances to NIGHT_DOPPELGANGER when a Doppelganger is present and untargeted', async () => {
-      // Setup players with a Doppelganger, no Cupid to avoid complications
-      const doppelgangerPlayer = {
+    it('advances to NIGHT_SHAPESHIFTER when a Shapeshifter is present and untargeted', async () => {
+      // Setup players with a Shapeshifter, no Cupid to avoid complications
+      const shapeshifterPlayer = {
         ..._mockPlayersArray[0],
-        role: ROLE_IDS.DOPPELGANGER,
+        role: ROLE_IDS.SHAPESHIFTER,
         isAlive: true,
       };
       const werewolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const players = [doppelgangerPlayer, werewolfPlayer, ..._mockPlayersArray.slice(2)]; // Ensure no Cupid for now
+      const players = [shapeshifterPlayer, werewolfPlayer, ..._mockPlayersArray.slice(2)]; // Ensure no Cupid for now
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_INTRO, // Start before Doppelganger in the sequence
-        doppelgangerTarget: null, // Doppelganger has not yet chosen a target
+        phase: PHASES.NIGHT_INTRO, // Start before Shapeshifter in the sequence
+        shapeshifterTarget: null, // Shapeshifter has not yet chosen a target
         lovers: [], // Ensure Cupid is not skipped if it were to be next
       });
 
@@ -800,14 +794,14 @@ describe('Night Actions Service', () => {
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          phase: PHASES.NIGHT_DOPPELGANGER,
+          phase: PHASES.NIGHT_SHAPESHIFTER,
           phaseEndTime: expect.any(Number),
         })
       );
     });
 
     it('advances to NIGHT_CUPID when Cupid is present and lovers are not set', async () => {
-      // Setup players with a Cupid, and ensure Doppelganger is either absent or has made a choice
+      // Setup players with a Cupid, and ensure Shapeshifter is either absent or has made a choice
       const cupidPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.CUPID, isAlive: true };
       const werewolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
       const doctorPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.DOCTOR, isAlive: true };
@@ -815,8 +809,8 @@ describe('Night Actions Service', () => {
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
-        phase: PHASES.NIGHT_DOPPELGANGER, // Start in Doppelganger phase
-        doppelgangerTarget: 'someId', // Assume Doppelganger has made a choice
+        phase: PHASES.NIGHT_SHAPESHIFTER, // Start in Shapeshifter phase
+        shapeshifterTarget: 'someId', // Assume Shapeshifter has made a choice
         lovers: [], // Lovers are not yet set
       });
 
@@ -830,26 +824,28 @@ describe('Night Actions Service', () => {
       );
     });
 
-    it('skips NIGHT_DOPPELGANGER in subsequent nights if target is already chosen', async () => {
-      const doppelgangerPlayer = {
+    it('skips NIGHT_SHAPESHIFTER in subsequent nights if target is already chosen', async () => {
+      const shapeshifterPlayer = {
         ..._mockPlayersArray[0],
-        role: ROLE_IDS.DOPPELGANGER,
+        role: ROLE_IDS.SHAPESHIFTER,
         isAlive: true,
       };
       const werewolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF, isAlive: true };
-      const players = [doppelgangerPlayer, werewolfPlayer, ..._mockPlayersArray.slice(2)];
+      const players = [shapeshifterPlayer, werewolfPlayer, ..._mockPlayersArray.slice(2)];
 
       const testGameState = new MockGameState({
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_INTRO, // An early phase
-        doppelgangerTarget: 'someExistingTargetId', // Doppelganger has already made a choice
-        doppelgangerPlayerId: doppelgangerPlayer.id,
-        lovers: [], // To ensure Cupid would be the next if Doppelganger is skipped
+        nightActions: {
+          shapeshifterCopy: 'someExistingTargetId', // Shapeshifter has already made a choice
+          shapeshifterPlayerId: shapeshifterPlayer.id,
+        },
+        lovers: [], // To ensure Cupid would be the next if Shapeshifter is skipped
       });
 
       await nightActions.advanceNight(testGameState, players, now);
 
-      // Expect to skip Doppelganger and land on Werewolf (since Cupid is not present in this setup)
+      // Expect to skip Shapeshifter and land on Werewolf (since Cupid is not present in this setup)
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: PHASES.NIGHT_WEREWOLF,
@@ -928,12 +924,12 @@ describe('Night Actions Service', () => {
       expect(updateCall.phase).not.toBe(PHASES.NIGHT_DOCTOR);
     });
 
-    it('advances to Minion phase and sets phaseEndTime to null if minion exists', async () => {
-      const minionPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.MINION }; // p1 is minion
+    it('advances to Fanatic phase and sets phaseEndTime to null if fanatic exists', async () => {
+      const fanaticPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.FANATIC }; // p1 is fanatic
       const wolfPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.WEREWOLF }; // p2 is wolf
-      // Only include the one werewolf (wolfPlayer) and minion, and some other players.
-      const playersWithMinion = [
-        minionPlayer,
+      // Only include the one werewolf (wolfPlayer) and fanatic, and some other players.
+      const playersWithFanatic = [
+        fanaticPlayer,
         wolfPlayer,
         { ..._mockPlayersArray[3], isAlive: true, ready: false, role: ROLE_IDS.VILLAGER }, // p4
         { ..._mockPlayersArray[4], isAlive: true, ready: false, role: ROLE_IDS.VILLAGER }, // p5
@@ -945,12 +941,12 @@ describe('Night Actions Service', () => {
         nightActions: { werewolfVotes: { [wolfPlayer.id]: 'p3' } }, // All wolves voted
       });
 
-      await nightActions.advanceNight(testGameState, playersWithMinion, now);
+      await nightActions.advanceNight(testGameState, playersWithFanatic, now);
 
       expect(testGameState.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          phase: PHASES.NIGHT_MINION,
-          phaseEndTime: null, // Minion phase has no action, so timer cleared
+          phase: PHASES.NIGHT_FANATIC,
+          phaseEndTime: null, // Fanatic phase has no action, so timer cleared
         })
       );
     });
@@ -1030,12 +1026,12 @@ describe('Night Actions Service', () => {
       expect(updatedSorcerer.foundSeer).toBe(true);
     });
 
-    it('handles Doppelganger transformation when target dies during night', async () => {
-      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
+    it('handles Shapeshifter transformation when target dies during night', async () => {
+      const shapeshifterPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SHAPESHIFTER }; // p1 is Shapeshifter
       const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
       const werewolfPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.WEREWOLF }; // p3 is Werewolf
-      const playersWithDoppelgangerWerewolf = [
-        doppelgangerPlayer,
+      const playersWithShapeshifterWerewolf = [
+        shapeshifterPlayer,
         targetPlayer,
         werewolfPlayer,
         ..._mockPlayersArray.slice(3),
@@ -1045,8 +1041,8 @@ describe('Night Actions Service', () => {
         ...mockGameStateInstance._state,
         phase: PHASES.NIGHT_WEREWOLF, // Phase doesn't strictly matter for resolveNight, but good context
         nightActions: {
-          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
-          doppelgangerPlayerId: doppelgangerPlayer.id,
+          shapeshifterCopy: targetPlayer.id, // Shapeshifter chose p2
+          shapeshifterPlayerId: shapeshifterPlayer.id,
           werewolfVotes: { [werewolfPlayer.id]: targetPlayer.id }, // Werewolf kills p2
           doctorProtect: null,
         },
@@ -1054,7 +1050,7 @@ describe('Night Actions Service', () => {
 
       await nightActions.resolveNight(
         testGameState,
-        playersWithDoppelgangerWerewolf,
+        playersWithShapeshifterWerewolf,
         testGameState.nightActions
       );
 
@@ -1063,9 +1059,9 @@ describe('Night Actions Service', () => {
 
       const updatedPlayers = Object.values(updateCall.players);
 
-      const updatedDoppelganger = updatedPlayers.find((p) => p.id === doppelgangerPlayer.id);
-      expect(updatedDoppelganger).toBeDefined();
-      expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
+      const updatedShapeshifter = updatedPlayers.find((p) => p.id === shapeshifterPlayer.id);
+      expect(updatedShapeshifter).toBeDefined();
+      expect(updatedShapeshifter.role).toBe(ROLE_IDS.SEER); // Shapeshifter becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false); // Target is dead
       expect(testGameState.dayLog).toContain(
         `${targetPlayer.name} was torn apart by wolves during the night.`
@@ -1422,13 +1418,13 @@ describe('Night Actions Service', () => {
       expect(lover2.isAlive).toBe(false);
     });
 
-    it('handles Doppelganger transformation when target is shot by Hunter', async () => {
-      const doppelgangerPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
+    it('handles Shapeshifter transformation when target is shot by Hunter', async () => {
+      const shapeshifterPlayer = { ..._mockPlayersArray[0], role: ROLE_IDS.SHAPESHIFTER }; // p1 is Shapeshifter
       const targetPlayer = { ..._mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
       const hunterPlayer = { ..._mockPlayersArray[2], role: ROLE_IDS.HUNTER }; // p3 is Hunter
       const werewolfPlayer = { ..._mockPlayersArray[3], role: ROLE_IDS.WEREWOLF }; // p4 is Werewolf
-      const playersWithDoppelgangerHunter = [
-        doppelgangerPlayer,
+      const playersWithShapeshifterHunter = [
+        shapeshifterPlayer,
         targetPlayer,
         hunterPlayer,
         werewolfPlayer, // Add a werewolf to prevent early win condition
@@ -1441,15 +1437,15 @@ describe('Night Actions Service', () => {
         dayLog: [`${hunterPlayer.name} (Hunter) was voted out!`],
         lovers: [],
         nightActions: {
-          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
-          doppelgangerPlayerId: doppelgangerPlayer.id,
+          shapeshifterCopy: targetPlayer.id, // Shapeshifter chose p2
+          shapeshifterPlayerId: shapeshifterPlayer.id,
           doctorProtect: null,
         },
       });
 
       await nightActions.handleHunterShot(
         testGameState,
-        playersWithDoppelgangerHunter,
+        playersWithShapeshifterHunter,
         targetPlayer.id
       ); // Hunter shoots p2
 
@@ -1459,9 +1455,9 @@ describe('Night Actions Service', () => {
 
       const updatedPlayers = Object.values(updateCall.players);
 
-      const updatedDoppelganger = updatedPlayers.find((p) => p.id === doppelgangerPlayer.id);
-      expect(updatedDoppelganger).toBeDefined();
-      expect(updatedDoppelganger.role).toBe(ROLE_IDS.SEER); // Doppelganger becomes Seer
+      const updatedShapeshifter = updatedPlayers.find((p) => p.id === shapeshifterPlayer.id);
+      expect(updatedShapeshifter).toBeDefined();
+      expect(updatedShapeshifter.role).toBe(ROLE_IDS.SEER); // Shapeshifter becomes Seer
       expect(updatedPlayers.find((p) => p.id === targetPlayer.id).isAlive).toBe(false);
       expect(
         testGameState.dayLog.some((log) =>

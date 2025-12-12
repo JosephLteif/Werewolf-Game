@@ -9,12 +9,12 @@ export const VillageWinStrategy = {
     if (currentWinners.includes('LOVERS')) return null;
 
     // Calculate active wolves - check both role ID and team alignment
-    // This handles Doppelgangers who have transformed into werewolves
+    // This handles Shapeshifters who have transformed into werewolves
     const activeWolves = alivePlayers.filter((p) => {
       // Direct werewolf role
       if (p.role === ROLE_IDS.WEREWOLF) return true;
 
-      // Check if player has werewolf team through transformation (e.g., Doppelganger)
+      // Check if player has werewolf team through transformation (e.g., Shapeshifter)
       const role = roleRegistry.getRole(p.role);
       const playerTeam = p.team || role?.team;
       return playerTeam === TEAMS.WEREWOLF || playerTeam?.id === TEAMS.WEREWOLF;

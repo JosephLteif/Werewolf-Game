@@ -3,7 +3,7 @@ import { isPlayerWinner } from './winConditions';
 import { TEAMS, CUPID_FATES } from '../constants';
 import { ROLE_IDS } from '../constants/roleIds';
 import { roleRegistry } from '../roles/RoleRegistry';
-import { Minion } from '../roles/implementations/Minion';
+import { Fanatic } from '../roles/implementations/Fanatic';
 import { Sorcerer } from '../roles/implementations/Sorcerer';
 
 // Mock roleRegistry
@@ -24,16 +24,16 @@ describe('Role Win Conditions', () => {
       switch (roleId) {
         case ROLE_IDS.SORCERER:
           return new Sorcerer();
-        case ROLE_IDS.MINION:
-          return new Minion();
+        case ROLE_IDS.FANATIC:
+          return new Fanatic();
         default:
           return null;
       }
     });
   });
 
-  it('Minion wins with Werewolves', () => {
-    const player = { id: 'p1', role: ROLE_IDS.MINION };
+  it('Fanatic wins with Werewolves', () => {
+    const player = { id: 'p1', role: ROLE_IDS.FANATIC };
     const winners = [TEAMS.WEREWOLF];
     expect(isPlayerWinner(player, winners, [], mockGameSettings)).toBe(true);
   });

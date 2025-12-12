@@ -1,5 +1,4 @@
-import { CUPID_FATES } from '../constants/teams.js';
-import { TANNER_WIN_STRATEGIES } from '../constants/tannerWinStrategies.js';
+import { THE_FOOL_WIN_STRATEGIES, CUPID_FATES } from '../constants/index.js';
 import { roleRegistry } from '../roles/RoleRegistry.js';
 
 export class GameSettings {
@@ -7,7 +6,7 @@ export class GameSettings {
     this.wolfCount = settings.wolfCount || 1;
     this.actionWaitTime = settings.actionWaitTime || 30;
     this.cupidFateOption = settings.cupidFateOption || CUPID_FATES.SELFLESS;
-    this.tannerWinStrategy = settings.tannerWinStrategy || TANNER_WIN_STRATEGIES.CONTINUE_GAME;
+    this.tannerWinStrategy = settings.tannerWinStrategy || THE_FOOL_WIN_STRATEGIES.CONTINUE_GAME;
     this.activeRoles = settings.activeRoles || {};
 
     // Ensure defaults for activeRoles

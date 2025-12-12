@@ -6,13 +6,13 @@ import { Doctor } from './implementations/Doctor';
 import { Hunter } from './implementations/Hunter';
 import { Vigilante } from './implementations/Vigilante';
 import { Sorcerer } from './implementations/Sorcerer';
-import { Minion } from './implementations/Minion';
+import { Fanatic } from './implementations/Fanatic';
 import { Cupid } from './implementations/Cupid';
-import { Doppelganger } from './implementations/Doppelganger';
-import { Mason } from './implementations/Mason';
+import { Shapeshifter } from './implementations/Shapeshifter';
+import { Twins } from './implementations/Twins';
 import { Lycan } from './implementations/Lycan';
 import { Mayor } from './implementations/Mayor';
-import { Tanner } from './implementations/Tanner';
+import { TheFool } from './implementations/TheFool';
 
 class RoleRegistry {
   constructor() {
@@ -31,13 +31,13 @@ class RoleRegistry {
       new Hunter(),
       new Vigilante(),
       new Sorcerer(),
-      new Minion(),
+      new Fanatic(),
       new Cupid(),
-      new Doppelganger(),
-      new Mason(),
+      new Shapeshifter(),
+      new Twins(),
       new Lycan(),
       new Mayor(),
-      new Tanner(),
+      new TheFool(),
     ];
 
     // Store instances by ID

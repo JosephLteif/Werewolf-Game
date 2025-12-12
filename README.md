@@ -60,13 +60,13 @@ Each player is assigned a role with a unique ability.
 | **Hunter**       | Village (Good)  | If you are eliminated, you get to take one other player down with you.                            |
 | **Vigilante**    | Village (Good)  | You have one bullet. You can choose to shoot one person at night.                                 |
 | **Sorcerer**     | Werewolf (Evil) | You work for the werewolves. Each night, you can check if a player is the Seer.                   |
-| **Minion**       | Werewolf (Evil) | You know who the werewolves are, but they don't know you. You win with the werewolves.            |
+| **Fanatic**      | Werewolf (Evil) | You know who the werewolves are, but they don't know you. You win with the werewolves.            |
 | **Cupid**        | Neutral         | On the first night, you choose two players to be "lovers." If one dies, the other dies too.       |
-| **Doppelgänger** | Neutral         | On the first night, you choose another player. If that player dies, you take on their role.       |
-| **Mason**        | Village (Good)  | You know who the other Masons are. You are on the side of the village.                            |
+| **Shapeshifter** | Neutral         | On the first night, you choose another player. If that player dies, you take on their role.       |
+| **Twins**        | Village (Good)  | You know who your twin is. You are on the side of the village.                            |
 | **Lycan**        | Village (Good)  | You are a villager, but the Seer sees you as a werewolf.                                          |
 | **Mayor**        | Village (Good)  | Your vote counts twice during the day. This can be revealed publicly.                             |
-| **Tanner**       | Neutral         | You only win if you are voted out.                                                                |
+| **The Fool**     | Neutral         | You only win if you are voted out.                                                                |
 
 ## 🛠️ Setup
 

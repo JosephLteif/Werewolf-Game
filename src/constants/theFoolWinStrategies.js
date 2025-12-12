@@ -1,4 +1,4 @@
-export const TANNER_WIN_STRATEGIES = {
+export const THE_FOOL_WIN_STRATEGIES = {
   CONTINUE_GAME: 'CONTINUE_GAME',
   END_GAME: 'END_GAME',
 };

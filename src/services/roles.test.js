@@ -5,15 +5,15 @@ import { ROLE_IDS, PHASES } from '../constants';
 import { Role } from '../roles/Role'; // Import the base Role class
 import { Cupid } from '../roles/implementations/Cupid'; // Import Cupid role
 import { Doctor } from '../roles/implementations/Doctor'; // Import Doctor role
-import { Doppelganger } from '../roles/implementations/Doppelganger'; // Import Doppelganger role
+import { Shapeshifter } from '../roles/implementations/Shapeshifter'; // Import Shapeshifter role
 import { Hunter } from '../roles/implementations/Hunter';
 import { Lycan } from '../roles/implementations/Lycan';
-import { Mason } from '../roles/implementations/Mason'; // Import Mason role
+import { Twins } from '../roles/implementations/Twins'; // Import Twins role
 import { Mayor } from '../roles/implementations/Mayor';
-import { Minion } from '../roles/implementations/Minion'; // Import Minion role
+import { Fanatic } from '../roles/implementations/Fanatic'; // Import Fanatic role
 import { Seer } from '../roles/implementations/Seer'; // Import Seer role
 import { Sorcerer } from '../roles/implementations/Sorcerer'; // Import Sorcerer role
-import { Tanner } from '../roles/implementations/Tanner';
+import { TheFool } from '../roles/implementations/TheFool';
 import { Vigilante } from '../roles/implementations/Vigilante'; // Import Vigilante role
 import { Villager } from '../roles/implementations/Villager';
 import { Werewolf } from '../roles/implementations/Werewolf'; // Import Werewolf role
@@ -26,13 +26,13 @@ const allRoles = [
   new Hunter(),
   new Vigilante(),
   new Sorcerer(),
-  new Minion(),
+  new Fanatic(),
   new Cupid(),
-  new Doppelganger(),
-  new Mason(),
+  new Shapeshifter(),
+  new Twins(),
   new Lycan(),
   new Mayor(),
-  new Tanner(),
+  new TheFool(),
 ];
 
 vi.mock('../roles/RoleRegistry', () => ({
@@ -226,12 +226,13 @@ describe('Role Assignment and Readiness', () => {
             [ROLE_IDS.HUNTER]: true,
             [ROLE_IDS.VIGILANTE]: true,
             [ROLE_IDS.SORCERER]: true,
-            [ROLE_IDS.MINION]: true,
+            [ROLE_IDS.FANATIC]: true,
             [ROLE_IDS.LYCAN]: true,
             [ROLE_IDS.CUPID]: true,
-            [ROLE_IDS.DOPPELGANGER]: true,
+            [ROLE_IDS.SHAPESHIFTER]: true,
             [ROLE_IDS.MAYOR]: true,
-            [ROLE_IDS.MASON]: true, // Mason will add two roles
+            [ROLE_IDS.TWIN]: true, // Twin will add two roles
+            [ROLE_IDS.THE_FOOL]: true,
           },
           actionWaitTime: 30,
         },
@@ -257,12 +258,13 @@ describe('Role Assignment and Readiness', () => {
         [ROLE_IDS.HUNTER]: 1,
         [ROLE_IDS.VIGILANTE]: 1,
         [ROLE_IDS.SORCERER]: 1,
-        [ROLE_IDS.MINION]: 1,
+        [ROLE_IDS.FANATIC]: 1,
         [ROLE_IDS.LYCAN]: 1,
         [ROLE_IDS.CUPID]: 1,
-        [ROLE_IDS.DOPPELGANGER]: 1,
+        [ROLE_IDS.SHAPESHIFTER]: 1,
         [ROLE_IDS.MAYOR]: 1,
-        [ROLE_IDS.MASON]: 2,
+        [ROLE_IDS.TWIN]: 2,
+        [ROLE_IDS.THE_FOOL]: 1,
       };
 
       const totalSpecialRoles = Object.values(expectedRoleCounts).reduce(
@@ -459,110 +461,110 @@ describe('Role Assignment and Readiness', () => {
     });
   });
 
-  describe('Doppelganger Role', () => {
-    let doppelgangerRole;
+  describe('Shapeshifter Role', () => {
+    let shapeshifterRole;
     beforeEach(() => {
-      doppelgangerRole = new Doppelganger();
+      shapeshifterRole = new Shapeshifter();
     });
 
-    it('isWakeUpPhase returns true for NIGHT_DOPPELGANGER', () => {
-      expect(doppelgangerRole.isWakeUpPhase(PHASES.NIGHT_DOPPELGANGER)).toBe(true);
+    it('isWakeUpPhase returns true for NIGHT_SHAPESHIFTER', () => {
+      expect(shapeshifterRole.isWakeUpPhase(PHASES.NIGHT_SHAPESHIFTER)).toBe(true);
     });
 
     it('isWakeUpPhase returns false for other phases', () => {
-      expect(doppelgangerRole.isWakeUpPhase(PHASES.DAY)).toBe(false);
-      expect(doppelgangerRole.isWakeUpPhase(PHASES.NIGHT_WEREWOLF)).toBe(false);
+      expect(shapeshifterRole.isWakeUpPhase(PHASES.DAY)).toBe(false);
+      expect(shapeshifterRole.isWakeUpPhase(PHASES.NIGHT_WEREWOLF)).toBe(false);
     });
 
-    it('getNightPhase returns NIGHT_DOPPELGANGER', () => {
-      expect(doppelgangerRole.getNightPhase()).toBe(PHASES.NIGHT_DOPPELGANGER);
+    it('getNightPhase returns NIGHT_SHAPESHIFTER', () => {
+      expect(shapeshifterRole.getNightPhase()).toBe(PHASES.NIGHT_SHAPESHIFTER);
     });
 
-    it('processNightAction correctly records doppelgangerCopy target and player', () => {
+    it('processNightAction correctly records shapeshifterCopy target and player', () => {
       const gameState = { nightActions: {} };
-      const player = { id: 'doppel1', role: ROLE_IDS.DOPPELGANGER };
-      const action = { type: 'doppelgangerCopy', targetId: 'p1' };
-      const result = doppelgangerRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({ doppelgangerCopy: 'p1', doppelgangerPlayerId: 'doppel1' });
+      const player = { id: 'shapeshifter1', role: ROLE_IDS.SHAPESHIFTER };
+      const action = { type: 'shapeshifterCopy', targetId: 'p1' };
+      const result = shapeshifterRole.processNightAction(gameState, player, action);
+      expect(result).toEqual({ shapeshifterCopy: 'p1', shapeshifterPlayerId: 'shapeshifter1' });
     });
 
     it('processNightAction returns empty object for unknown action type', () => {
       const gameState = { nightActions: {} };
-      const player = { id: 'doppel1', role: ROLE_IDS.DOPPELGANGER };
+      const player = { id: 'shapeshifter1', role: ROLE_IDS.SHAPESHIFTER };
       const action = { type: 'unknownAction' };
-      const result = doppelgangerRole.processNightAction(gameState, player, action);
+      const result = shapeshifterRole.processNightAction(gameState, player, action);
       expect(result).toEqual({});
     });
   });
 
-  describe('Mason Role', () => {
-    let masonRole;
+  describe('Twins Role', () => {
+    let twinRole;
     beforeEach(() => {
-      masonRole = new Mason();
+      twinRole = new Twins();
     });
 
-    it('isWakeUpPhase returns true for NIGHT_MASON', () => {
-      expect(masonRole.isWakeUpPhase(PHASES.NIGHT_MASON)).toBe(true);
+    it('isWakeUpPhase returns true for NIGHT_TWIN', () => {
+      expect(twinRole.isWakeUpPhase(PHASES.NIGHT_TWIN)).toBe(true);
     });
 
     it('isWakeUpPhase returns false for other phases', () => {
-      expect(masonRole.isWakeUpPhase(PHASES.DAY)).toBe(false);
-      expect(masonRole.isWakeUpPhase(PHASES.NIGHT_WEREWOLF)).toBe(false);
+      expect(twinRole.isWakeUpPhase(PHASES.DAY)).toBe(false);
+      expect(twinRole.isWakeUpPhase(PHASES.NIGHT_WEREWOLF)).toBe(false);
     });
 
-    it('getNightPhase returns NIGHT_MASON', () => {
-      expect(masonRole.getNightPhase()).toBe(PHASES.NIGHT_MASON);
+    it('getNightPhase returns NIGHT_TWIN', () => {
+      expect(twinRole.getNightPhase()).toBe(PHASES.NIGHT_TWIN);
     });
 
-    it('processNightAction correctly records masonReady status', () => {
-      const gameState = { nightActions: { masonsReady: {} } };
-      const player = { id: 'mason1', role: ROLE_IDS.MASON };
-      const action = { type: 'masonReady' };
-      const result = masonRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({ masonsReady: { mason1: true } });
+    it('processNightAction correctly records twinReady status', () => {
+      const gameState = { nightActions: { twinsReady: {} } };
+      const player = { id: 'twin1', role: ROLE_IDS.TWIN };
+      const action = { type: 'twinReady' };
+      const result = twinRole.processNightAction(gameState, player, action);
+      expect(result).toEqual({ twinsReady: { twin1: true } });
     });
 
-    it('processNightAction merges masonReady status with existing ones', () => {
-      const gameState = { nightActions: { masonsReady: { mason2: true } } };
-      const player = { id: 'mason1', role: ROLE_IDS.MASON };
-      const action = { type: 'masonReady' };
-      const result = masonRole.processNightAction(gameState, player, action);
-      expect(result).toEqual({ masonsReady: { mason2: true, mason1: true } });
+    it('processNightAction merges twinReady status with existing ones', () => {
+      const gameState = { nightActions: { twinsReady: { twin2: true } } };
+      const player = { id: 'twin1', role: ROLE_IDS.TWIN };
+      const action = { type: 'twinReady' };
+      const result = twinRole.processNightAction(gameState, player, action);
+      expect(result).toEqual({ twinsReady: { twin2: true, twin1: true } });
     });
 
     it('processNightAction returns empty object for unknown action type', () => {
       const gameState = { nightActions: {} };
-      const player = { id: 'mason1', role: ROLE_IDS.MASON };
+      const player = { id: 'twin1', role: ROLE_IDS.TWIN };
       const action = { type: 'unknownAction' };
-      const result = masonRole.processNightAction(gameState, player, action);
+      const result = twinRole.processNightAction(gameState, player, action);
       expect(result).toEqual({});
     });
   });
 
-  describe('Minion Role', () => {
-    let minionRole;
+  describe('Fanatic Role', () => {
+    let fanaticRole;
     beforeEach(() => {
-      minionRole = new Minion();
+      fanaticRole = new Fanatic();
     });
 
-    it('isWakeUpPhase returns true for NIGHT_MINION', () => {
-      expect(minionRole.isWakeUpPhase(PHASES.NIGHT_MINION)).toBe(true);
+    it('isWakeUpPhase returns true for NIGHT_FANATIC', () => {
+      expect(fanaticRole.isWakeUpPhase(PHASES.NIGHT_FANATIC)).toBe(true);
     });
 
     it('isWakeUpPhase returns false for other phases', () => {
-      expect(minionRole.isWakeUpPhase(PHASES.DAY)).toBe(false);
-      expect(minionRole.isWakeUpPhase(PHASES.NIGHT_WEREWOLF)).toBe(false);
+      expect(fanaticRole.isWakeUpPhase(PHASES.DAY)).toBe(false);
+      expect(fanaticRole.isWakeUpPhase(PHASES.NIGHT_WEREWOLF)).toBe(false);
     });
 
-    it('getNightPhase returns NIGHT_MINION', () => {
-      expect(minionRole.getNightPhase()).toBe(PHASES.NIGHT_MINION);
+    it('getNightPhase returns NIGHT_FANATIC', () => {
+      expect(fanaticRole.getNightPhase()).toBe(PHASES.NIGHT_FANATIC);
     });
 
     it('processNightAction returns empty object', () => {
       const gameState = { nightActions: {} };
-      const player = { id: 'minion1', role: ROLE_IDS.MINION };
-      const action = { type: 'anyAction' }; // Minion doesn't process night actions
-      const result = minionRole.processNightAction(gameState, player, action);
+      const player = { id: 'fanatic1', role: ROLE_IDS.FANATIC };
+      const action = { type: 'anyAction' }; // Fanatic doesn't process night actions
+      const result = fanaticRole.processNightAction(gameState, player, action);
       expect(result).toEqual({});
     });
   });

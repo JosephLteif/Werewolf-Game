@@ -4,11 +4,11 @@ import { Ghost } from 'lucide-react';
 import { Teams } from '../../models/Team';
 import { ALIGNMENTS } from '../../constants/alignments';
 
-export class Minion extends Role {
+export class Fanatic extends Role {
   constructor() {
     super();
-    this.id = 'minion';
-    this.name = 'Minion';
+    this.id = 'fanatic';
+    this.name = 'Fanatic';
     this.icon = Ghost;
     this.description = "You know the wolves. They don't know you.";
     this.alignment = ALIGNMENTS.EVIL;
@@ -18,17 +18,17 @@ export class Minion extends Role {
   }
 
   getVisibleTeammates(_currentPlayer, allPlayers, _gameState) {
-    // Minions see Werewolves
+    // Fanatics see Werewolves
     return allPlayers.filter((p) => p.role === 'werewolf');
   }
 
   isWakeUpPhase(phase) {
-    return phase === PHASES.NIGHT_MINION;
+    return phase === PHASES.NIGHT_FANATIC;
   }
 
   getNightPhase() {
-    return PHASES.NIGHT_MINION;
+    return PHASES.NIGHT_FANATIC;
   }
 
-  // Minion just observes, no action to process
+  // Fanatic just observes, no action to process
 }

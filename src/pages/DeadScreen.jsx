@@ -24,7 +24,7 @@ export default function DeadScreen({
     WEREWOLVES: { bg: 'from-red-600 to-rose-600', text: 'text-red-400', alignment: 'evil' },
     LOVERS: { bg: 'from-pink-600 to-rose-600', text: 'text-pink-400', alignment: 'neutral' },
     CUPID: { bg: 'from-pink-500 to-red-500', text: 'text-pink-300', alignment: 'neutral' },
-    TANNER: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add Tanner
+    THE_FOOL: { bg: 'from-amber-600 to-orange-600', text: 'text-amber-400', alignment: 'neutral' }, // Add The Fool
     MULTIPLE: {
       bg: 'from-purple-600 to-indigo-600',
       text: 'text-purple-300',
@@ -118,8 +118,8 @@ export default function DeadScreen({
                       <span className="font-bold text-sm">{p.name}</span>
                       <span className="text-xs text-slate-500">
                         (
-                        {p.role === ROLE_IDS.TANNER && winners.includes(p.id)
-                          ? 'Tanner'
+                        {p.role === ROLE_IDS.THE_FOOL && winners.includes(p.id)
+                          ? 'The Fool'
                           : roleRegistry.getRole(p.role)?.name || p.role}
                         )
                       </span>
@@ -144,8 +144,8 @@ export default function DeadScreen({
                       <span className="font-bold text-sm">{p.name}</span>
                       <span className="text-xs text-slate-500">
                         (
-                        {p.role === ROLE_IDS.TANNER && winners.includes(p.id)
-                          ? 'Tanner'
+                        {p.role === ROLE_IDS.THE_FOOL && winners.includes(p.id)
+                          ? 'The Fool'
                           : roleRegistry.getRole(p.role)?.name || p.role}
                         )
                       </span>

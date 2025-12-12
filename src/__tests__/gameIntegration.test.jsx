@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TEAMS, CUPID_FATES, PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
+import { TEAMS, CUPID_FATES, PHASES, ROLE_IDS, THE_FOOL_WIN_STRATEGIES } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { findPlayerById } from '../utils/playersUtils';
 import { roleRegistry } from '../roles/RoleRegistry.js';
@@ -51,8 +51,8 @@ const createInitialGameState = (playersArray, settings = {}, initialPhase = PHAS
       vigilanteTarget: null,
       sorcererCheck: null,
       cupidLinks: [],
-      doppelgangerCopy: null,
-      masonsReady: {},
+      shapeshifterCopy: null,
+      twinsReady: {},
     },
     votes: {},
     lockedVotes: [],
@@ -675,54 +675,54 @@ describe('Game Integration Tests', () => {
       expect(gameState._state.dayLog.some((log) => log.includes('was lynched'))).toBe(true);
     });
 
-    it('Scenario: Tanner Win Strategy - END_GAME', async () => {
-      const tanner = createPlayer('t1', ROLE_IDS.TANNER);
+    it('Scenario: The Fool Win Strategy - END_GAME', async () => {
+      const theFool = createPlayer('t1', ROLE_IDS.THE_FOOL);
       const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
       const villager = createPlayer('v1', ROLE_IDS.VILLAGER);
 
       gameState = createInitialGameState(
-        [tanner, wolf, villager],
+        [theFool, wolf, villager],
         {
           wolfCount: 1,
-          tannerWinStrategy: TANNER_WIN_STRATEGIES.END_GAME,
+          theFoolWinStrategy: THE_FOOL_WIN_STRATEGIES.END_GAME,
         },
         PHASES.DAY_VOTING
       );
       gameState._state.votes = {
-        [wolf.id]: tanner.id,
-        [villager.id]: tanner.id,
-        [tanner.id]: wolf.id,
+        [wolf.id]: theFool.id,
+        [villager.id]: theFool.id,
+        [theFool.id]: wolf.id,
       };
-      gameState._state.lockedVotes = [wolf.id, villager.id, tanner.id];
+      gameState._state.lockedVotes = [wolf.id, villager.id, theFool.id];
 
       await resolveDayVoting(gameState, gameState.players, gameState._state.lockedVotes);
 
       expect(gameState.update).toHaveBeenCalled();
       expect(gameState._state.phase).toBe(PHASES.GAME_OVER);
-      expect(gameState._state.winners).toContain('TANNER');
+      expect(gameState._state.winners).toContain('THE_FOOL');
     });
 
-    it('Scenario: Tanner Win Strategy - CONTINUE_GAME', async () => {
-      const tanner = createPlayer('t1', ROLE_IDS.TANNER);
+    it('Scenario: The Fool Win Strategy - CONTINUE_GAME', async () => {
+      const theFool = createPlayer('t1', ROLE_IDS.THE_FOOL);
       const wolf = createPlayer('w1', ROLE_IDS.WEREWOLF);
       const villager1 = createPlayer('v1', ROLE_IDS.VILLAGER);
       const villager2 = createPlayer('v2', ROLE_IDS.VILLAGER);
 
       gameState = createInitialGameState(
-        [tanner, wolf, villager1, villager2],
+        [theFool, wolf, villager1, villager2],
         {
           wolfCount: 1,
-          tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,
+          theFoolWinStrategy: THE_FOOL_WIN_STRATEGIES.CONTINUE_GAME,
         },
         PHASES.DAY_VOTING
       );
       gameState._state.votes = {
-        [wolf.id]: tanner.id,
-        [villager1.id]: tanner.id,
-        [villager2.id]: tanner.id,
-        [tanner.id]: wolf.id,
+        [wolf.id]: theFool.id,
+        [villager1.id]: theFool.id,
+        [villager2.id]: theFool.id,
+        [theFool.id]: wolf.id,
       };
-      gameState._state.lockedVotes = [wolf.id, villager1.id, villager2.id, tanner.id];
+      gameState._state.lockedVotes = [wolf.id, villager1.id, villager2.id, theFool.id];
 
       await resolveDayVoting(gameState, gameState.players, gameState._state.lockedVotes);
 
@@ -730,13 +730,13 @@ describe('Game Integration Tests', () => {
       // Game should NOT be over (still 1 wolf vs 2 villagers)
       expect(gameState._state.phase).not.toBe(PHASES.GAME_OVER);
       expect(gameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
-      expect(gameState._state.playerAwaitingDeathNote).toBe(tanner.id);
+      expect(gameState._state.playerAwaitingDeathNote).toBe(theFool.id);
       expect(gameState._state.nextPhaseAfterDeathNote).toBe(PHASES.NIGHT_INTRO);
-      // Tanner should be in winners list
-      expect(gameState._state.winners).toContain('TANNER');
-      // Tanner should be dead
-      const updatedTanner = findPlayerById(gameState.players, tanner.id);
-      expect(updatedTanner.isAlive).toBe(false);
+      // The Fool should be in winners list
+      expect(gameState._state.winners).toContain('THE_FOOL');
+      // The Fool should be dead
+      const updatedTheFool = findPlayerById(gameState.players, theFool.id);
+      expect(updatedTheFool.isAlive).toBe(false);
     });
   });
 

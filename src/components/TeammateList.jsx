@@ -18,8 +18,8 @@ export default function TeammateList({ players, myPlayer, gameState }) {
   // Title Logic - Keeping it simple based on role or fallback
   let title = 'Allies';
   if (myPlayer.role === ROLE_IDS.WEREWOLF) title = 'Pack & Allies';
-  else if (myPlayer.role === ROLE_IDS.MINION) title = 'My Masters';
-  else if (myPlayer.role === ROLE_IDS.MASON) title = 'Fellow Masons';
+  else if (myPlayer.role === ROLE_IDS.FANATIC) title = 'My Leader';
+  else if (myPlayer.role === ROLE_IDS.TWIN) title = 'Your Twin';
   else if (myPlayer.role === ROLE_IDS.CUPID) title = 'Lovers'; // Cupid Logic handling below
 
   // 4. Cupid Logic (See Lovers) - Keeping this here as Cupid might not have getVisibleTeammates implemented perfectly or as a safeguard
@@ -86,9 +86,8 @@ export default function TeammateList({ players, myPlayer, gameState }) {
                         {!p.isAlive
                           ? '💀 Dead'
                           : p.role === ROLE_IDS.MINION
-                            ? 'Minion'
-                            : p.role === ROLE_IDS.WEREWOLF
-                              ? 'Werewolf'
+                                                      ? 'Fanatic'
+                                                      : p.role === ROLE_IDS.WEREWOLF                              ? 'Werewolf'
                               : 'Ally'}
                       </div>
                     </div>

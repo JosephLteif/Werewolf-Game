@@ -37,8 +37,8 @@ function buildRoleDeck(playerCount, activeRolesSettings, wolfCount) {
     }
 
     if (activeRolesSettings[role.id]) {
-      if (role.id === ROLE_IDS.MASON) {
-        deck.push(ROLE_IDS.MASON, ROLE_IDS.MASON); // Masons come in pairs
+      if (role.id === ROLE_IDS.TWIN) {
+        deck.push(ROLE_IDS.TWIN, ROLE_IDS.TWIN); // Twins come in pairs
       } else {
         deck.push(role.id);
       }
@@ -94,10 +94,10 @@ export function assignRoles(players, settings) {
 
 export function determineFirstNightPhase(players, gameState) {
   if (
-    players.some((p) => p.role === 'doppelganger' && p.isAlive) &&
-    !gameState.doppelgangerPlayerId
+    players.some((p) => p.role === 'shapeshifter' && p.isAlive) &&
+    !gameState.shapeshifterPlayerId
   ) {
-    return PHASES.NIGHT_DOPPELGANGER;
+    return PHASES.NIGHT_SHAPESHIFTER;
   } else if (
     players.some((p) => p.role === 'cupid' && p.isAlive) &&
     (!gameState.lovers || gameState.lovers.length === 0)
@@ -108,32 +108,32 @@ export function determineFirstNightPhase(players, gameState) {
   }
 }
 
-export function handleDoppelgangerTransformation(
+export function handleShapeshifterTransformation(
   players,
-  doppelgangerPlayerId,
-  doppelgangerTargetId,
+  shapeshifterPlayerId,
+  shapeshifterTargetId,
   victimId
 ) {
-  // If the chosen target is not the victim, or no target/victim, or doppelganger has no target, no transformation
+  // If the chosen target is not the victim, or no target/victim, or shapeshifter has no target, no transformation
   if (
-    !doppelgangerPlayerId ||
-    !doppelgangerTargetId ||
+    !shapeshifterPlayerId ||
+    !shapeshifterTargetId ||
     !victimId ||
-    doppelgangerTargetId !== victimId
+    shapeshifterTargetId !== victimId
   ) {
     return players;
   }
 
-  const doppelganger = players.find((p) => p.id === doppelgangerPlayerId && p.isAlive);
-  const chosenTarget = players.find((p) => p.id === doppelgangerTargetId);
+  const shapeshifter = players.find((p) => p.id === shapeshifterPlayerId && p.isAlive);
+  const chosenTarget = players.find((p) => p.id === shapeshifterTargetId);
 
-  if (doppelganger && chosenTarget) {
+  if (shapeshifter && chosenTarget) {
     // Get the role info to copy team and alignment
     const newRole = roleRegistry.getRole(chosenTarget.role);
 
-    // Return a new players array with the doppelganger's role, team, and alignment updated
+    // Return a new players array with the shapeshifter's role, team, and alignment updated
     return players.map((p) => {
-      if (p.id === doppelganger.id) {
+      if (p.id === shapeshifter.id) {
         return {
           ...p,
           role: chosenTarget.role,

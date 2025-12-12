@@ -3,7 +3,7 @@ import { Ghost } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { ACTION_TYPES } from '../constants/actions';
 
-export default function MinionNightActionScreen({ players, advanceNightPhase }) {
+export default function FanaticNightActionScreen({ players, advanceNightPhase }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-950 via-rose-950 to-slate-950 text-slate-100 p-6 flex flex-col items-center justify-center text-center relative">
       <div className="max-w-md w-full">

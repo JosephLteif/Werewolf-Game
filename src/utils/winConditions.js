@@ -6,11 +6,11 @@ import { ROLE_IDS } from '../constants/roleIds';
  * Checks if the game has ended and determines the winner
  * Returns the winning team(s) or null if game continues
  */
-import { TannerWinStrategy } from '../strategies/winConditions/TannerWinStrategy';
+import { TheFoolWinStrategy } from '../strategies/winConditions/TheFoolWinStrategy';
 import { LoversWinStrategy } from '../strategies/winConditions/LoversWinStrategy';
 import { Teams } from '../models/Team';
 
-const STRATEGIES = [TannerWinStrategy, LoversWinStrategy].sort((a, b) => a.priority - b.priority);
+const STRATEGIES = [TheFoolWinStrategy, LoversWinStrategy].sort((a, b) => a.priority - b.priority);
 
 /**
  * Checks if the game has ended and determines the winner
@@ -136,6 +136,7 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
     VILLAGERS: TEAMS.VILLAGE,
     WEREWOLVES: TEAMS.WEREWOLF,
     LOVERS: TEAMS.LOVERS,
+    THE_FOOL: TEAMS.NEUTRAL,
   };
 
   // Normalize winners to include both display strings and team IDs
@@ -144,7 +145,7 @@ export function isPlayerWinner(player, winners, lovers, gameSettings) {
     return teamId ? [w, teamId] : [w];
   });
 
-  // Direct win by player ID (e.g., for Tanner)
+  // Direct win by player ID (e.g., for The Fool)
   if (normalizedWinners.includes(player.id)) return true;
 
   // The "Lovers" win is a global condition that can override normal team alignment.

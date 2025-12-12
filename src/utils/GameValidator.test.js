@@ -22,7 +22,7 @@ describe('GameValidator', () => {
     const players = [{}, {}, {}, {}]; // 4 players
     const settings = {
       wolfCount: 2,
-      activeRoles: { mason: true, seer: true },
+      activeRoles: { twin: true, seer: true },
     };
     // Slots: 2 wolves + 2 masons + 1 seer = 5 slots
     const result = GameValidator.validate(players, settings);
@@ -34,10 +34,10 @@ describe('GameValidator', () => {
     expect(result.errors.length).toBe(2); // Ensure exactly two errors
   });
 
-  it('should count mason as 2 slots', () => {
+  it('should count twin as 2 slots', () => {
     const players = [{}, {}, {}, {}, {}]; // 5 players
-    const settings = { wolfCount: 1, specialRoles: { mason: true } };
-    // Slots: 1 wolf + 2 masons = 3 slots. 5 players available. Valid.
+    const settings = { wolfCount: 1, specialRoles: { twin: true } };
+    // Slots: 1 wolf + 2 twins = 3 slots. 5 players available. Valid.
     const result = GameValidator.validate(players, settings);
     expect(result.isValid).toBe(true);
   });

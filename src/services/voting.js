@@ -1,7 +1,7 @@
 import { PHASES, ROLE_IDS } from '../constants';
 import { checkWinCondition } from '../utils/winConditions';
 import { findPlayerById } from '../utils/playersUtils';
-import { handleDoppelgangerTransformation } from '../utils/gameLogic';
+import { handleShapeshifterTransformation } from '../utils/gameLogic';
 import { roleRegistry } from '../roles/RoleRegistry';
 
 /**
@@ -161,10 +161,10 @@ export const resolveDayVoting = async (gameState, players) => {
     return;
   }
 
-  newPlayers = handleDoppelgangerTransformation(
+  newPlayers = handleShapeshifterTransformation(
     newPlayers,
-    gameState.doppelgangerPlayerId || gameState.nightActions?.doppelgangerPlayerId,
-    gameState.nightActions?.doppelgangerCopy,
+    gameState.shapeshifterPlayerId || gameState.nightActions?.shapeshifterPlayerId,
+    gameState.nightActions?.shapeshifterCopy,
     victim.id
   );
 

@@ -21,6 +21,7 @@ vi.mock('lucide-react', () => ({
   Sparkles: vi.fn(() => <svg data-testid="sparkles-icon" />),
   UserX: vi.fn(() => <svg data-testid="userx-icon" />),
   Zap: vi.fn(() => <svg data-testid="zap-icon" />),
+  UserRound: vi.fn(() => <svg data-testid="user-round-icon" />),
 }));
 
 // Mock roleRegistry (simplified for this component's needs)
@@ -29,8 +30,8 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
   // Import actual role implementations for mocking
   const { Villager } = await import('../../roles/implementations/Villager');
   const { Werewolf } = await import('../../roles/implementations/Werewolf');
-  const { Minion } = await import('../../roles/implementations/Minion');
-  const { Mason } = await import('../../roles/implementations/Mason');
+  const { Fanatic } = await import('../../roles/implementations/Fanatic');
+  const { Twins } = await import('../../roles/implementations/Twins');
   const { Cupid } = await import('../../roles/implementations/Cupid');
   const { Role } = await import('../../roles/Role'); // Base Role
 
@@ -42,10 +43,10 @@ vi.mock('../../roles/RoleRegistry', async (importOriginal) => {
         switch (roleId) {
           case ROLE_IDS.WEREWOLF:
             return new Werewolf();
-          case ROLE_IDS.MINION:
-            return new Minion();
-          case ROLE_IDS.MASON:
-            return new Mason();
+          case ROLE_IDS.FANATIC:
+            return new Fanatic();
+          case ROLE_IDS.TWIN:
+            return new Twins();
           case ROLE_IDS.CUPID:
             return new Cupid();
           case ROLE_IDS.VILLAGER:
@@ -75,9 +76,9 @@ describe('TeammateList', () => {
     { id: 'p1', name: 'Alice', role: ROLE_IDS.VILLAGER, avatarColor: '#111', isAlive: true },
     { id: 'p2', name: 'Bob', role: ROLE_IDS.WEREWOLF, avatarColor: '#222', isAlive: true },
     { id: 'p3', name: 'Charlie', role: ROLE_IDS.WEREWOLF, avatarColor: '#333', isAlive: true },
-    { id: 'p4', name: 'David', role: ROLE_IDS.MINION, avatarColor: '#444', isAlive: true },
-    { id: 'p5', name: 'Eve', role: ROLE_IDS.MASON, avatarColor: '#555', isAlive: true },
-    { id: 'p6', name: 'Frank', role: ROLE_IDS.MASON, avatarColor: '#666', isAlive: true },
+    { id: 'p4', name: 'David', role: ROLE_IDS.FANATIC, avatarColor: '#444', isAlive: true },
+    { id: 'p5', name: 'Eve', role: ROLE_IDS.TWIN, avatarColor: '#555', isAlive: true },
+    { id: 'p6', name: 'Frank', role: ROLE_IDS.TWIN, avatarColor: '#666', isAlive: true },
     { id: 'p7', name: 'Grace', role: ROLE_IDS.CUPID, avatarColor: '#777', isAlive: true },
     { id: 'p8', name: 'Heidi', role: ROLE_IDS.VILLAGER, avatarColor: '#888', isAlive: true },
     { id: 'p9', name: 'Ivan', role: 'ALLY_ROLE', avatarColor: '#999', isAlive: true }, // For 'Ally' branch
@@ -110,26 +111,26 @@ describe('TeammateList', () => {
     expect(screen.queryByText('Alice')).not.toBeInTheDocument(); // Villager
   });
 
-  it('renders for a Minion, showing Werewolves', () => {
-    const myPlayer = { ...commonPlayers[3], role: ROLE_IDS.MINION }; // David the Minion
+  it('renders for a Fanatic, showing Werewolves', () => {
+    const myPlayer = { ...commonPlayers[3], role: ROLE_IDS.FANATIC }; // David the Fanatic
     const gameState = { lovers: [] };
     render(<TeammateList players={commonPlayers} myPlayer={myPlayer} gameState={gameState} />);
 
     // Content should be visible by default
-    expect(screen.getByText('My Masters')).toBeInTheDocument();
+    expect(screen.getByText('My Leader')).toBeInTheDocument();
     expect(screen.getByText('Bob')).toBeInTheDocument(); // Werewolf
     expect(screen.getByText('Charlie')).toBeInTheDocument(); // Werewolf
     expect(screen.queryByText('Alice')).not.toBeInTheDocument(); // Villager
   });
 
-  it('renders for a Mason, showing other Masons', () => {
-    const myPlayer = { ...commonPlayers[4], role: ROLE_IDS.MASON }; // Eve the Mason
+  it('renders for a Twin, showing their other Twin', () => {
+    const myPlayer = { ...commonPlayers[4], role: ROLE_IDS.TWIN }; // Eve the Twin
     const gameState = { lovers: [] };
     render(<TeammateList players={commonPlayers} myPlayer={myPlayer} gameState={gameState} />);
 
     // Content should be visible by default
-    expect(screen.getByText('Fellow Masons')).toBeInTheDocument();
-    expect(screen.getByText('Frank')).toBeInTheDocument(); // Other Mason
+    expect(screen.getByText('Your Twin')).toBeInTheDocument();
+    expect(screen.getByText('Frank')).toBeInTheDocument(); // Other Twin
     expect(screen.queryByText('Alice')).not.toBeInTheDocument(); // Villager
   });
 
@@ -211,8 +212,8 @@ describe('TeammateList', () => {
   });
 
   it('displays "Ally" for a relevant player who is not Minion/Werewolf (covers line 95)', () => {
-    const myPlayer = { ...commonPlayers[4], role: ROLE_IDS.MASON }; // Eve the Mason
-    const relevantAlly = { ...commonPlayers[5], role: ROLE_IDS.MASON, isAlive: true }; // Frank the Mason
+    const myPlayer = { ...commonPlayers[4], role: ROLE_IDS.TWIN }; // Eve the Twin
+    const relevantAlly = { ...commonPlayers[5], role: ROLE_IDS.TWIN, isAlive: true }; // Frank the Twin
     const players = [
       myPlayer,
       relevantAlly,
@@ -222,9 +223,9 @@ describe('TeammateList', () => {
 
     render(<TeammateList players={players} myPlayer={myPlayer} gameState={gameState} />);
 
-    expect(screen.getByText('Fellow Masons')).toBeInTheDocument();
+    expect(screen.getByText('Your Twin')).toBeInTheDocument();
     expect(screen.getByText('Frank')).toBeInTheDocument();
-    // For Frank (Mason), it should display 'Ally' as his role is not Minion/Werewolf
+    // For Frank (Twin), it should display 'Ally' as his role is not Fanatic/Werewolf
     expect(screen.getByText('Ally')).toBeInTheDocument();
   });
 

@@ -58,7 +58,7 @@ const checkSorcererSuccess = (newPlayers, sorcererCheck) => {
   }
 };
 
-const getNextNightPhaseInternal = (currentPhase, players, gameState, _nightActions) => {
+const getNextNightPhaseInternal = (currentPhase, players, gameState, effectiveNightActions) => {
   const alivePlayers = players.filter((p) => p.isAlive);
   const sequence = determineNightSequence(alivePlayers);
 
@@ -70,9 +70,9 @@ const getNextNightPhaseInternal = (currentPhase, players, gameState, _nightActio
     const p = sequence[i]; // p is a PHASE string, e.g., 'NIGHT_WEREWOLF'
 
     // Special checks for one-time roles or specific conditions
-    if (p === PHASES.NIGHT_DOPPELGANGER) {
-      // Only advance to Doppelganger phase if no target has been chosen yet
-      if (!gameState.doppelgangerTarget) {
+    if (p === PHASES.NIGHT_SHAPESHIFTER) {
+      // Only advance to Shapeshifter phase if no target has been chosen yet
+      if (!effectiveNightActions.shapeshifterCopy) {
         return p;
       }
     } else if (p === PHASES.NIGHT_CUPID) {
@@ -103,9 +103,9 @@ export const startNight = async (gameState, players, now) => {
       vigilanteTarget: null,
       sorcererCheck: null,
       cupidLinks: [],
-      doppelgangerCopy: null,
-      doppelgangerPlayerId: null,
-      masonsReady: {},
+      shapeshifterCopy: null,
+      shapeshifterPlayerId: null,
+      twinsReady: {},
     },
   });
 };
@@ -133,11 +133,11 @@ export const advanceNight = async (
     case ACTION_TYPES.WEREWOLF_SKIP:
       actingPlayer = players.find((p) => p.id === (extraPayload?.voterId || actionValue?.voterId));
       break;
-    case ACTION_TYPES.MASON_READY:
+    case ACTION_TYPES.TWIN_READY:
       actingPlayer = players.find((p) => p.id === (extraPayload?.playerId || actionValue));
       break;
-    case ACTION_TYPES.DOPPELGANGER_COPY:
-      actingPlayer = players.find((p) => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive);
+    case ACTION_TYPES.SHAPESHIFTER_COPY:
+      actingPlayer = players.find((p) => p.role === ROLE_IDS.SHAPESHIFTER && p.isAlive);
       break;
     // For single-actor roles, find the player by their role based on the current phase
     case ACTION_TYPES.DOCTOR_PROTECT:
@@ -219,15 +219,15 @@ export const advanceNight = async (
     }
   }
 
-  // Special check for Mason acknowledgment
-  if (gameState.phase === PHASES.NIGHT_MASON && actionType !== null) {
-    const aliveMasons = players.filter((pl) => pl.role === ROLE_IDS.MASON && pl.isAlive);
-    // If there's only one mason, they can proceed immediately.
-    if (aliveMasons.length > 1) {
-      const masonsReadyCount = Object.keys(newActions.masonsReady || {}).length;
-      if (masonsReadyCount < aliveMasons.length) {
+  // Special check for Twin acknowledgment
+  if (gameState.phase === PHASES.NIGHT_TWIN && actionType !== null) {
+    const aliveTwins = players.filter((pl) => pl.role === ROLE_IDS.TWIN && pl.isAlive);
+    // If there's only one twin, they can proceed immediately.
+    if (aliveTwins.length > 1) {
+      const twinsReadyCount = Object.keys(newActions.twinsReady || {}).length;
+      if (twinsReadyCount < aliveTwins.length) {
         await gameState.update({ nightActions: newActions });
-        return; // Wait for all masons
+        return; // Wait for all twins
       }
     }
   }
@@ -245,8 +245,8 @@ export const advanceNight = async (
       updates.nightActions = { ...updates.nightActions, werewolfProvisionalVotes: {} };
     }
 
-    if (nextPhase === PHASES.NIGHT_MASON) {
-      updates.nightActions = { ...updates.nightActions, masonsReady: {} };
+    if (nextPhase === PHASES.NIGHT_TWIN) {
+      updates.nightActions = { ...updates.nightActions, twinsReady: {} };
     } // Set timer for next phase if it's an action phase
     const isTimedPhase = [
       PHASES.NIGHT_WEREWOLF,
@@ -255,7 +255,7 @@ export const advanceNight = async (
       PHASES.NIGHT_SORCERER,
       PHASES.NIGHT_VIGILANTE,
       PHASES.NIGHT_CUPID,
-      PHASES.NIGHT_DOPPELGANGER,
+      PHASES.NIGHT_SHAPESHIFTER,
     ].includes(nextPhase);
 
     if (isTimedPhase) {
@@ -267,7 +267,7 @@ export const advanceNight = async (
     if (gameState.phase === PHASES.NIGHT_CUPID && newActions.cupidLinks?.length === 2) {
       updates.lovers = newActions.cupidLinks;
     }
-
+    console.log('Updates object:', updates);
     await gameState.update(updates);
   }
 };
@@ -341,24 +341,24 @@ export const resolveNight = async (gameState, players, finalActions) => {
   // Apply team changes for Forbidden Love after lovers are established and initial deaths are processed
   applyLoverTeamChanges(newPlayers, currentLovers);
 
-  // Doppelgänger Transformation (Night Death)
-  // Find the Doppelganger and their target once at the beginning of resolution
-  const doppelgangerPlayerInitial = newPlayers.find(
-    (p) => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive
+  // Shapeshifter Transformation (Night Death)
+  // Find the Shapeshifter and their target once at the beginning of resolution
+  const shapeshifterPlayerInitial = newPlayers.find(
+    (p) => p.role === ROLE_IDS.SHAPESHIFTER && p.isAlive
   );
-  const doppelgangerTargetId = gameState.nightActions?.doppelgangerCopy; // Get the target from game state
+  const shapeshifterTargetId = gameState.nightActions?.shapeshifterCopy; // Get the target from game state
 
-  // New: Iterate through deaths and notify any listening roles (e.g., Doppelganger)
+  // New: Iterate through deaths and notify any listening roles (e.g., Shapeshifter)
   for (const victim of deaths) {
-    // Only process if the initial doppelganger is still alive and their target is the current victim
+    // Only process if the initial shapeshifter is still alive and their target is the current victim
     if (
-      doppelgangerPlayerInitial &&
-      doppelgangerPlayerInitial.isAlive && // Make sure the doppelganger hasn't died themselves
-      doppelgangerTargetId === victim.id
+      shapeshifterPlayerInitial &&
+      shapeshifterPlayerInitial.isAlive && // Make sure the shapeshifter hasn't died themselves
+      shapeshifterTargetId === victim.id
     ) {
-      const doppelgangerRole = roleRegistry.getRole(doppelgangerPlayerInitial.role);
-      if (doppelgangerRole && typeof doppelgangerRole.onAnyPlayerDeath === 'function') {
-        const updatedPlayers = doppelgangerRole.onAnyPlayerDeath({
+      const shapeshifterRole = roleRegistry.getRole(shapeshifterPlayerInitial.role);
+      if (shapeshifterRole && typeof shapeshifterRole.onAnyPlayerDeath === 'function') {
+        const updatedPlayers = shapeshifterRole.onAnyPlayerDeath({
           deadPlayer: victim,
           players: newPlayers, // Pass the current state of players
           gameState,
@@ -419,8 +419,8 @@ export const resolveNight = async (gameState, players, finalActions) => {
   await gameState.update({
     players: newPlayers,
     phase: nextPhase,
-    doppelgangerPlayerId:
-      finalActions.doppelgangerPlayerId || gameState.doppelgangerPlayerId || null,
+    shapeshifterPlayerId:
+      finalActions.shapeshifterPlayerId || gameState.shapeshifterPlayerId || null,
     dayNumber:
       nextPhase === PHASES.DAY_REVEAL ? (gameState.dayNumber || 0) + 1 : gameState.dayNumber,
   });
@@ -478,16 +478,16 @@ export const handleHunterShot = async (gameState, players, targetId) => {
     }
   }
 
-  // Doppelgänger Transformation (Hunter Shot)
-  // Find the Doppelganger and their target
-  const doppelgangerPlayer = newPlayers.find((p) => p.role === ROLE_IDS.DOPPELGANGER && p.isAlive);
-  const doppelgangerTargetId = gameState.nightActions?.doppelgangerCopy; // Get the target from game state
+  // Shapeshifter Transformation (Hunter Shot)
+  // Find the Shapeshifter and their target
+  const shapeshifterPlayer = newPlayers.find((p) => p.role === ROLE_IDS.SHAPESHIFTER && p.isAlive);
+  const shapeshifterTargetId = gameState.nightActions?.shapeshifterCopy; // Get the target from game state
 
-  // If the doppelganger exists, is alive, and their target is the victim
-  if (doppelgangerPlayer && doppelgangerPlayer.isAlive && doppelgangerTargetId === victim.id) {
-    const doppelgangerRole = roleRegistry.getRole(doppelgangerPlayer.role);
-    if (doppelgangerRole && typeof doppelgangerRole.onAnyPlayerDeath === 'function') {
-      const updatedPlayers = doppelgangerRole.onAnyPlayerDeath({
+  // If the shapeshifter exists, is alive, and their target is the victim
+  if (shapeshifterPlayer && shapeshifterPlayer.isAlive && shapeshifterTargetId === victim.id) {
+    const shapeshifterRole = roleRegistry.getRole(shapeshifterPlayer.role);
+    if (shapeshifterRole && typeof shapeshifterRole.onAnyPlayerDeath === 'function') {
+      const updatedPlayers = shapeshifterRole.onAnyPlayerDeath({
         deadPlayer: victim,
         players: newPlayers, // Pass the current state of players
         gameState,

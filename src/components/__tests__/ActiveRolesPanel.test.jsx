@@ -12,7 +12,7 @@ vi.mock('lucide-react', () => ({
   Shield: vi.fn(() => <svg data-testid="shield-icon" />),
   Crosshair: vi.fn(() => <svg data-testid="crosshair-icon" />),
   Fingerprint: vi.fn(() => <svg data-testid="fingerprint-icon" />),
-  Hammer: vi.fn(() => <svg data-testid="hammer-icon" />),
+  Hammer: vi.fn(() => <svg data-testid="hammer-icon" />), // Keep Hammer for other roles if needed, or remove if unused elsewhere
   Crown: vi.fn(() => <svg data-testid="crown-icon" />),
   Ghost: vi.fn(() => <svg data-testid="ghost-icon" />),
   Eye: vi.fn(() => <svg data-testid="eye-icon" />),
@@ -20,17 +20,17 @@ vi.mock('lucide-react', () => ({
   UserX: vi.fn(() => <svg data-testid="userx-icon" />),
   Zap: vi.fn(() => <svg data-testid="zap-icon" />),
   Info: vi.fn(() => <svg data-testid="info-icon" />),
+  UserRound: vi.fn(() => <svg data-testid="user-round-icon" />),
 }));
 
 // Mock the module that exports the singleton roleRegistry
 vi.mock('../roles/RoleRegistry', () => {
   // Define mock role objects with necessary properties, including a mock icon
   const MockVillagerIcon = vi.fn(() => <svg data-testid="villager-icon" />);
-  const MockWerewolfIcon = vi.fn(() => <svg data-testid="werewolf-icon" />);
-  const MockDoctorIcon = vi.fn(() => <svg data-testid="doctor-icon" />);
-  const MockMasonIcon = vi.fn(() => <svg data-testid="mason-icon" />);
-
-  const mockVillagerRole = {
+    const MockWerewolfIcon = vi.fn(() => <svg data-testid="werewolf-icon" />);
+    const MockDoctorIcon = vi.fn(() => <svg data-testid="doctor-icon" />);
+    const MockTwinIcon = vi.fn(() => <svg data-testid="twin-icon" />);
+    const mockVillagerRole = {
     id: ROLE_IDS.VILLAGER,
     name: 'Villager',
     description: 'A simple villager.',
@@ -57,17 +57,17 @@ vi.mock('../roles/RoleRegistry', () => {
     icon: MockDoctorIcon,
   };
 
-  const mockMasonRole = {
-    id: ROLE_IDS.MASON,
-    name: 'Mason',
-    description: 'Knows other Masons.',
+  const mockTwinRole = {
+    id: ROLE_IDS.TWIN,
+    name: 'Twin',
+    description: 'Knows who their twin is.',
     team: 'villagers',
     alignment: 'good',
-    icon: MockMasonIcon,
+    icon: MockTwinIcon,
   };
 
   const mockRoleRegistry = {
-    getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole, mockMasonRole]),
+    getAllRoles: vi.fn(() => [mockVillagerRole, mockWerewolfRole, mockDoctorRole, mockTwinRole]),
     getRole: vi.fn((id) => {
       switch (id) {
         case ROLE_IDS.VILLAGER:
@@ -76,8 +76,8 @@ vi.mock('../roles/RoleRegistry', () => {
           return mockWerewolfRole;
         case ROLE_IDS.DOCTOR:
           return mockDoctorRole;
-        case ROLE_IDS.MASON:
-          return mockMasonRole;
+        case ROLE_IDS.TWIN:
+          return mockTwinRole;
         default:
           return undefined;
       }
@@ -153,12 +153,12 @@ describe('ActiveRolesPanel', () => {
     expect(screen.queryByText('Werewolf')).not.toBeInTheDocument();
   });
 
-  it('calculates villagers correctly with various roles including Mason', () => {
-    // 1 Werewolf, 1 Doctor, 2 Masons. Total 4 special roles + 1 wolf = 5.
+  it('calculates villagers correctly with various roles including Twin', () => {
+    // 1 Werewolf, 1 Doctor, 2 Twins. Total 4 special roles + 1 wolf = 5.
     // If playerCount is 6, then 1 Villager should be added.
     const activeRoles = {
       [ROLE_IDS.DOCTOR]: true,
-      [ROLE_IDS.MASON]: true,
+      [ROLE_IDS.TWIN]: true,
     };
     render(<ActiveRolesPanel activeRoles={activeRoles} wolfCount={1} playerCount={6} />);
 
@@ -167,7 +167,7 @@ describe('ActiveRolesPanel', () => {
     expect(screen.getByText('Villager')).toBeInTheDocument();
     expect(screen.getByText('Werewolf')).toBeInTheDocument();
     expect(screen.getByText('Doctor')).toBeInTheDocument();
-    expect(screen.getByText('Mason')).toBeInTheDocument();
+    expect(screen.getByText('Twins')).toBeInTheDocument();
   });
 
   it('does not render if activeRoles is null', () => {

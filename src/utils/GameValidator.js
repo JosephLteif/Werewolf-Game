@@ -34,8 +34,8 @@ export class GameValidator {
     // Sum up active roles
     Object.entries(activeRoles).forEach(([roleId, isSelected]) => {
       if (isSelected) {
-        if (roleId === ROLE_IDS.MASON) {
-          requiredSlots += 2; // Masons always come in pairs
+        if (roleId === ROLE_IDS.TWIN) {
+          requiredSlots += 2; // Twins always come in pairs
         } else {
           requiredSlots += 1;
         }

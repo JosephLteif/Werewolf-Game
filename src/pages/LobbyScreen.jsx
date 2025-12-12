@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'; // Import useState, useEffe
 import { Info, Copy, ArrowLeft, XCircle, Pencil, Check, X } from 'lucide-react';
 import { ROLE_IDS } from '../constants/roleIds';
 import { kickPlayer, renamePlayer, transferHost } from '../services/rooms';
-import { CUPID_FATES, TANNER_WIN_STRATEGIES } from '../constants';
+import { CUPID_FATES, THE_FOOL_WIN_STRATEGIES } from '../constants';
 import RoleInfoModal from '../components/RoleInfoModal';
 import RoleRulesModal from '../components/RoleRulesModal'; // Import RoleRulesModal
 import ConfirmationModal from '../components/modals/ConfirmationModal'; // Import ConfirmationModal
@@ -444,24 +444,24 @@ export default function LobbyScreen({
               </div>
             )}
 
-            {gameState.settings.activeRoles[ROLE_IDS.TANNER] && (
+            {gameState.settings.activeRoles[ROLE_IDS.THE_FOOL] && (
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-400">Tanner Win</span>
+                <span className="text-sm font-bold text-slate-400">The Fool Win</span>
                 <select
                   className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
                   value={
-                    gameState.settings.tannerWinStrategy || TANNER_WIN_STRATEGIES.CONTINUE_GAME
+                    gameState.settings.theFoolWinStrategy || THE_FOOL_WIN_STRATEGIES.CONTINUE_GAME
                   }
                   onChange={(e) =>
                     isHost &&
                     gameState.update({
-                      settings: { ...gameState.settings, tannerWinStrategy: e.target.value },
+                      settings: { ...gameState.settings, theFoolWinStrategy: e.target.value },
                     })
                   }
                   disabled={!isHost}
                 >
-                  <option value={TANNER_WIN_STRATEGIES.CONTINUE_GAME}>Game Continues</option>
-                  <option value={TANNER_WIN_STRATEGIES.END_GAME}>Game Ends</option>
+                  <option value={THE_FOOL_WIN_STRATEGIES.CONTINUE_GAME}>Game Continues</option>
+                  <option value={THE_FOOL_WIN_STRATEGIES.END_GAME}>Game Ends</option>
                 </select>
               </div>
             )}

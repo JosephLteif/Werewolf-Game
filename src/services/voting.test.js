@@ -1,7 +1,7 @@
 import { MockGameState } from '../__tests__/testUtils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { castPlayerVote, lockPlayerVote, resolveDayVoting, determineVotingResult } from './voting';
-import { PHASES, ROLE_IDS, TANNER_WIN_STRATEGIES } from '../constants';
+import { PHASES, ROLE_IDS, THE_FOOL_WIN_STRATEGIES } from '../constants';
 
 describe('Voting Service', () => {
   let mockPlayersArray;
@@ -256,27 +256,27 @@ describe('Voting Service', () => {
       expect(testGameState._state.phase).toBe(PHASES.NIGHT_INTRO);
     });
 
-    it('handles Doppelganger transformation when target is voted out', async () => {
-      const doppelgangerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.DOPPELGANGER }; // p1 is Doppelganger
+    it('handles Shapeshifter transformation when target is voted out', async () => {
+      const shapeshifterPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.SHAPESHIFTER }; // p1 is Shapeshifter
       const targetPlayer = { ...mockPlayersArray[1], role: ROLE_IDS.SEER }; // p2 is Seer (the target)
-      const playersWithDoppelganger = [
-        doppelgangerPlayer,
+      const playersWithShapeshifter = [
+        shapeshifterPlayer,
         targetPlayer,
         ...mockPlayersArray.slice(2),
       ];
-      const playersWithDoppelgangerMap = {};
-      playersWithDoppelganger.forEach((p) => {
-        playersWithDoppelgangerMap[p.id] = p;
+      const playersWithShapeshifterMap = {};
+      playersWithShapeshifter.forEach((p) => {
+        playersWithShapeshifterMap[p.id] = p;
       });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
-        players: playersWithDoppelgangerMap,
+        players: playersWithShapeshifterMap,
         nightActions: {
-          doppelgangerCopy: targetPlayer.id, // Doppelganger chose p2
-          doppelgangerPlayerId: doppelgangerPlayer.id,
+          shapeshifterCopy: targetPlayer.id, // Shapeshifter chose p2
+          shapeshifterPlayerId: shapeshifterPlayer.id,
         },
-        doppelgangerPlayerId: doppelgangerPlayer.id, // Also set at root level for fallback
+        shapeshifterPlayerId: shapeshifterPlayer.id, // Also set at root level for fallback
         votes: {
           p3: targetPlayer.id, // p3 votes for p2
           p4: targetPlayer.id, // p4 votes for p2
@@ -284,10 +284,10 @@ describe('Voting Service', () => {
         lockedVotes: ['p3', 'p4'],
       });
 
-      await resolveDayVoting(testGameState, playersWithDoppelganger, testGameState.lockedVotes);
+      await resolveDayVoting(testGameState, playersWithShapeshifter, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
-      expect(testGameState._state.players[doppelgangerPlayer.id].role).toBe(ROLE_IDS.SEER);
+      expect(testGameState._state.players[shapeshifterPlayer.id].role).toBe(ROLE_IDS.SEER);
       expect(testGameState._state.players[targetPlayer.id].isAlive).toBe(false);
     });
 
@@ -390,66 +390,66 @@ describe('Voting Service', () => {
       );
     });
 
-    it('handles Tanner win with END_GAME strategy', async () => {
-      const tannerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.TANNER };
-      const playersWithTanner = [tannerPlayer, ...mockPlayersArray.slice(1)];
-      const playersWithTannerMap = {};
-      playersWithTanner.forEach((p) => {
-        playersWithTannerMap[p.id] = p;
+    it('handles The Fool win with END_GAME strategy', async () => {
+      const theFoolPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.THE_FOOL };
+      const playersWithTheFool = [theFoolPlayer, ...mockPlayersArray.slice(1)];
+      const playersWithTheFoolMap = {};
+      playersWithTheFool.forEach((p) => {
+        playersWithTheFoolMap[p.id] = p;
       });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         settings: {
           ...mockInitialGameState.settings,
-          tannerWinStrategy: TANNER_WIN_STRATEGIES.END_GAME,
+          theFoolWinStrategy: THE_FOOL_WIN_STRATEGIES.END_GAME,
         },
-        players: playersWithTannerMap,
+        players: playersWithTheFoolMap,
         votes: {
-          p2: tannerPlayer.id,
-          p3: tannerPlayer.id,
+          p2: theFoolPlayer.id,
+          p3: theFoolPlayer.id,
         },
         lockedVotes: ['p2', 'p3'],
       });
 
-      await resolveDayVoting(testGameState, playersWithTanner, testGameState.lockedVotes);
+      await resolveDayVoting(testGameState, playersWithTheFool, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
       expect(testGameState._state.phase).toBe(PHASES.GAME_OVER);
-      expect(testGameState._state.winners).toEqual(['TANNER']);
+      expect(testGameState._state.winners).toEqual(['THE_FOOL']);
     });
 
-    it('handles Tanner win with CONTINUE_GAME strategy', async () => {
-      const tannerPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.TANNER };
-      const playersWithTanner = [tannerPlayer, ...mockPlayersArray.slice(1)];
-      const playersWithTannerMap = {};
-      playersWithTanner.forEach((p) => {
-        playersWithTannerMap[p.id] = p;
+    it('handles The Fool win with CONTINUE_GAME strategy', async () => {
+      const theFoolPlayer = { ...mockPlayersArray[0], role: ROLE_IDS.THE_FOOL };
+      const playersWithTheFool = [theFoolPlayer, ...mockPlayersArray.slice(1)];
+      const playersWithTheFoolMap = {};
+      playersWithTheFool.forEach((p) => {
+        playersWithTheFoolMap[p.id] = p;
       });
 
       const testGameState = new MockGameState({
         ...mockInitialGameState,
         settings: {
           ...mockInitialGameState.settings,
-          tannerWinStrategy: TANNER_WIN_STRATEGIES.CONTINUE_GAME,
+          theFoolWinStrategy: THE_FOOL_WIN_STRATEGIES.CONTINUE_GAME,
         },
-        players: playersWithTannerMap,
+        players: playersWithTheFoolMap,
         votes: {
-          p2: tannerPlayer.id,
-          p3: tannerPlayer.id,
+          p2: theFoolPlayer.id,
+          p3: theFoolPlayer.id,
         },
         lockedVotes: ['p2', 'p3'],
         winners: [],
       });
 
-      await resolveDayVoting(testGameState, playersWithTanner, testGameState.lockedVotes);
+      await resolveDayVoting(testGameState, playersWithTheFool, testGameState.lockedVotes);
 
       expect(testGameState.update).toHaveBeenCalled();
-      // Tanner's death still triggers the death note phase before continuing
+      // The Fool's death still triggers the death note phase before continuing
       expect(testGameState._state.phase).toBe(PHASES.DEATH_NOTE_INPUT);
-      expect(testGameState._state.winners).toEqual(['TANNER']);
-      expect(testGameState._state.players[tannerPlayer.id].isAlive).toBe(false);
-      expect(testGameState._state.playerAwaitingDeathNote).toBe(tannerPlayer.id);
+      expect(testGameState._state.winners).toEqual(['THE_FOOL']);
+      expect(testGameState._state.players[theFoolPlayer.id].isAlive).toBe(false);
+      expect(testGameState._state.playerAwaitingDeathNote).toBe(theFoolPlayer.id);
       expect(testGameState._state.nextPhaseAfterDeathNote).toBe(PHASES.NIGHT_INTRO);
     });
   });

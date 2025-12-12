@@ -10,8 +10,8 @@ import DayVoteScreen from '../pages/DayVoteScreen';
 import DeadScreen from '../pages/DeadScreen';
 import HunterActionScreen from '../pages/HunterActionScreen';
 import LobbyScreen from '../pages/LobbyScreen';
-import MasonNightActionScreen from '../pages/MasonNightActionScreen';
-import MinionNightActionScreen from '../pages/MinionNightActionScreen';
+import TwinsNightActionScreen from '../pages/TwinsNightActionScreen';
+import FanaticNightActionScreen from '../pages/FanaticNightActionScreen';
 import NightActionScreen from '../pages/NightActionScreen';
 import NightIntroScreen from '../pages/NightIntroScreen';
 import NightWaitingScreen from '../pages/NightWaitingScreen';
@@ -26,14 +26,14 @@ const PHASE_COMPONENTS = {
   [PHASES.LOBBY]: LobbyScreen,
   [PHASES.ROLE_REVEAL]: RoleRevealScreen,
   [PHASES.NIGHT_INTRO]: NightIntroScreen,
-  [PHASES.NIGHT_DOPPELGANGER]: NightActionScreen, // Generic NightActionScreen
+  [PHASES.NIGHT_SHAPESHIFTER]: NightActionScreen, // Generic NightActionScreen
   [PHASES.NIGHT_CUPID]: NightActionScreen, // Generic NightActionScreen
   [PHASES.NIGHT_WEREWOLF]: WerewolfNightActionScreen,
-  [PHASES.NIGHT_MINION]: MinionNightActionScreen,
+  [PHASES.NIGHT_FANATIC]: FanaticNightActionScreen,
   [PHASES.NIGHT_SORCERER]: SorcererNightActionScreen,
   [PHASES.NIGHT_DOCTOR]: NightActionScreen, // Generic NightActionScreen
   [PHASES.NIGHT_SEER]: SeerNightActionScreen,
-  [PHASES.NIGHT_MASON]: MasonNightActionScreen,
+  [PHASES.NIGHT_TWIN]: TwinsNightActionScreen,
   [PHASES.NIGHT_VIGILANTE]: NightActionScreen, // Generic NightActionScreen
   [PHASES.HUNTER_ACTION]: HunterActionScreen, // This will be conditionally rendered with WaitingForHunterScreen
   [PHASES.DAY_REVEAL]: DayRevealScreen,
@@ -77,14 +77,14 @@ export function PhaseRouter({
   if (
     [
       PHASES.NIGHT_INTRO,
-      PHASES.NIGHT_DOPPELGANGER,
+      PHASES.NIGHT_SHAPESHIFTER,
       PHASES.NIGHT_CUPID,
       PHASES.NIGHT_WEREWOLF,
-      PHASES.NIGHT_MINION,
+      PHASES.NIGHT_FANATIC,
       PHASES.NIGHT_SORCERER,
       PHASES.NIGHT_DOCTOR,
       PHASES.NIGHT_SEER,
-      PHASES.NIGHT_MASON,
+      PHASES.NIGHT_TWIN,
       PHASES.NIGHT_VIGILANTE,
     ].includes(gameState.phase)
   ) {
@@ -135,13 +135,13 @@ export function PhaseRouter({
             />
           );
         }
-        case PHASES.NIGHT_DOPPELGANGER: {
+        case PHASES.NIGHT_SHAPESHIFTER: {
           const config = role.getNightScreenConfig();
           return wrapGameContent(
             <NightActionScreen
               {...config}
               players={players.filter((p) => p.isAlive && p.id !== user.uid)}
-              onAction={(id) => actions.advanceNightPhase('doppelgangerCopy', id)}
+              onAction={(id) => actions.advanceNightPhase('shapeshifterCopy', id)}
               phaseEndTime={gameState.phaseEndTime}
             />
           );
@@ -160,9 +160,9 @@ export function PhaseRouter({
               roomCode={gameState.code}
             />
           );
-        case PHASES.NIGHT_MINION:
+        case PHASES.NIGHT_FANATIC:
           return wrapGameContent(
-            <MinionNightActionScreen
+            <FanaticNightActionScreen
               players={players}
               advanceNightPhase={actions.advanceNightPhase}
             />
@@ -204,9 +204,9 @@ export function PhaseRouter({
               now={now}
             />
           );
-        case PHASES.NIGHT_MASON:
+        case PHASES.NIGHT_TWIN:
           return wrapGameContent(
-            <MasonNightActionScreen
+            <TwinsNightActionScreen
               players={players}
               user={user}
               gameState={gameState}
