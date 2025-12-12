@@ -11,7 +11,6 @@ import { auth, googleProvider } from '../services/firebase';
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const signInWithGoogle = async () => {
     try {
@@ -40,12 +39,25 @@ export function useAuth() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return unsubscribe;
+    // We only set persistence once here if not already set by signInWithGoogle or signInAsGuest
+    const initPersistenceAndListen = async () => {
+      if (!auth.persistence) {
+        // Check if persistence is already set
+        await setPersistence(auth, browserLocalPersistence);
+      }
+
+      const unsubscribe = onAuthStateChanged(auth, (u) => {
+        if (u) {
+          setUser(u);
+        } else {
+          setUser(null);
+        }
+      });
+      return unsubscribe;
+    };
+
+    initPersistenceAndListen();
   }, []);
 
-  return { user, error, loading, signInWithGoogle, signInAsGuest };
+  return { user, error, signInWithGoogle, signInAsGuest };
 }
