@@ -15,4 +15,5 @@ export const ROLE_IDS = {
   MAYOR: 'mayor',
   THE_FOOL: 'the_fool',
   CURSED: 'cursed',
+  THE_BEHOLDER: 'the_beholder'
 };
